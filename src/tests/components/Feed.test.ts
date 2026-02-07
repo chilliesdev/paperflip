@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/svelte";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Feed from "../../lib/components/Feed.svelte";
 import * as audio from "../../lib/audio";
@@ -8,21 +14,34 @@ vi.mock("../../lib/audio", () => {
   let speaking = false;
   return {
     initializeTTS: vi.fn(),
-    speakText: vi.fn(() => { speaking = true; }),
-    stopTTS: vi.fn(() => { speaking = false; }),
-    pauseTTS: vi.fn(() => { speaking = false; }),
-    resumeTTS: vi.fn(() => { speaking = true; }),
+    speakText: vi.fn(() => {
+      speaking = true;
+    }),
+    stopTTS: vi.fn(() => {
+      speaking = false;
+    }),
+    pauseTTS: vi.fn(() => {
+      speaking = false;
+    }),
+    resumeTTS: vi.fn(() => {
+      speaking = true;
+    }),
     isSpeaking: vi.fn(() => speaking),
-    resetTTS: vi.fn(() => { speaking = false; }),
+    resetTTS: vi.fn(() => {
+      speaking = false;
+    }),
     // Helper to manually set state for testing
-    __setSpeaking: (val: boolean) => { speaking = val; }
+    __setSpeaking: (val: boolean) => {
+      speaking = val;
+    },
   };
 });
 
 // Mock Swiper
 vi.mock("swiper/svelte", async () => {
   const MockSwiper = (await import("../mocks/MockSwiper.svelte")).default;
-  const MockSwiperSlide = (await import("../mocks/MockSwiperSlide.svelte")).default;
+  const MockSwiperSlide = (await import("../mocks/MockSwiperSlide.svelte"))
+    .default;
   return { Swiper: MockSwiper, SwiperSlide: MockSwiperSlide };
 });
 
@@ -32,7 +51,7 @@ vi.mock("swiper", () => ({
 }));
 
 // Mock HammerJS (dynamic import)
-const hammerHandlers: Record<string, Function> = {};
+const hammerHandlers: Record<string, (...args: any[]) => void> = {};
 const hammerMockInstance = {
   on: vi.fn((event, handler) => {
     hammerHandlers[event] = handler;
@@ -49,7 +68,7 @@ const hammerMockInstance = {
     if (hammerHandlers[event]) {
       hammerHandlers[event]();
     }
-  }
+  },
 };
 
 // Use a class for the default export to support 'new Hammer()'
@@ -63,7 +82,6 @@ class HammerMock {
 vi.mock("hammerjs", () => ({
   default: HammerMock,
 }));
-
 
 describe("Feed Component", () => {
   beforeEach(() => {
@@ -83,20 +101,27 @@ describe("Feed Component", () => {
 
   it("renders 'Upload a PDF' message when segments are empty", () => {
     render(Feed, { segments: [] });
-    expect(screen.getByText("Upload a PDF to see the feed!")).toBeInTheDocument();
+    expect(
+      screen.getByText("Upload a PDF to see the feed!"),
+    ).toBeInTheDocument();
   });
 
   it("renders video and swiper when segments are provided", async () => {
     const segments = ["Segment 1", "Segment 2"];
     render(Feed, { segments });
 
-    expect(screen.queryByText("Upload a PDF to see the feed!")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Upload a PDF to see the feed!"),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("swiper-mock")).toBeInTheDocument();
 
     // Check video source
-    const video = document.querySelector('video');
+    const video = document.querySelector("video");
     expect(video).toBeInTheDocument();
-    expect(video).toHaveAttribute('src', '/videos/bg-video-1.mp4');
+    expect(video).toHaveAttribute(
+      "src",
+      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+    );
 
     // Check that slides are rendered
     const slides = screen.getAllByTestId("swiper-slide-mock");
@@ -115,7 +140,10 @@ describe("Feed Component", () => {
     render(Feed, { segments });
 
     await waitFor(() => {
-        expect(audio.speakText).toHaveBeenCalledWith("First Segment", expect.any(Function));
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "First Segment",
+        expect.any(Function),
+      );
     });
   });
 
@@ -137,7 +165,10 @@ describe("Feed Component", () => {
 
     // Wait for Hammer to be initialized
     await waitFor(() => {
-      expect(hammerMockInstance.on).toHaveBeenCalledWith("singletap", expect.any(Function));
+      expect(hammerMockInstance.on).toHaveBeenCalledWith(
+        "singletap",
+        expect.any(Function),
+      );
     });
 
     // Now speaking is true because speakText was called
@@ -151,8 +182,8 @@ describe("Feed Component", () => {
     hammerMockInstance.__trigger("singletap");
 
     await waitFor(() => {
-        expect(audio.pauseTTS).toHaveBeenCalled();
-        expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+      expect(audio.pauseTTS).toHaveBeenCalled();
+      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
     expect(audio.isSpeaking()).toBe(false);
 
@@ -160,8 +191,8 @@ describe("Feed Component", () => {
     hammerMockInstance.__trigger("singletap");
 
     await waitFor(() => {
-        expect(audio.resumeTTS).toHaveBeenCalled();
-        expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+      expect(audio.resumeTTS).toHaveBeenCalled();
+      expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
     });
     expect(audio.isSpeaking()).toBe(true);
   });
@@ -175,25 +206,37 @@ describe("Feed Component", () => {
 
     // Wait for Hammer to be initialized
     await waitFor(() => {
-      expect(hammerMockInstance.on).toHaveBeenCalledWith("doubletap", expect.any(Function));
+      expect(hammerMockInstance.on).toHaveBeenCalledWith(
+        "doubletap",
+        expect.any(Function),
+      );
     });
 
-    const video = document.querySelector('video');
-    expect(video).toHaveAttribute('src', '/videos/bg-video-1.mp4');
+    const video = document.querySelector("video");
+    expect(video).toHaveAttribute(
+      "src",
+      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+    );
 
     // Trigger double tap -> Next video
     hammerMockInstance.__trigger("doubletap");
 
     // Re-query or wait for update
     await waitFor(() => {
-        expect(video).toHaveAttribute('src', '/videos/bg-video-2.mp4');
+      expect(video).toHaveAttribute(
+        "src",
+        "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
+      );
     });
 
     // Trigger double tap -> Back to first video (since only 2 in array)
     hammerMockInstance.__trigger("doubletap");
 
     await waitFor(() => {
-        expect(video).toHaveAttribute('src', '/videos/bg-video-1.mp4');
+      expect(video).toHaveAttribute(
+        "src",
+        "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+      );
     });
   });
 
@@ -202,7 +245,12 @@ describe("Feed Component", () => {
     render(Feed, { segments });
 
     // Wait for initial speech
-    await waitFor(() => expect(audio.speakText).toHaveBeenCalledWith("Segment 1", expect.any(Function)));
+    await waitFor(() =>
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 1",
+        expect.any(Function),
+      ),
+    );
 
     const swiper = screen.getByTestId("swiper-mock");
 
@@ -211,12 +259,17 @@ describe("Feed Component", () => {
     (audio.stopTTS as any).mockClear();
 
     // Simulate slide change to index 1
-    const event = new CustomEvent('test-slide-change', { detail: { index: 1 } });
+    const event = new CustomEvent("test-slide-change", {
+      detail: { index: 1 },
+    });
     fireEvent(swiper, event);
 
     await waitFor(() => {
-        expect(audio.stopTTS).toHaveBeenCalled();
-        expect(audio.speakText).toHaveBeenCalledWith("Segment 2", expect.any(Function));
+      expect(audio.stopTTS).toHaveBeenCalled();
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 2",
+        expect.any(Function),
+      );
     });
   });
 
@@ -231,16 +284,16 @@ describe("Feed Component", () => {
     const lastCall = mockCalls[mockCalls.length - 1];
     const boundaryCallback = lastCall[1];
 
-    expect(boundaryCallback).toBeTypeOf('function');
+    expect(boundaryCallback).toBeTypeOf("function");
 
     // Simulate word boundary for "Hello"
     boundaryCallback("Hello");
 
     // Wait for update
     await waitFor(() => {
-       const helloSpan = screen.getByText("Hello");
-       expect(helloSpan.tagName).toBe("SPAN");
-       expect(helloSpan).toHaveClass("bg-[yellow]");
+      const helloSpan = screen.getByText("Hello");
+      expect(helloSpan.tagName).toBe("SPAN");
+      expect(helloSpan).toHaveClass("bg-[yellow]");
     });
   });
 });

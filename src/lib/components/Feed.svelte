@@ -19,15 +19,17 @@
   export let segments: string[] = [];
 
   const videoSources = [
-    "/videos/bg-video-1.mp4",
-    "/videos/bg-video-2.mp4",
+    "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+    "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
     // Add more video paths here
   ];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swiperInstance: any;
   let currentWord: string = "";
   let currentVideoIndex: number = 0;
   let videoElement: HTMLVideoElement;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let hammerManager: any; // Changed type to any
 
   // Reactive declaration for currentVideoSrc
@@ -154,13 +156,14 @@
       on:swiper={handleSwiperInit}
       on:slideChange={handleSlideChange}
     >
-      {#each segments as segment, i}
+      {#each segments as segment, i (i)}
         <SwiperSlide
           class="flex items-center justify-center p-4 relative bg-transparent"
         >
           <div
             class="text-center text-2xl text-white z-10 p-4 bg-black bg-opacity-50 rounded"
           >
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html getHighlightedText(segment, currentWord)}
           </div>
         </SwiperSlide>
