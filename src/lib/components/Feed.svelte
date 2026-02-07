@@ -83,12 +83,15 @@
   }
 
   function togglePlayback() {
+    // Robustness check: ensure videoElement exists
+    const el =
+      videoElement || (document.querySelector("video") as HTMLVideoElement);
     if (isSpeaking()) {
       pauseTTS();
-      videoElement.pause();
+      el?.pause();
     } else {
       resumeTTS();
-      videoElement.play();
+      el?.play();
     }
   }
 
