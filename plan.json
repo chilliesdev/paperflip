@@ -1,0 +1,105 @@
+[
+  {
+    "category": "setup",
+    "description": "Initialize Project with Svelte 5, Tailwind CSS 4.0, and Code Quality Tools",
+    "steps": [
+      "Initialize a new SvelteKit project using Svelte 5 as the core framework.",
+      "Install and configure Tailwind CSS 4.0 for utility-first styling.",
+      "Install ESLint and Prettier to enforce code style and catch errors early (Industry Best Practice).",
+      "Configure Husky and lint-staged to run linters before every commit (Industry Best Practice).",
+      "Verify the development server starts and Tailwind styles are applying correctly."
+    ],
+    "completed": true
+  },
+  {
+    "category": "backend",
+    "description": "Implement Local-First Database Layer with RxDB",
+    "steps": [
+      "Install RxDB to serve as the local-first NoSQL database sitting on top of IndexedDB.",
+      "Define a document schema that includes fields for DocumentID, Segments (array), and CurrentSegmentIndex.",
+      "Create a helper service to initialize the database connection only on the client side (browser) to support offline mode.",
+      "Write a test function to insert a dummy document and query it back to verify persistence."
+    ],
+    "completed": true
+  },
+  {
+    "category": "functional",
+    "description": "Create Client-Side PDF Parsing Service",
+    "steps": [
+      "Install PDF.js (Mozilla) to handle PDF extraction directly in the browser.",
+      "Create a file upload component that accepts PDF files.",
+      "Implement a function that reads the uploaded file and extracts raw text using the PDF.js library.",
+      "Ensure the parsing happens entirely on the client side without sending files to a server.",
+      "Log the extracted text to the console to verify successful parsing."
+    ],
+    "completed": true
+  },
+  {
+    "category": "functional",
+    "description": "Implement Intelligent Text Segmentation Logic",
+    "steps": [
+      "Create a utility function using `Intl.Segmenter` to split raw text.",
+      "Implement logic to group text into 'Shorts' based on paragraph breaks or a ~1,000 character limit.",
+      "Connect the PDF Parsing service (from previous task) to this segmenter.",
+      "Store the resulting array of text segments into the RxDB instance created in the backend task."
+    ],
+    "completed": true
+  },
+  {
+    "category": "ui",
+    "description": "Build the Vertical 'Shorts' Feed Layout",
+    "steps": [
+      "Install Swiper.js or Embla Carousel to handle the vertical scrolling interaction.",
+      "Create a main 'Feed' component that fetches the segmented text from RxDB.",
+      "Map over the segments to render a vertical slide for each text block.",
+      "Configure the carousel for vertical orientation so it mimics a social media feed.",
+      "Verify that snapping works correctly (one segment per screen)."
+    ],
+    "completed": true
+  },
+  {
+    "category": "visuals",
+    "description": "Implement Background Video Layer with WebGPU Support",
+    "steps": [
+      "Add a `<video>` tag to the background of the slide component.",
+      "Import a set of 5-10 lightweight, looping background videos into the public assets folder.",
+      "Implement logic to assign a random video loop to the player upon initialization.",
+      "Ensure the video tag uses the `loop` attribute and muted property for auto-play compliance.",
+      "Verify video decoding is functioning (modern browsers will utilize WebGPU/Hardware Acceleration automatically)."
+    ],
+    "completed": true
+  },
+  {
+    "category": "audio",
+    "description": "Integrate Native Web Speech API for TTS",
+    "steps": [
+      "Create an audio controller service using `window.speechSynthesis` (Web Speech API).",
+      "Implement a function to speak the text of the currently visible slide.",
+      "Add an event listener for the `onboundary` event to track which word is currently being spoken.",
+      "Ensure the TTS engine stops/pauses when the user navigates away from the current slide."
+    ],
+    "completed": true
+  },
+  {
+    "category": "ui",
+    "description": "Implement Reactive Word-Level Highlighting",
+    "steps": [
+      "Update the text display component to wrap words in individual `<span>` tags.",
+      "Connect the `onboundary` event from the Audio task to a Svelte state variable.",
+      "Apply a CSS highlight class (e.g., specific color or background) to the word matching the current speech cursor.",
+      "Test that the visual highlight moves in sync with the audio playback."
+    ],
+    "completed": true
+  },
+  {
+    "category": "interaction",
+    "description": "Add Gesture Controls with Hammer.js",
+    "steps": [
+      "Install Hammer.js to manage touch gestures.",
+      "Bind a 'Single Tap' event to toggle the TTS audio and video playback (Pause/Play).",
+      "Bind a 'Double Tap' event to cycle through the available background video styles.",
+      "Verify gestures work on a mobile viewport simulation."
+    ],
+    "completed": true
+  }
+]
