@@ -34,4 +34,7 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ["./src/tests/setup.ts"],
     include: ["src/**/*.{test,spec}.{js,ts}"],
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+  },
 }));
