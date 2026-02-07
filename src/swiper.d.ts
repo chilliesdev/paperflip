@@ -1,4 +1,4 @@
-declare module 'swiper' {
+declare module "swiper" {
   const Swiper: any;
   const Mousewheel: any;
   const Navigation: any;
@@ -7,7 +7,7 @@ declare module 'swiper' {
   export default Swiper;
 }
 
-declare module 'swiper/svelte' {
+declare module "swiper/svelte" {
   const Swiper: any;
   const SwiperSlide: any;
   export { Swiper, SwiperSlide };
