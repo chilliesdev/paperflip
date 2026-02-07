@@ -4,6 +4,10 @@ let synth: SpeechSynthesis;
 let utterance: SpeechSynthesisUtterance | null = null;
 let currentBoundaryCallback: ((word: string) => void) | null = null;
 
+// Manual state tracking to avoid browser inconsistencies
+let manualSpeaking = false;
+let manualPaused = false;
+
 export function initializeTTS() {
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
     synth = window.speechSynthesis;
@@ -22,6 +26,9 @@ export function speakText(text: string, onBoundary?: (word: string) => void) {
   if (utterance) {
     synth.cancel();
   }
+
+  manualSpeaking = true;
+  manualPaused = false;
 
   utterance = new SpeechSynthesisUtterance(text);
   // You can set voice, pitch, rate here
@@ -45,46 +52,69 @@ export function speakText(text: string, onBoundary?: (word: string) => void) {
     currentBoundaryCallback = null;
   }
 
+  // Capture the utterance instance to prevent race conditions with cancel/speak
+  const currentUtterance = utterance;
+
   utterance.onend = () => {
-    utterance = null;
-    currentBoundaryCallback = null;
+    // Only reset if this is still the active utterance
+    if (utterance === currentUtterance) {
+      utterance = null;
+      currentBoundaryCallback = null;
+      manualSpeaking = false;
+      manualPaused = false;
+    }
   };
 
   utterance.onerror = (event) => {
     console.error("SpeechSynthesisUtterance error:", event);
-    utterance = null;
-    currentBoundaryCallback = null;
+    // Only reset if this is still the active utterance
+    if (utterance === currentUtterance) {
+      utterance = null;
+      currentBoundaryCallback = null;
+      manualSpeaking = false;
+      manualPaused = false;
+    }
   };
 
   synth.speak(utterance);
 }
 
 export function stopTTS() {
-  if (synth && utterance) {
+  if (synth && (manualSpeaking || utterance)) {
     synth.cancel();
     utterance = null;
     currentBoundaryCallback = null;
+    manualSpeaking = false;
+    manualPaused = false;
   }
 }
 
 export function pauseTTS() {
-  if (synth && synth.speaking) {
+  if (synth && manualSpeaking && !manualPaused) {
     synth.pause();
+    manualPaused = true;
   }
 }
 
 export function resumeTTS() {
-  if (synth && synth.paused) {
+  if (synth && manualPaused) {
     synth.resume();
+    manualPaused = false;
   }
 }
 
 export function isSpeaking(): boolean {
-  return synth ? synth.speaking : false;
+  return manualSpeaking;
+}
+
+export function isPaused(): boolean {
+  return manualPaused;
 }
 
 // For testing purposes - resets module state
 export function resetTTS() {
   utterance = null;
   currentBoundaryCallback = null;
+  manualSpeaking = false;
+  manualPaused = false;
 }

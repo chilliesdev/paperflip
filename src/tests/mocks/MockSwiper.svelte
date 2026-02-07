@@ -61,6 +61,11 @@
 </script>
 
 <!-- Add a listener for testing -->
-<div data-testid="swiper-mock" class={className} use:testSlideChangeAction>
+<div
+  data-testid="swiper-mock"
+  class={className}
+  use:testSlideChangeAction
+  on:click
+>
   <slot />
 </div>

@@ -9,6 +9,7 @@
     pauseTTS,
     resumeTTS,
     isSpeaking,
+    isPaused,
   } from "$lib/audio";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
@@ -29,11 +30,9 @@
   let currentWord: string = "";
   let currentVideoIndex: number = 0;
   let videoElement: HTMLVideoElement;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let hammerManager: any; // Changed type to any
 
-  // Reactive declaration for currentVideoSrc
-  $: currentVideoSrc = videoSources[currentVideoIndex];
+  // Non-reactive declaration for currentVideoSrc since index is static for now
+  const currentVideoSrc = videoSources[currentVideoIndex];
 
   function getHighlightedText(text: string, highlightWord: string): string {
     if (!highlightWord) return text;
@@ -60,6 +59,7 @@
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
     swiperInstance = swiper;
+    initializeTTS();
     if (segments.length > 0) {
       if (videoElement) videoElement.play();
       speakCurrentSlide();
@@ -88,48 +88,31 @@
     // Robustness check: ensure videoElement exists
     const el =
       videoElement || (document.querySelector("video") as HTMLVideoElement);
+
     if (isSpeaking()) {
-      pauseTTS();
-      el?.pause();
+      if (isPaused()) {
+        resumeTTS();
+        el?.play();
+      } else {
+        pauseTTS();
+        el?.pause();
+      }
     } else {
+      // If not speaking (and not paused), it might be stopped or not started.
+      // We can try to resume if it was just paused but isSpeaking returned false (unlikely for pause),
+      // or maybe restart?
+      // For now, let's just try resume/play which covers the 'paused' case if isSpeaking is false (browsers vary).
       resumeTTS();
       el?.play();
     }
   }
 
-  function cycleVideo() {
-    currentVideoIndex = (currentVideoIndex + 1) % videoSources.length;
-  }
-
   onMount(async () => {
     initializeTTS();
-
-    // Initialize Hammer.js
-    const swiperContainer = document.querySelector(".mySwiper");
-    if (swiperContainer) {
-      const { default: Hammer } = await import("hammerjs");
-      hammerManager = new Hammer(swiperContainer as HTMLElement);
-
-      // Explicitly add a singletap recognizer (Hammer doesn't have it by default usually, it has 'tap')
-      // or we can use 'tap' but the code below uses 'singletap'.
-      // Let's create a custom recognizer for single tap if needed, or just use 'tap'.
-      // However, common pattern is:
-      hammerManager.add(new Hammer.Tap({ event: "doubletap", taps: 2 }));
-      hammerManager.add(new Hammer.Tap({ event: "singletap" }));
-
-      hammerManager.get("doubletap").recognizeWith("singletap");
-      hammerManager.get("singletap").requireFailure("doubletap");
-
-      hammerManager.on("singletap", togglePlayback);
-      hammerManager.on("doubletap", cycleVideo);
-    }
   });
 
   onDestroy(() => {
     stopTTS();
-    if (hammerManager) {
-      hammerManager.destroy();
-    }
   });
 </script>
 
@@ -155,6 +138,7 @@
       class="mySwiper w-full h-full"
       on:swiper={handleSwiperInit}
       on:slideChange={handleSlideChange}
+      on:click={togglePlayback}
     >
       {#each segments as segment, i (i)}
         <SwiperSlide

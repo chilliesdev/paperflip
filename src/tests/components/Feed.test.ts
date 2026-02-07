@@ -12,27 +12,52 @@ import * as audio from "../../lib/audio";
 // Mock the audio module
 vi.mock("../../lib/audio", () => {
   let speaking = false;
+  let paused = false;
+  let initialized = false;
+
   return {
-    initializeTTS: vi.fn(),
+    initializeTTS: vi.fn(() => {
+      initialized = true;
+    }),
     speakText: vi.fn(() => {
+      if (!initialized) {
+        console.warn("SpeechSynthesis not initialized.");
+        return;
+      }
       speaking = true;
+      paused = false;
     }),
     stopTTS: vi.fn(() => {
       speaking = false;
+      paused = false;
     }),
     pauseTTS: vi.fn(() => {
-      speaking = false;
+      // In reality, speaking remains true when paused
+      if (speaking) {
+        paused = true;
+      }
     }),
     resumeTTS: vi.fn(() => {
-      speaking = true;
+      if (speaking && paused) {
+        paused = false;
+      }
     }),
     isSpeaking: vi.fn(() => speaking),
+    isPaused: vi.fn(() => paused),
     resetTTS: vi.fn(() => {
       speaking = false;
+      paused = false;
+      initialized = false;
     }),
     // Helper to manually set state for testing
     __setSpeaking: (val: boolean) => {
       speaking = val;
+    },
+    __setPaused: (val: boolean) => {
+      paused = val;
+    },
+    __setInitialized: (val: boolean) => {
+      initialized = val;
     },
   };
 });
@@ -50,49 +75,17 @@ vi.mock("swiper", () => ({
   Mousewheel: {},
 }));
 
-// Mock HammerJS (dynamic import)
-const hammerHandlers: Record<string, (...args: any[]) => void> = {};
-const hammerMockInstance = {
-  on: vi.fn((event, handler) => {
-    hammerHandlers[event] = handler;
-  }),
-  off: vi.fn(),
-  destroy: vi.fn(),
-  add: vi.fn(),
-  get: vi.fn(() => ({
-    recognizeWith: vi.fn(),
-    requireFailure: vi.fn(),
-  })),
-  // Helper to trigger events
-  __trigger: (event: string) => {
-    if (hammerHandlers[event]) {
-      hammerHandlers[event]();
-    }
-  },
-};
-
-// Use a class for the default export to support 'new Hammer()'
-class HammerMock {
-  constructor() {
-    return hammerMockInstance;
-  }
-  static Tap = vi.fn();
-}
-
-vi.mock("hammerjs", () => ({
-  default: HammerMock,
-}));
-
 describe("Feed Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Clear handlers
-    for (const key in hammerHandlers) delete hammerHandlers[key];
 
     // Reset video element mocks if necessary
     HTMLMediaElement.prototype.play = vi.fn();
     HTMLMediaElement.prototype.pause = vi.fn();
     (audio as any).__setSpeaking(false);
+    (audio as any).__setPaused(false);
+    (audio as any).__setInitialized(false);
   });
 
   afterEach(() => {
@@ -163,14 +156,6 @@ describe("Feed Component", () => {
     // Verify play() was called during init
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
 
-    // Wait for Hammer to be initialized
-    await waitFor(() => {
-      expect(hammerMockInstance.on).toHaveBeenCalledWith(
-        "singletap",
-        expect.any(Function),
-      );
-    });
-
     // Now speaking is true because speakText was called
     expect(audio.isSpeaking()).toBe(true);
 
@@ -178,66 +163,28 @@ describe("Feed Component", () => {
     (HTMLMediaElement.prototype.play as any).mockClear();
     (HTMLMediaElement.prototype.pause as any).mockClear();
 
-    // Trigger single tap -> Pause
-    hammerMockInstance.__trigger("singletap");
+    const swiper = screen.getByTestId("swiper-mock");
+
+    // Click -> Expect Toggle (after delay)
+    fireEvent.click(swiper);
 
     await waitFor(() => {
       expect(audio.pauseTTS).toHaveBeenCalled();
       expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
-    expect(audio.isSpeaking()).toBe(false);
+    // With new mock logic, speaking remains true, but paused becomes true
+    expect(audio.isSpeaking()).toBe(true);
+    expect(audio.isPaused()).toBe(true);
 
-    // Trigger single tap -> Resume
-    hammerMockInstance.__trigger("singletap");
+    // Click again -> Expect Resume
+    fireEvent.click(swiper);
 
     await waitFor(() => {
       expect(audio.resumeTTS).toHaveBeenCalled();
       expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
     });
     expect(audio.isSpeaking()).toBe(true);
-  });
-
-  it("cycles video on double tap", async () => {
-    const segments = ["Test Segment"];
-    render(Feed, { segments });
-
-    // Wait for mount
-    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
-
-    // Wait for Hammer to be initialized
-    await waitFor(() => {
-      expect(hammerMockInstance.on).toHaveBeenCalledWith(
-        "doubletap",
-        expect.any(Function),
-      );
-    });
-
-    const video = document.querySelector("video");
-    expect(video).toHaveAttribute(
-      "src",
-      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
-    );
-
-    // Trigger double tap -> Next video
-    hammerMockInstance.__trigger("doubletap");
-
-    // Re-query or wait for update
-    await waitFor(() => {
-      expect(video).toHaveAttribute(
-        "src",
-        "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
-      );
-    });
-
-    // Trigger double tap -> Back to first video (since only 2 in array)
-    hammerMockInstance.__trigger("doubletap");
-
-    await waitFor(() => {
-      expect(video).toHaveAttribute(
-        "src",
-        "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
-      );
-    });
+    expect(audio.isPaused()).toBe(false);
   });
 
   it("changes slide and speaks new segment", async () => {

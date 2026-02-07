@@ -73,6 +73,7 @@ import {
   pauseTTS,
   resumeTTS,
   isSpeaking,
+  isPaused,
   resetTTS,
 } from "../../lib/audio";
 
@@ -319,7 +320,7 @@ describe("audio.ts", () => {
       const pauseSpy = vi.spyOn(mockSynth, "pause");
 
       speakText("Test text");
-      mockSynth.speaking = true; // Ensure speaking state
+      // manualSpeaking is set to true by speakText
       pauseTTS();
 
       expect(pauseSpy).toHaveBeenCalledTimes(1);
@@ -328,7 +329,7 @@ describe("audio.ts", () => {
     it("does nothing when not speaking", () => {
       const pauseSpy = vi.spyOn(mockSynth, "pause");
 
-      mockSynth.speaking = false;
+      stopTTS(); // Ensure manualSpeaking is false
       pauseTTS();
 
       expect(pauseSpy).not.toHaveBeenCalled();
@@ -344,7 +345,7 @@ describe("audio.ts", () => {
       const resumeSpy = vi.spyOn(mockSynth, "resume");
 
       speakText("Test text");
-      mockSynth.paused = true; // Simulate paused state
+      pauseTTS(); // Sets manualPaused = true
       resumeTTS();
 
       expect(resumeSpy).toHaveBeenCalledTimes(1);
@@ -353,7 +354,7 @@ describe("audio.ts", () => {
     it("does nothing when not paused", () => {
       const resumeSpy = vi.spyOn(mockSynth, "resume");
 
-      mockSynth.paused = false;
+      speakText("Test"); // manualPaused is false initially
       resumeTTS();
 
       expect(resumeSpy).not.toHaveBeenCalled();
@@ -366,12 +367,13 @@ describe("audio.ts", () => {
     });
 
     it("returns true when speech synthesis is speaking", () => {
-      mockSynth.speaking = true;
+      speakText("Test");
       expect(isSpeaking()).toBe(true);
     });
 
     it("returns false when speech synthesis is not speaking", () => {
-      mockSynth.speaking = false;
+      // Intentionally not calling speakText or calling stopTTS
+      stopTTS();
       expect(isSpeaking()).toBe(false);
     });
 
@@ -399,19 +401,23 @@ describe("audio.ts", () => {
 
       // Speak
       speakText(text, onBoundary);
-      expect(mockSynth.speaking).toBe(true);
+      expect(isSpeaking()).toBe(true);
+      expect(isPaused()).toBe(false);
 
       // Pause
       pauseTTS();
-      expect(mockSynth.paused).toBe(true);
+      expect(isSpeaking()).toBe(true);
+      expect(isPaused()).toBe(true);
 
       // Resume
       resumeTTS();
-      expect(mockSynth.paused).toBe(false);
+      expect(isSpeaking()).toBe(true);
+      expect(isPaused()).toBe(false);
 
       // Stop
       stopTTS();
-      expect(mockSynth.speaking).toBe(false);
+      expect(isSpeaking()).toBe(false);
+      expect(isPaused()).toBe(false);
     });
 
     it("handles rapid consecutive speak calls", () => {
@@ -431,8 +437,6 @@ describe("audio.ts", () => {
       const speakSpy = vi.spyOn(mockSynth, "speak");
 
       speakText("First text", callback1);
-      const utterance1 = speakSpy.mock
-        .calls[0][0] as MockSpeechSynthesisUtterance;
 
       speakText("Second text", callback2);
       const utterance2 = speakSpy.mock
@@ -450,6 +454,37 @@ describe("audio.ts", () => {
       // Only callback2 should be called (callback1 was cleared when utterance was cancelled)
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledWith("Second");
+    });
+
+    it("handles race condition where previous utterance onend fires after new speakText", () => {
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+
+      // 1. Start speaking first text
+      speakText("First");
+      const utterance1 = speakSpy.mock
+        .calls[0][0] as MockSpeechSynthesisUtterance;
+
+      // 2. Stop (which cancels) - this is what happens when changing slides
+      stopTTS();
+
+      // 3. Immediately speak second text
+      speakText("Second");
+      const utterance2 = speakSpy.mock
+        .calls[1][0] as MockSpeechSynthesisUtterance;
+
+      expect(isSpeaking()).toBe(true);
+      // Ensure we have a different utterance
+      expect(utterance1).not.toBe(utterance2);
+
+      // 4. Simulate delayed onend from First utterance (caused by cancel in step 2)
+      // In the browser, cancel() triggers onend/onerror asynchronously.
+      // If this fires now, valid implementation should ignore it for state reset.
+      if (utterance1.onend) {
+        utterance1.onend();
+      }
+
+      // 5. Verification: Should still be speaking because Second is active
+      expect(isSpeaking()).toBe(true);
     });
   });
 });
