@@ -90,7 +90,7 @@
     accept=".pdf"
     on:change={handleFileUpload}
     disabled={isLoading || !pdfjsLib}
-    class=""
+    class="hidden"
   />
   {#if debugStatus && debugStatus !== "Ready"}
     <p class="mt-2 text-xs text-[#666]">{debugStatus}</p>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getDb } from "$lib/database";
+  import { getDb, upsertDocument, getDocument } from "$lib/database";
   import { segmentText } from "$lib/segmenter";
   import { v4 as uuidv4 } from "uuid";
   import Feed from "$lib/components/Feed.svelte";
@@ -10,22 +10,24 @@
   let currentDocumentId: string | null = null;
   let isLoading: boolean = false;
 
-  async function handlePdfParsed(event: CustomEvent<{ text: string }>) {
+  async function handlePdfParsed({
+    text,
+    filename,
+  }: {
+    text: string;
+    filename: string;
+  }) {
     isLoading = true;
     try {
-      const { text } = event.detail;
+      const { text, filename } = event.detail;
       const newSegmentedData = segmentText(text);
       segmentedData = newSegmentedData;
 
       const db = await getDb();
-      currentDocumentId = uuidv4();
-      await db.documents.insert({
-        documentId: currentDocumentId,
-        segments: segmentedData,
-        currentSegmentIndex: 0,
-      });
+      currentDocumentId = filename;
+      await upsertDocument(currentDocumentId, segmentedData);
       console.log(
-        "Document and segments stored in RxDB with ID:",
+        "Document and segments stored/updated in RxDB with ID:",
         currentDocumentId,
       );
     } catch (error) {
@@ -36,13 +38,34 @@
     }
   }
 
-  function handlePdfError(event: CustomEvent<{ error: string }>) {
+  function handlePdfError({ error }: { error: string }) {
     // Log the error
     console.error("PDF Upload Error:", event.detail.error);
     // Show user friendly alert
     alert(`Error: ${event.detail.error}`);
     // Reset state
     isLoading = false;
+  }
+
+  async function handleLoadDocument({ documentId }: { documentId: string }) {
+    isLoading = true;
+    try {
+      const { documentId } = event.detail;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const doc: any = await getDocument(documentId);
+      if (doc) {
+        currentDocumentId = doc.documentId;
+        segmentedData = doc.segments;
+        console.log("Loaded document:", doc.documentId);
+      } else {
+        alert("Document not found");
+      }
+    } catch (error) {
+      console.error("Error loading document:", error);
+      alert("Failed to load document");
+    } finally {
+      isLoading = false;
+    }
   }
 
   onMount(async () => {
@@ -62,8 +85,9 @@
         Upload a PDF to get started
       </h2>
       <PdfUploader
-        on:pdf-parsed={handlePdfParsed}
-        on:pdf-error={handlePdfError}
+        onPdfParsed={handlePdfParsed}
+        onPdfError={handlePdfError}
+        onLoadDocument={handleLoadDocument}
       />
     </div>
   {/if}
