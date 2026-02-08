@@ -2,10 +2,12 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vitest/config";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
+import { svelteTesting } from "@testing-library/svelte/vite";
 
 export default defineConfig(({ mode }) => ({
   plugins: [
     sveltekit(),
+    svelteTesting(),
     mode !== "test" &&
       nodePolyfills({
         include: ["buffer", "process", "util", "stream", "events"],

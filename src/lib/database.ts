@@ -1,4 +1,6 @@
 import { createRxDatabase, addRxPlugin } from "rxdb";
+import { RxDBMigrationPlugin } from "rxdb/plugins/migration";
+addRxPlugin(RxDBMigrationPlugin);
 // import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
 import { browser } from "$app/environment";
 
@@ -12,7 +14,7 @@ declare global {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 0,
+  version: 1,
   type: "object",
   properties: {
     documentId: {
@@ -28,8 +30,12 @@ const documentSchema = {
     currentSegmentIndex: {
       type: "number",
     },
+    createdAt: {
+      type: "number",
+    },
   },
-  required: ["documentId", "segments", "currentSegmentIndex"],
+  required: ["documentId", "segments", "currentSegmentIndex", "createdAt"],
+  indexes: ["createdAt"],
 };
 
 async function _createDb() {
@@ -78,6 +84,14 @@ async function _createDb() {
   await db.addCollections({
     documents: {
       schema: documentSchema,
+      migrationStrategies: {
+        1: function (oldDoc) {
+          return {
+            ...oldDoc,
+            createdAt: Date.now(),
+          };
+        },
+      },
     },
   });
 
@@ -107,8 +121,41 @@ export async function addDocument(
     documentId,
     segments,
     currentSegmentIndex,
+    createdAt: Date.now(),
   });
   return doc.toJSON();
+}
+
+export async function upsertDocument(
+  documentId: string,
+  segments: string[],
+  currentSegmentIndex: number = 0,
+) {
+  const db = await getDb();
+  const doc = await db.documents.upsert({
+    documentId,
+    segments,
+    currentSegmentIndex,
+    createdAt: Date.now(),
+  });
+  return doc.toJSON();
+}
+
+export async function getRecentUploads(limit: number = 10) {
+  const db = await getDb();
+  const docs = await db.documents
+    .find()
+    .sort({ createdAt: "desc" })
+    .limit(limit)
+    .exec();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return docs.map((doc: any) => doc.toJSON());
+}
+
+export async function getDocument(documentId: string) {
+  const db = await getDb();
+  const doc = await db.documents.findOne(documentId).exec();
+  return doc ? doc.toJSON() : null;
 }
 
 // For testing purposes only - resets the database singleton

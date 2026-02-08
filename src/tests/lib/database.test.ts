@@ -21,6 +21,7 @@ const {
   mockAddRxPlugin,
   mockAddCollections,
   mockInsert,
+  mockUpsert,
   mockIdbAdapter,
   mockDevModePlugin,
 } = vi.hoisted(() => {
@@ -28,6 +29,7 @@ const {
   const mockAddRxPlugin = vi.fn();
   const mockAddCollections = vi.fn();
   const mockInsert = vi.fn();
+  const mockUpsert = vi.fn();
   const mockIdbAdapter = { name: "idb-adapter" };
   const mockDevModePlugin = { name: "dev-mode-plugin" };
 
@@ -36,6 +38,7 @@ const {
     mockAddRxPlugin,
     mockAddCollections,
     mockInsert,
+    mockUpsert,
     mockIdbAdapter,
     mockDevModePlugin,
   };
@@ -61,12 +64,20 @@ vi.mock("rxdb/plugins/dev-mode", () => ({
 }));
 
 // Import the module after mocks are set up
-import { getDb, addDocument, resetDb } from "../../lib/database";
+import {
+  getDb,
+  addDocument,
+  upsertDocument,
+  resetDb,
+} from "../../lib/database";
 
 // Type for mock database
 type MockDatabase = {
   documents: {
     insert: typeof mockInsert;
+    upsert: typeof mockUpsert;
+    find: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
   };
   addCollections: typeof mockAddCollections;
 };
@@ -95,6 +106,17 @@ describe("database.ts", () => {
     mockDb = {
       documents: {
         insert: mockInsert,
+        upsert: mockUpsert,
+        find: vi.fn(() => ({
+          sort: vi.fn(() => ({
+            limit: vi.fn(() => ({
+              exec: vi.fn().mockResolvedValue([]),
+            })),
+          })),
+        })),
+        findOne: vi.fn(() => ({
+          exec: vi.fn().mockResolvedValue(null),
+        })),
       },
       addCollections: mockAddCollections,
     };
@@ -103,6 +125,9 @@ describe("database.ts", () => {
     mockCreateRxDatabase.mockResolvedValue(mockDb);
     mockAddCollections.mockResolvedValue(undefined);
     mockInsert.mockImplementation((doc) => ({
+      toJSON: () => doc,
+    }));
+    mockUpsert.mockImplementation((doc) => ({
       toJSON: () => doc,
     }));
 
@@ -142,7 +167,7 @@ describe("database.ts", () => {
         documents: {
           schema: {
             title: "paperflip_document",
-            version: 0,
+            version: 1,
             type: "object",
             properties: {
               documentId: {
@@ -158,8 +183,20 @@ describe("database.ts", () => {
               currentSegmentIndex: {
                 type: "number",
               },
+              createdAt: {
+                type: "number",
+              },
             },
-            required: ["documentId", "segments", "currentSegmentIndex"],
+            required: [
+              "documentId",
+              "segments",
+              "currentSegmentIndex",
+              "createdAt",
+            ],
+            indexes: ["createdAt"],
+          },
+          migrationStrategies: {
+            1: expect.any(Function),
           },
         },
       });
@@ -336,12 +373,14 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex,
+        createdAt: expect.any(Number),
       });
 
       expect(result).toEqual({
         documentId,
         segments,
         currentSegmentIndex,
+        createdAt: expect.any(Number),
       });
     });
 
@@ -355,6 +394,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex: 0,
+        createdAt: expect.any(Number),
       });
     });
 
@@ -368,6 +408,7 @@ describe("database.ts", () => {
         documentId,
         segments: [],
         currentSegmentIndex: 0,
+        createdAt: expect.any(Number),
       });
 
       expect(result.segments).toEqual([]);
@@ -383,6 +424,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex: 0,
+        createdAt: expect.any(Number),
       });
     });
 
@@ -396,6 +438,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex: 500,
+        createdAt: expect.any(Number),
       });
     });
 
@@ -427,6 +470,49 @@ describe("database.ts", () => {
 
       // Now insert should have been called
       expect(mockInsert).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("upsertDocument", () => {
+    it("upserts a document with all required fields", async () => {
+      const documentId = "doc-123";
+      const segments = ["Segment 1", "Segment 2"];
+      const currentSegmentIndex = 1;
+
+      const result = await upsertDocument(
+        documentId,
+        segments,
+        currentSegmentIndex,
+      );
+
+      expect(mockUpsert).toHaveBeenCalledTimes(1);
+      expect(mockUpsert).toHaveBeenCalledWith({
+        documentId,
+        segments,
+        currentSegmentIndex,
+        createdAt: expect.any(Number),
+      });
+
+      expect(result).toEqual({
+        documentId,
+        segments,
+        currentSegmentIndex,
+        createdAt: expect.any(Number),
+      });
+    });
+
+    it("uses default currentSegmentIndex of 0 when not provided", async () => {
+      const documentId = "doc-456";
+      const segments = ["First segment"];
+
+      await upsertDocument(documentId, segments);
+
+      expect(mockUpsert).toHaveBeenCalledWith({
+        documentId,
+        segments,
+        currentSegmentIndex: 0,
+        createdAt: expect.any(Number),
+      });
     });
   });
 
@@ -471,11 +557,13 @@ describe("database.ts", () => {
         documentId: "doc-1",
         segments: ["Segment A", "Segment B"],
         currentSegmentIndex: 0,
+        createdAt: expect.any(Number),
       });
       expect(mockInsert).toHaveBeenNthCalledWith(2, {
         documentId: "doc-2",
         segments: ["Segment X", "Segment Y", "Segment Z"],
         currentSegmentIndex: 2,
+        createdAt: expect.any(Number),
       });
     });
 
@@ -494,6 +582,62 @@ describe("database.ts", () => {
 
       // All documents should be inserted
       expect(mockInsert).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("getRecentUploads", () => {
+    it("fetches recent uploads sorted by createdAt desc", async () => {
+      // Mock find chain
+      const mockExec = vi
+        .fn()
+        .mockResolvedValue([
+          { toJSON: () => ({ documentId: "doc1", createdAt: 200 }) },
+          { toJSON: () => ({ documentId: "doc2", createdAt: 100 }) },
+        ]);
+      const mockLimit = vi.fn().mockReturnValue({ exec: mockExec });
+      const mockSort = vi.fn().mockReturnValue({ limit: mockLimit });
+      const mockFind = vi.fn().mockReturnValue({ sort: mockSort });
+      mockDb.documents.find = mockFind as any;
+
+      const result = await import("../../lib/database").then((m) =>
+        m.getRecentUploads(5),
+      );
+
+      expect(mockFind).toHaveBeenCalledWith(); // No arguments to find()
+      expect(mockSort).toHaveBeenCalledWith({ createdAt: "desc" });
+      expect(mockLimit).toHaveBeenCalledWith(5);
+      expect(mockExec).toHaveBeenCalledTimes(1);
+      expect(result).toHaveLength(2);
+      expect(result[0].documentId).toBe("doc1");
+    });
+  });
+
+  describe("getDocument", () => {
+    it("fetches a single document by ID", async () => {
+      const mockExec = vi.fn().mockResolvedValue({
+        toJSON: () => ({ documentId: "doc1", title: "Test" }),
+      });
+      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+      mockDb.documents.findOne = mockFindOne as any;
+
+      const result = await import("../../lib/database").then((m) =>
+        m.getDocument("doc1"),
+      );
+
+      expect(mockFindOne).toHaveBeenCalledWith("doc1");
+      expect(result).toEqual({ documentId: "doc1", title: "Test" });
+    });
+
+    it("returns null if document not found", async () => {
+      const mockExec = vi.fn().mockResolvedValue(null);
+      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+      mockDb.documents.findOne = mockFindOne as any;
+
+      const result = await import("../../lib/database").then((m) =>
+        m.getDocument("doc1"),
+      );
+
+      expect(result).toBeNull();
     });
   });
 });

@@ -12,9 +12,32 @@ vi.mock("../../lib/segmenter", () => ({
   segmentText: vi.fn((_text) => ["segment1"]),
 }));
 
-vi.mock("../../lib/database", () => ({
-  addDocument: vi.fn(),
-}));
+// Mock File.prototype.arrayBuffer because JSDOM doesn't implement it
+vi.spyOn(File.prototype, "arrayBuffer").mockResolvedValue(new ArrayBuffer(8));
+
+// Hoist all mock functions so they can be used in vi.mock factories
+const { mockAddDocument, mockUpsertDocument, mockGetRecentUploads } =
+  vi.hoisted(() => {
+    const mockAddDocument = vi.fn().mockResolvedValue({});
+    const mockUpsertDocument = vi.fn();
+    const mockGetRecentUploads = vi.fn().mockResolvedValue([]);
+
+    return {
+      mockAddDocument,
+      mockUpsertDocument,
+      mockGetRecentUploads,
+    };
+  });
+
+vi.mock("../../lib/database", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/database")>();
+  return {
+    ...actual,
+    addDocument: mockAddDocument,
+    upsertDocument: mockUpsertDocument,
+    getRecentUploads: mockGetRecentUploads,
+  };
+});
 
 describe("PdfUploader", () => {
   beforeEach(() => {
@@ -29,23 +52,17 @@ describe("PdfUploader", () => {
 
   it("handles file upload successfully", async () => {
     // Mock event dispatch functions
-    const onDocumentAdded = vi.fn();
+    const onPdfParsed = vi.fn();
     const onPdfError = vi.fn();
 
-    // Pass event listeners as props (casting to avoid Svelte 5 strict prop type checks in test)
-
     render(PdfUploader, {
-      props: {
-        "on:document-added": onDocumentAdded,
-        "on:pdf-error": onPdfError,
-      } as any,
+      onPdfParsed,
+      onPdfError,
     });
 
     const file = new File(["dummy content"], "test.pdf", {
       type: "application/pdf",
     });
-    // Mock arrayBuffer since jsdom might not fully implement it or for reliability
-    file.arrayBuffer = () => Promise.resolve(new ArrayBuffer(8));
     const input = screen.getByLabelText("Upload PDF") as HTMLInputElement;
 
     // Wait for PDF.js to load (input becomes enabled)
@@ -63,17 +80,53 @@ describe("PdfUploader", () => {
       expect(screen.getByText("Parsing...")).toBeInTheDocument();
     });
 
-    // Wait for async operations
+    // Wait for async operations and event dispatch
     await waitFor(() => {
-      // We expect it to finish loading
       expect(screen.queryByText("Parsing...")).not.toBeInTheDocument();
       expect(screen.getByText("Upload PDF")).toBeInTheDocument();
+      expect(onPdfParsed).toHaveBeenCalledWith({
+        text: "Test Content",
+        filename: "test.pdf",
+      });
+    });
+    expect(File.prototype.arrayBuffer).toHaveBeenCalled();
+  });
+  it("displays recent uploads", async () => {
+    const mockUploads = [
+      { documentId: "doc1.pdf", createdAt: 1620000000000 },
+      { documentId: "doc2.pdf", createdAt: 1620000001000 },
+    ];
+
+    mockGetRecentUploads.mockResolvedValue(mockUploads);
+
+    render(PdfUploader);
+
+    await waitFor(() => {
+      expect(screen.getByText("Recent Uploads")).toBeInTheDocument();
+      expect(screen.getByText("doc1.pdf")).toBeInTheDocument();
+      expect(screen.getByText("doc2.pdf")).toBeInTheDocument();
+    });
+  });
+
+  it("dispatches load-document event when clicking recent upload", async () => {
+    const mockUploads = [{ documentId: "doc1.pdf", createdAt: 1620000000000 }];
+
+    mockGetRecentUploads.mockResolvedValue(mockUploads);
+
+    const onLoadDocument = vi.fn();
+
+    render(PdfUploader, {
+      onLoadDocument,
     });
 
-    // Verify success event was called
-    // Note: dependent on implementation working
-    // expect(onDocumentAdded).toHaveBeenCalledWith(expect.objectContaining({
-    //    detail: { documentId: 'test-uuid' }
-    // }));
+    await waitFor(() => {
+      expect(screen.getByText("doc1.pdf")).toBeInTheDocument();
+    });
+
+    await fireEvent.click(screen.getByText("doc1.pdf"));
+
+    await waitFor(() => {
+      expect(onLoadDocument).toHaveBeenCalledWith({ documentId: "doc1.pdf" });
+    });
   });
 });

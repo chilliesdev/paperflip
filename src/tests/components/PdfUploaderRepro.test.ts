@@ -3,21 +3,29 @@
 import { render, fireEvent, waitFor, screen } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import PdfUploader from "../../lib/components/PdfUploader.svelte";
-import { addDocument } from "../../lib/database";
+// Hoist all mock functions so they can be used in vi.mock factories
+const { mockAddDocument, mockUpsertDocument, mockGetRecentUploads } =
+  vi.hoisted(() => {
+    const mockAddDocument = vi.fn().mockResolvedValue({});
+    const mockUpsertDocument = vi.fn();
+    const mockGetRecentUploads = vi.fn().mockResolvedValue([]);
 
-// Mock dependencies
+    return {
+      mockAddDocument,
+      mockUpsertDocument,
+      mockGetRecentUploads,
+    };
+  });
 
-vi.mock("uuid", () => ({
-  v4: vi.fn(() => "test-uuid"),
-}));
-
-vi.mock("../../lib/segmenter", () => ({
-  segmentText: vi.fn((_text) => ["segment1"]),
-}));
-
-vi.mock("../../lib/database", () => ({
-  addDocument: vi.fn(),
-}));
+vi.mock("../../lib/database", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/database")>();
+  return {
+    ...actual,
+    addDocument: mockAddDocument,
+    upsertDocument: mockUpsertDocument,
+    getRecentUploads: mockGetRecentUploads,
+  };
+});
 
 describe("PdfUploader Repro", () => {
   beforeEach(() => {
@@ -48,6 +56,6 @@ describe("PdfUploader Repro", () => {
     });
 
     // The FIX: Component should NOT call addDocument
-    expect(addDocument).not.toHaveBeenCalled();
+    expect(mockAddDocument).not.toHaveBeenCalled();
   });
 });
