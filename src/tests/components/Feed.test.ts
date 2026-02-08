@@ -133,10 +133,11 @@ describe("Feed Component", () => {
     // Check that slides are rendered
     const slides = screen.getAllByTestId("swiper-slide-mock");
     expect(slides).toHaveLength(2);
-    expect(slides[0]).toHaveTextContent(/Short 1 \/ 2/);
     expect(slides[0]).toHaveTextContent(/Segment\s*1/);
-    expect(slides[1]).toHaveTextContent(/Short 2 \/ 2/);
     expect(slides[1]).toHaveTextContent(/Segment\s*2/);
+
+    // Check fixed page indicator
+    expect(screen.getByText(/Short 1 \/ 2/)).toBeInTheDocument();
   });
 
   it("initializes TTS on mount", async () => {
@@ -259,6 +260,8 @@ describe("Feed Component", () => {
         expect.any(Function),
         expect.any(Function),
       );
+      // Indicator should update
+      expect(screen.getByText(/Short 2 \/ 2/)).toBeInTheDocument();
     });
   });
 

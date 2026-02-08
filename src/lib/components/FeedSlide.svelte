@@ -4,7 +4,6 @@
 
   export let segment: string;
   export let index: number;
-  export let total: number;
   export let isActive: boolean;
   export let isPlaying: boolean = true;
   export let currentCharIndex: number;
@@ -85,13 +84,6 @@
     <div
       class="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-teal-900/40 mix-blend-overlay"
     ></div>
-  </div>
-
-  <!-- Page Indicator -->
-  <div
-    class="absolute top-8 left-8 z-20 backdrop-blur-xl bg-black/40 px-4 py-2 rounded-full border border-white/20"
-  >
-    <p class="text-white text-sm font-medium">Short {index + 1} / {total}</p>
   </div>
 
   <!-- Floating TTS Indicator (Top Right) -->

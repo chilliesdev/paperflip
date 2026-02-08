@@ -87,6 +87,15 @@
   class="h-screen w-screen flex justify-center items-center relative overflow-hidden bg-black"
 >
   {#if segments.length > 0}
+    <!-- Page Indicator (Fixed Overlay) -->
+    <div
+      class="absolute top-8 left-36 z-40 backdrop-blur-xl bg-black/40 px-4 py-2 rounded-full border border-white/20 pointer-events-none"
+    >
+      <p class="text-white text-sm font-medium">
+        Short {activeIndex + 1} / {segments.length}
+      </p>
+    </div>
+
     <swiper-container
       direction="vertical"
       slides-per-view={1}
@@ -103,7 +112,6 @@
           <FeedSlide
             {segment}
             index={i}
-            total={segments.length}
             isActive={i === activeIndex}
             {isPlaying}
             currentCharIndex={i === activeIndex ? currentCharIndex : -1}

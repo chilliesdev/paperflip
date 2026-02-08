@@ -38,11 +38,11 @@
 <div class="min-h-screen relative">
   <a
     href={resolve("/")}
-    class="absolute top-4 left-4 z-50 bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-70 transition-all flex items-center"
+    class="absolute top-8 left-8 z-50 backdrop-blur-xl bg-black/40 text-white px-4 py-2 rounded-full border border-white/20 hover:bg-black/60 transition-all flex items-center"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      class="h-6 w-6 mr-1"
+      class="h-5 w-5 mr-2"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -54,7 +54,7 @@
         d="M10 19l-7-7m0 0l7-7m-7 7h18"
       />
     </svg>
-    Back
+    <span class="text-sm font-medium">Back</span>
   </a>
 
   {#if isLoading}

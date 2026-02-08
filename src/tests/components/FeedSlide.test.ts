@@ -30,7 +30,6 @@ describe("FeedSlide Component", () => {
   const defaultProps = {
     segment: "Hello world this is a test",
     index: 0,
-    total: 5,
     isActive: true,
     isPlaying: true,
     currentCharIndex: -1,
@@ -43,11 +42,6 @@ describe("FeedSlide Component", () => {
       const video = document.querySelector("video");
       expect(video).toBeInTheDocument();
       expect(video).toHaveAttribute("src", defaultProps.videoSource);
-    });
-
-    it("renders page indicator correctly", () => {
-      render(FeedSlide, { ...defaultProps, index: 2, total: 10 });
-      expect(screen.getByText("Short 3 / 10")).toBeInTheDocument();
     });
 
     it("renders segment text split into words", () => {
