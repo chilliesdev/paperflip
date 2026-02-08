@@ -31,18 +31,27 @@
       const uploads = await getRecentUploads(5);
       // Transform uploads to match UI needs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recentUploads = uploads.map((doc: any) => ({
-        id: doc.documentId,
-        name: doc.documentId,
-        progress:
-          doc.segments && doc.segments.length > 0
-            ? Math.round(
-                ((doc.currentSegmentIndex || 0) / doc.segments.length) * 100,
-              )
-            : 0,
-        totalPages: doc.segments ? doc.segments.length : 0,
-        currentPage: (doc.currentSegmentIndex || 0) + 1,
-      }));
+      recentUploads = uploads.map((doc: any) => {
+        const segments = doc.segments || [];
+        const currentIndex = doc.currentSegmentIndex || 0;
+        const currentProgress = doc.currentSegmentProgress || 0;
+
+        let progress = 0;
+        if (segments.length > 0) {
+          const segmentLength = segments[currentIndex]?.length || 1;
+          const granularProgress =
+            currentIndex + currentProgress / segmentLength;
+          progress = Math.round((granularProgress / segments.length) * 100);
+        }
+
+        return {
+          id: doc.documentId,
+          name: doc.documentId,
+          progress: Math.min(progress, 100),
+          totalPages: segments.length,
+          currentPage: currentIndex + 1,
+        };
+      });
     } catch (error) {
       console.error("Failed to load recent uploads:", error);
     }

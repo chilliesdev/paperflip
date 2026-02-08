@@ -22,6 +22,7 @@ export function speakText(
   text: string,
   onBoundary?: (word: string, charIndex: number, charLength: number) => void,
   onEnd?: () => void,
+  startIndex: number = 0,
 ) {
   if (!synth) {
     console.warn("SpeechSynthesis not initialized.");
@@ -36,7 +37,8 @@ export function speakText(
   manualSpeaking = true;
   manualPaused = false;
 
-  utterance = new SpeechSynthesisUtterance(text);
+  const textToSpeak = startIndex > 0 ? text.substring(startIndex) : text;
+  utterance = new SpeechSynthesisUtterance(textToSpeak);
   // You can set voice, pitch, rate here
   // utterance.voice = ...;
   // utterance.pitch = 1;
@@ -46,11 +48,13 @@ export function speakText(
     currentBoundaryCallback = onBoundary;
     utterance.onboundary = (event) => {
       if (event.name === "word" && currentBoundaryCallback) {
+        // Adjust index to match original text
+        const adjustedIndex = event.charIndex + startIndex;
         const word = text.substring(
-          event.charIndex,
-          event.charIndex + event.charLength,
+          adjustedIndex,
+          adjustedIndex + event.charLength,
         );
-        currentBoundaryCallback(word, event.charIndex, event.charLength);
+        currentBoundaryCallback(word, adjustedIndex, event.charLength);
       }
     };
   } else {

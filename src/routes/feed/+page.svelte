@@ -6,6 +6,9 @@
   import Feed from "$lib/components/Feed.svelte";
 
   let segmentedData: string[] = [];
+  let startSegmentIndex: number = 0;
+  let startSegmentProgress: number = 0;
+  let currentDocumentId: string = "";
   let isLoading: boolean = true;
   let error: string | null = null;
 
@@ -16,6 +19,7 @@
       isLoading = false;
       return;
     }
+    currentDocumentId = documentId;
 
     try {
       await getDb(); // Ensure DB is initialized
@@ -23,6 +27,8 @@
       const doc: any = await getDocument(documentId);
       if (doc) {
         segmentedData = doc.segments;
+        startSegmentIndex = doc.currentSegmentIndex || 0;
+        startSegmentProgress = doc.currentSegmentProgress || 0;
       } else {
         error = "Document not found";
       }
@@ -72,7 +78,12 @@
         <a href={resolve("/")} class="text-brand-primary underline">Go back</a>
       </div>
     {:else if segmentedData.length > 0}
-      <Feed segments={segmentedData} />
+      <Feed
+        segments={segmentedData}
+        initialIndex={startSegmentIndex}
+        initialProgress={startSegmentProgress}
+        documentId={currentDocumentId}
+      />
     {:else}
       <div
         class="flex flex-col items-center justify-center h-full text-center p-6"

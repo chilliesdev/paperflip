@@ -308,6 +308,67 @@ describe("audio.ts", () => {
 
       expect(onEnd).toHaveBeenCalled();
     });
+
+    it("TC-AUDIO-001: Start from Beginning", () => {
+      const text = "Hello world";
+      const onBoundary = vi.fn();
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+
+      speakText(text, onBoundary, undefined, 0);
+
+      const utterance = speakSpy.mock
+        .calls[0][0] as MockSpeechSynthesisUtterance;
+      expect(utterance.text).toBe("Hello world");
+
+      // Simulate boundary for "Hello"
+      const boundaryEvent = {
+        name: "word",
+        charIndex: 0,
+        charLength: 5,
+      } as SpeechSynthesisEvent;
+
+      utterance.onboundary!(boundaryEvent);
+      expect(onBoundary).toHaveBeenCalledWith("Hello", 0, 5);
+    });
+
+    it("TC-AUDIO-002: Start from Offset", () => {
+      const text = "Hello world";
+      const startIndex = 6;
+      const onBoundary = vi.fn();
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+
+      speakText(text, onBoundary, undefined, startIndex);
+
+      const utterance = speakSpy.mock
+        .calls[0][0] as MockSpeechSynthesisUtterance;
+      // Should only speak "world"
+      expect(utterance.text).toBe("world");
+
+      // Simulate boundary for "world" (relative to the utterance text, it starts at 0)
+      const boundaryEvent = {
+        name: "word",
+        charIndex: 0,
+        charLength: 5,
+      } as SpeechSynthesisEvent;
+
+      utterance.onboundary!(boundaryEvent);
+      // But callback should report index 6 (relative to full text)
+      expect(onBoundary).toHaveBeenCalledWith("world", 6, 5);
+    });
+
+    it("TC-AUDIO-003: Invalid Offset Handling", () => {
+      const text = "Hi";
+      const startIndex = 10;
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+
+      // Should not crash
+      speakText(text, undefined, undefined, startIndex);
+
+      const utterance = speakSpy.mock
+        .calls[0][0] as MockSpeechSynthesisUtterance;
+      // "Hi".substring(10) is ""
+      expect(utterance.text).toBe("");
+    });
   });
 
   describe("stopTTS", () => {

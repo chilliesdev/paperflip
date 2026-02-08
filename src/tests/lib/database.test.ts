@@ -91,6 +91,7 @@ import {
   resetDb,
   getRecentUploads,
   getDocument,
+  updateDocumentProgress,
 } from "../../lib/database";
 
 // Type for mock database
@@ -190,9 +191,17 @@ describe("database.ts", () => {
           schema: expect.objectContaining({
             title: "paperflip_document",
             primaryKey: "documentId",
+            version: 2,
+            properties: expect.objectContaining({
+              currentSegmentIndex: expect.objectContaining({ type: "number" }),
+              currentSegmentProgress: expect.objectContaining({
+                type: "number",
+              }),
+            }),
           }),
           migrationStrategies: {
             1: expect.any(Function),
+            2: expect.any(Function),
           },
         },
       });
@@ -205,6 +214,39 @@ describe("database.ts", () => {
       await expect(getDb()).rejects.toThrow(
         "RxDB is not available on the server",
       );
+    });
+  });
+
+  describe("Schema & Migration", () => {
+    it("TC-DB-001: Schema Validation", async () => {
+      await getDb();
+      const call = mockAddCollections.mock.calls[0][0];
+      const schema = call.documents.schema;
+
+      expect(schema.version).toBe(2);
+      expect(schema.properties).toHaveProperty("currentSegmentIndex");
+      expect(schema.properties).toHaveProperty("currentSegmentProgress");
+    });
+
+    it("TC-DB-002: Migration from Version 1", async () => {
+      await getDb();
+      const call = mockAddCollections.mock.calls[0][0];
+      const migrationStrategy2 = call.documents.migrationStrategies[2];
+
+      const oldDoc = {
+        documentId: "doc-1",
+        segments: ["text"],
+        currentSegmentIndex: 5,
+        createdAt: 1000,
+      };
+
+      const migratedDoc = migrationStrategy2(oldDoc);
+
+      expect(migratedDoc).toEqual({
+        ...oldDoc,
+        currentSegmentProgress: 0,
+      });
+      expect(migratedDoc.currentSegmentIndex).toBe(5);
     });
   });
 
@@ -317,6 +359,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex,
+        currentSegmentProgress: 0,
         createdAt: expect.any(Number),
       });
 
@@ -324,6 +367,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex,
+        currentSegmentProgress: 0,
         createdAt: expect.any(Number),
       });
     });
@@ -346,6 +390,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex,
+        currentSegmentProgress: 0,
         createdAt: expect.any(Number),
       });
 
@@ -353,6 +398,7 @@ describe("database.ts", () => {
         documentId,
         segments,
         currentSegmentIndex,
+        currentSegmentProgress: 0,
         createdAt: expect.any(Number),
       });
     });
@@ -392,6 +438,25 @@ describe("database.ts", () => {
 
       expect(mockFindOne).toHaveBeenCalledWith("doc1");
       expect(result).toEqual({ documentId: "doc1", title: "Test" });
+    });
+  });
+
+  describe("updateDocumentProgress", () => {
+    it("TC-DB-003: Update Progress Functionality", async () => {
+      const mockPatch = vi.fn();
+      const mockExec = vi.fn().mockResolvedValue({
+        patch: mockPatch,
+      });
+      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+      mockDb.documents.findOne = mockFindOne as any;
+
+      await updateDocumentProgress("doc-1", 5, 120);
+
+      expect(mockFindOne).toHaveBeenCalledWith("doc-1");
+      expect(mockPatch).toHaveBeenCalledWith({
+        currentSegmentIndex: 5,
+        currentSegmentProgress: 120,
+      });
     });
   });
 });

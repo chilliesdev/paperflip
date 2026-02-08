@@ -25,7 +25,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 1,
+  version: 2,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -44,6 +44,12 @@ const documentSchema = {
       multipleOf: 1,
       minimum: 0,
       maximum: 1000000,
+    },
+    currentSegmentProgress: {
+      type: "number",
+      multipleOf: 1,
+      minimum: 0,
+      maximum: 10000000, // Large enough for char index
     },
     createdAt: {
       type: "number",
@@ -117,6 +123,13 @@ async function _createDb() {
               createdAt: oldDoc.createdAt || Date.now(),
             };
           },
+          // Migration from 1 to 2
+          2: function (oldDoc) {
+            return {
+              ...oldDoc,
+              currentSegmentProgress: 0,
+            };
+          },
         },
       },
     });
@@ -152,6 +165,7 @@ export async function addDocument(
       documentId,
       segments,
       currentSegmentIndex,
+      currentSegmentProgress: 0,
       createdAt: Date.now(),
     });
     return doc.toJSON();
@@ -172,6 +186,7 @@ export async function upsertDocument(
       documentId,
       segments,
       currentSegmentIndex,
+      currentSegmentProgress: 0,
       createdAt: Date.now(),
     });
     return doc.toJSON();
@@ -196,6 +211,25 @@ export async function getDocument(documentId: string) {
   const db = await getDb();
   const doc = await db.documents.findOne(documentId).exec();
   return doc ? doc.toJSON() : null;
+}
+
+export async function updateDocumentProgress(
+  documentId: string,
+  index: number,
+  progress: number = 0,
+) {
+  try {
+    const db = await getDb();
+    const doc = await db.documents.findOne(documentId).exec();
+    if (doc) {
+      await doc.patch({
+        currentSegmentIndex: index,
+        currentSegmentProgress: progress,
+      });
+    }
+  } catch (error) {
+    console.error(`Failed to update progress for ${documentId}:`, error);
+  }
 }
 
 // For testing purposes only - resets the database singleton

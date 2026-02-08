@@ -129,4 +129,77 @@ describe("PdfUploader", () => {
       expect(onLoadDocument).toHaveBeenCalledWith({ documentId: "doc1.pdf" });
     });
   });
+
+  describe("Progress Display", () => {
+    it("TC-LIST-001: Display Granular Progress", async () => {
+      // Document A: 10 segments. Current index 4. Progress within segment 5 (halfway).
+      // Logic: currentIndex (4) + (currentProgress (5) / segmentLength (10)) = 4.5
+      // Total Progress: (4.5 / 10) * 100 = 45%
+      const mockUploads = [
+        {
+          documentId: "doc-granular.pdf",
+          segments: new Array(10).fill("1234567890"), // 10 chars each
+          currentSegmentIndex: 4,
+          currentSegmentProgress: 5,
+          createdAt: 1000,
+        },
+      ];
+      mockGetRecentUploads.mockResolvedValue(mockUploads);
+
+      render(PdfUploader);
+
+      await waitFor(() => {
+        expect(screen.getByText("doc-granular.pdf")).toBeInTheDocument();
+        // Check for "45% watched"
+        expect(screen.getByText("45% watched")).toBeInTheDocument();
+        // Check progress bar width (approximate check via style)
+        const progressBar =
+          screen.getByText("45% watched").parentElement?.nextElementSibling
+            ?.firstElementChild;
+        expect(progressBar).toHaveStyle("width: 45%");
+      });
+    });
+
+    it("TC-LIST-002: Zero Progress", async () => {
+      const mockUploads = [
+        {
+          documentId: "doc-zero.pdf",
+          segments: ["seg1", "seg2"],
+          currentSegmentIndex: 0,
+          currentSegmentProgress: 0,
+          createdAt: 1000,
+        },
+      ];
+      mockGetRecentUploads.mockResolvedValue(mockUploads);
+
+      render(PdfUploader);
+
+      await waitFor(() => {
+        expect(screen.getByText("doc-zero.pdf")).toBeInTheDocument();
+        expect(screen.getByText("0% watched")).toBeInTheDocument();
+        expect(screen.getByText("Part 1 of 2")).toBeInTheDocument();
+      });
+    });
+
+    it("TC-LIST-003: Completed Document", async () => {
+      const mockUploads = [
+        {
+          documentId: "doc-complete.pdf",
+          segments: ["seg1"],
+          currentSegmentIndex: 0,
+          currentSegmentProgress: 4, // "seg1" is length 4
+          createdAt: 1000,
+        },
+      ];
+      mockGetRecentUploads.mockResolvedValue(mockUploads);
+
+      render(PdfUploader);
+
+      await waitFor(() => {
+        expect(screen.getByText("doc-complete.pdf")).toBeInTheDocument();
+        // 0 + 4/4 = 1. 1/1 * 100 = 100%
+        expect(screen.getByText("100% watched")).toBeInTheDocument();
+      });
+    });
+  });
 });
