@@ -1,8 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { fly, scale } from "svelte/transition";
   import { getRecentUploads } from "$lib/database";
+  import { Upload, Shield, FileText, Clock } from "lucide-svelte";
 
-  // Define event handlers as props for Svelte 5 idiomatic event handling
+  interface RecentUpload {
+    id: string;
+    name: string;
+    progress: number;
+    totalPages: number;
+    currentPage: number;
+  }
+
+  // Props
   export let onPdfParsed: (event: {
     text: string;
     filename: string;
@@ -10,16 +20,29 @@
   export let onPdfError: (event: { error: string }) => void = () => {};
   export let onLoadDocument: (event: { documentId: string }) => void = () => {};
 
+  // State
   let isLoading = false;
   let pdfjsLib: typeof import("pdfjs-dist") | null = null;
+  let recentUploads: RecentUpload[] = [];
   let debugStatus = "";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let recentUploads: any[] = []; // Using any to avoid complex type setup for now, or define interface
 
   async function loadRecentUploads() {
     try {
       const uploads = await getRecentUploads(5);
-      recentUploads = uploads;
+      // Transform uploads to match UI needs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recentUploads = uploads.map((doc: any) => ({
+        id: doc.documentId,
+        name: doc.documentId,
+        progress:
+          doc.segments && doc.segments.length > 0
+            ? Math.round(
+                ((doc.currentSegmentIndex || 0) / doc.segments.length) * 100,
+              )
+            : 0,
+        totalPages: doc.segments ? doc.segments.length : 0,
+        currentPage: (doc.currentSegmentIndex || 0) + 1,
+      }));
     } catch (error) {
       console.error("Failed to load recent uploads:", error);
     }
@@ -32,13 +55,10 @@
       pdfjsLib = pdfjs;
 
       // Set worker source
-      // Using a specific version to avoid mismatches
       const workerSrc = `/pdf.worker.min.mjs`;
       pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
       debugStatus = "Ready";
-      console.log("PDF.js loaded", pdfjs.version);
-
       await loadRecentUploads();
     } catch (e: unknown) {
       console.error("Failed to load PDF.js", e);
@@ -50,24 +70,13 @@
   async function handleFileUpload(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
-    console.log("handleFileUpload called", { file, pdfjsLib, isLoading });
-
-    if (!file) {
-      return;
-    }
-
-    if (!pdfjsLib) {
-      alert("PDF.js not loaded yet. " + debugStatus);
-      return;
-    }
+    if (!file || !pdfjsLib) return;
 
     isLoading = true;
     debugStatus = "Processing...";
 
     try {
-      console.log("Reading file...");
       const arrayBuffer = await file.arrayBuffer();
-      console.log("Parsing PDF...");
       const loadingTask = pdfjsLib.getDocument(arrayBuffer);
       const pdf = await loadingTask.promise;
 
@@ -80,7 +89,6 @@
           .join(" ");
       }
 
-      // Call the prop so parent can handle segmentation and storage
       onPdfParsed({ text: textContent, filename: file.name });
       debugStatus = "Done";
     } catch (error: unknown) {
@@ -93,63 +101,137 @@
       });
     } finally {
       isLoading = false;
+      // Reset input value to allow re-uploading same file
+      target.value = "";
     }
   }
 
   function handleRecentClick(docId: string) {
     onLoadDocument({ documentId: docId });
   }
-
-  function formatDate(timestamp: number) {
-    if (!timestamp) return "";
-    return (
-      new Date(timestamp).toLocaleDateString() +
-      " " +
-      new Date(timestamp).toLocaleTimeString()
-    );
-  }
 </script>
 
-<div class="flex flex-col justify-center items-center p-4">
-  <label
-    for="file-upload"
-    class="inline-block px-4 py-2 cursor-pointer bg-[#4A90E2] text-white rounded font-bold text-center transition-colors duration-300 hover:bg-[#357ABD]"
-  >
-    {isLoading ? "Parsing..." : "Upload PDF"}
-  </label>
-  <input
-    id="file-upload"
-    type="file"
-    accept=".pdf"
-    on:change={handleFileUpload}
-    disabled={isLoading || !pdfjsLib}
-    class="hidden"
-  />
-  {#if debugStatus && debugStatus !== "Ready"}
-    <p class="mt-2 text-xs text-[#666]">{debugStatus}</p>
-  {/if}
+<div
+  class="h-full bg-gradient-to-b from-[#0a0a0a] to-[#1a1a2e] flex flex-col text-white font-sans overflow-hidden relative"
+>
+  <!-- Header -->
+  <div class="px-6 pt-12 pb-6">
+    <div
+      in:fly={{ y: -20, duration: 500 }}
+      class="text-5xl font-black tracking-tight text-white"
+    >
+      Paper<span class="text-[#00ff88]">Flip</span>
+    </div>
+    <p class="text-gray-400 mt-2 text-sm">
+      Transform PDFs into immersive stories
+    </p>
+  </div>
 
-  {#if recentUploads.length > 0}
-    <div class="mt-8 w-full max-w-md">
-      <h3 class="text-lg font-semibold text-gray-700 mb-2">Recent Uploads</h3>
-      <div class="bg-white rounded shadow divide-y">
-        {#each recentUploads as doc (doc.documentId)}
-          <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <div
-            class="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
-            on:click={() => handleRecentClick(doc.documentId)}
-          >
-            <span
-              class="font-medium truncate flex-1 mr-2"
-              title={doc.documentId}>{doc.documentId}</span
-            >
-            <span class="text-xs text-gray-500 whitespace-nowrap"
-              >{formatDate(doc.createdAt)}</span
-            >
-          </div>
-        {/each}
+  <!-- Privacy Badge -->
+  <div
+    in:scale={{ start: 0.9, duration: 500, delay: 100 }}
+    class="mx-6 mb-8 px-4 py-3 rounded-2xl bg-gradient-to-r from-[#00ff88]/10 to-[#00bfff]/10 border border-[#00ff88]/30 backdrop-blur-sm"
+  >
+    <div class="flex items-center gap-3">
+      <Shield class="w-5 h-5 text-[#00ff88]" />
+      <div>
+        <p class="text-white text-sm font-semibold">100% On-Device</p>
+        <p class="text-gray-400 text-xs">No Cloud Uploads • Zero Tracking</p>
       </div>
     </div>
-  {/if}
+  </div>
+
+  <!-- Upload Zone -->
+  <div in:fly={{ y: 20, duration: 500, delay: 200 }} class="mx-6 mb-8">
+    <label
+      class="block w-full aspect-[4/3] rounded-3xl bg-gradient-to-br from-[#00ff88] to-[#00bfff] p-[2px] shadow-2xl shadow-[#00ff88]/20 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
+    >
+      <input
+        type="file"
+        accept=".pdf"
+        on:change={handleFileUpload}
+        disabled={isLoading || !pdfjsLib}
+        class="hidden"
+      />
+      <div
+        class="w-full h-full rounded-3xl bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1e] flex flex-col items-center justify-center gap-4 border-2 border-dashed border-[#00ff88]/30 hover:border-[#00ff88]/60 transition-colors"
+      >
+        {#if isLoading}
+          <div
+            class="w-20 h-20 rounded-full bg-gradient-to-br from-[#00ff88] to-[#00bfff] flex items-center justify-center animate-pulse"
+          >
+            <Clock class="w-10 h-10 text-[#0a0a0a]" />
+          </div>
+          <div class="text-center">
+            <p class="text-white text-xl font-bold">Processing...</p>
+          </div>
+        {:else}
+          <div
+            class="w-20 h-20 rounded-full bg-gradient-to-br from-[#00ff88] to-[#00bfff] flex items-center justify-center"
+          >
+            <Upload class="w-10 h-10 text-[#0a0a0a]" />
+          </div>
+          <div class="text-center">
+            <p class="text-white text-xl font-bold">Open PDF</p>
+            <p class="text-gray-400 text-sm mt-1">Tap to browse files</p>
+          </div>
+          <div class="flex items-center gap-2 text-[#00ff88] text-xs">
+            <Clock class="w-3 h-3" />
+            <span>Instant • Zero Latency</span>
+          </div>
+        {/if}
+      </div>
+    </label>
+    {#if debugStatus && debugStatus !== "Ready" && !isLoading && debugStatus !== "Done"}
+      <p class="mt-2 text-xs text-red-400 text-center">{debugStatus}</p>
+    {/if}
+  </div>
+
+  <!-- Recent Files -->
+  <div class="flex-1 px-6 pb-6 overflow-y-auto">
+    <h2 class="text-white text-lg font-bold mb-4">Recent</h2>
+    <div class="space-y-3">
+      {#each recentUploads as file, index (file.id)}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div
+          in:fly={{ x: -20, duration: 500, delay: 300 + index * 100 }}
+          class="p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+          on:click={() => handleRecentClick(file.id)}
+        >
+          <div class="flex items-start gap-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00ff88]/20 to-[#00bfff]/20 flex items-center justify-center flex-shrink-0"
+            >
+              <FileText class="w-5 h-5 text-[#00ff88]" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-white text-sm font-medium truncate">{file.name}</p>
+              <div class="flex items-center gap-2 mt-1">
+                <p class="text-gray-400 text-xs">
+                  Part {file.currentPage} of {file.totalPages}
+                </p>
+                <span class="text-gray-600">•</span>
+                <p class="text-[#00ff88] text-xs font-medium">
+                  {file.progress}% watched
+                </p>
+              </div>
+              <!-- Progress Bar -->
+              <div class="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-gradient-to-r from-[#00ff88] to-[#00bfff]"
+                  style="width: {file.progress}%"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {/each}
+      {#if recentUploads.length === 0}
+        <p class="text-gray-500 text-sm text-center py-4">
+          No recent files found.
+        </p>
+      {/if}
+    </div>
+  </div>
 </div>
