@@ -13,7 +13,7 @@ declare global {
 }
 
 // Add essential plugins - only once
-if (browser && !window.__rxdb_plugins_added) {
+if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
   try {
     addRxPlugin(RxDBMigrationSchemaPlugin);
     addRxPlugin(RxDBQueryBuilderPlugin);
@@ -66,7 +66,7 @@ async function _createDb() {
 
   // Only load dev-mode plugin in development
   if (import.meta.env.DEV) {
-    if (!window.__rxdb_devmode_added) {
+    if (typeof window !== "undefined" && !window.__rxdb_devmode_added) {
       try {
         const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
         addRxPlugin(RxDBDevModePlugin);

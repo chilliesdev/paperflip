@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
 import { get } from "svelte/store";
 import { isLoading, loadingStatus } from "../../lib/stores/loading";

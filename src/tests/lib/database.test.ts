@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 
 // Use vi.hoisted to ensure mocks are set up before module imports
@@ -108,6 +109,9 @@ describe("database.ts", () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    // Mock window for these tests since we are in node environment
+    vi.stubGlobal("window", {});
+
     // Reset browser to true for most tests
     setMockBrowser(true);
 
@@ -157,6 +161,7 @@ describe("database.ts", () => {
 
   afterEach(() => {
     consoleWarnSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   describe("getDb", () => {

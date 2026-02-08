@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 
 // Mock SpeechSynthesis and SpeechSynthesisUtterance
