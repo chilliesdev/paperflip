@@ -17,21 +17,32 @@
   }) {
     isLoading = true;
     try {
+      console.log("Segmenting text...");
       const newSegmentedData = segmentText(text);
+      console.log(`Text segmented into ${newSegmentedData.length} segments`);
 
+      if (newSegmentedData.length === 0) {
+        console.warn("No text segments found in PDF");
+      }
+
+      console.log("Getting database...");
       await getDb();
+      console.log("Upserting document...");
       await upsertDocument(filename, newSegmentedData);
       console.log(
         "Document and segments stored/updated in RxDB with ID:",
         filename,
       );
 
-      // Navigate to the feed page
+      const feedUrl = `${resolve("/feed")}?id=${encodeURIComponent(filename)}`;
+      console.log("Navigating to:", feedUrl);
       // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(`${resolve("/feed")}?id=${encodeURIComponent(filename)}`);
+      goto(feedUrl);
     } catch (error) {
       console.error("Error processing PDF:", error);
-      alert("Failed to process PDF. Please try again.");
+      const errorMessage =
+        error instanceof Error ? error.message : JSON.stringify(error);
+      alert(`Failed to process PDF: ${errorMessage}`);
     } finally {
       isLoading = false;
     }

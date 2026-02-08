@@ -1,25 +1,37 @@
-import { createRxDatabase, addRxPlugin } from "rxdb";
-import { RxDBMigrationPlugin } from "rxdb/plugins/migration";
-addRxPlugin(RxDBMigrationPlugin);
-// import { getRxStoragePouch, addPouchPlugin } from 'rxdb/plugins/pouchdb';
+import { createRxDatabase, addRxPlugin, type RxStorage } from "rxdb";
+import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
+import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
+import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { browser } from "$app/environment";
 
 // Use window globals to track plugin registration across Vite HMR reloads
 declare global {
   interface Window {
+    __rxdb_plugins_added?: boolean;
     __rxdb_devmode_added?: boolean;
-    __rxdb_idb_added?: boolean;
+  }
+}
+
+// Add essential plugins - only once
+if (browser && !window.__rxdb_plugins_added) {
+  try {
+    addRxPlugin(RxDBMigrationSchemaPlugin);
+    addRxPlugin(RxDBQueryBuilderPlugin);
+    window.__rxdb_plugins_added = true;
+  } catch (_e) {
+    // Silently ignore DEV1 errors during HMR
   }
 }
 
 const documentSchema = {
   title: "paperflip_document",
   version: 1,
+  primaryKey: "documentId",
   type: "object",
   properties: {
     documentId: {
       type: "string",
-      primary: true,
+      maxLength: 100, // primaryKey and indexes need maxLength in some storages
     },
     segments: {
       type: "array",
@@ -29,9 +41,15 @@ const documentSchema = {
     },
     currentSegmentIndex: {
       type: "number",
+      multipleOf: 1,
+      minimum: 0,
+      maximum: 1000000,
     },
     createdAt: {
       type: "number",
+      multipleOf: 1,
+      minimum: 0,
+      maximum: 10000000000000,
     },
   },
   required: ["documentId", "segments", "currentSegmentIndex", "createdAt"],
@@ -43,59 +61,71 @@ async function _createDb() {
     throw new Error("RxDB can only be initialized in the browser");
   }
 
-  // Dynamic import to avoid SSR issues with pouchdb-adapter-idb
-  if (!window.__rxdb_idb_added) {
-    const { default: idb } = await import("pouchdb-adapter-idb");
-    addRxPlugin(idb);
-    window.__rxdb_idb_added = true;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let storage: RxStorage<any, any> = getRxStorageDexie();
 
   // Only load dev-mode plugin in development
-  // Use try-catch to gracefully handle the DEV1 "already added" error
-  if (import.meta.env.DEV && !window.__rxdb_devmode_added) {
-    try {
-      const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
-      addRxPlugin(RxDBDevModePlugin);
-      window.__rxdb_devmode_added = true;
-    } catch (e: unknown) {
-      // Suppress DEV1 error (dev-mode added multiple times) - this is non-breaking
-      const err = e as { code?: string; message?: string; name?: string };
-      const isDev1 =
-        err?.code === "DEV1" ||
-        String(e).includes("DEV1") ||
-        err?.message?.includes?.("DEV1") ||
-        err?.name?.includes?.("DEV1");
+  if (import.meta.env.DEV) {
+    if (!window.__rxdb_devmode_added) {
+      try {
+        const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
+        addRxPlugin(RxDBDevModePlugin);
+        window.__rxdb_devmode_added = true;
+      } catch (e: unknown) {
+        // Suppress DEV1 error (dev-mode added multiple times)
+        const err = e as { code?: string; message?: string; name?: string };
+        const isDev1 =
+          err?.code === "DEV1" ||
+          String(e).includes("DEV1") ||
+          err?.message?.includes?.("DEV1") ||
+          err?.name?.includes?.("DEV1");
 
-      if (isDev1) {
-        window.__rxdb_devmode_added = true; // Mark as added to prevent future attempts
-        // Silently ignore - plugin is already registered
-      } else {
-        console.warn("Failed to load RxDB Dev Mode Plugin", e);
+        if (isDev1) {
+          window.__rxdb_devmode_added = true;
+        } else {
+          console.warn("Failed to load RxDB Dev Mode Plugin", e);
+        }
       }
+    }
+
+    // In dev-mode, we MUST use a schema validator
+    try {
+      const { wrappedValidateAjvStorage } =
+        await import("rxdb/plugins/validate-ajv");
+      storage = wrappedValidateAjvStorage({ storage });
+    } catch (e) {
+      console.warn("Failed to load RxDB AJV Validation Storage Wrapper", e);
     }
   }
 
-  const db = await createRxDatabase({
-    name: "paperflipdb",
-    adapter: "idb", // RxDB v9 usage with PouchDB adapter
-    // storage: getRxStoragePouch('idb'), // RxDB v10+ usage
-  });
+  try {
+    const db = await createRxDatabase({
+      name: "paperflipdb",
+      storage,
+    });
 
-  await db.addCollections({
-    documents: {
-      schema: documentSchema,
-      migrationStrategies: {
-        1: function (oldDoc) {
-          return {
-            ...oldDoc,
-            createdAt: Date.now(),
-          };
+    await db.addCollections({
+      documents: {
+        schema: documentSchema,
+        migrationStrategies: {
+          // Migration from 0 to 1
+          1: function (oldDoc) {
+            return {
+              documentId: oldDoc.documentId,
+              segments: oldDoc.segments || [],
+              currentSegmentIndex: oldDoc.currentSegmentIndex || 0,
+              createdAt: oldDoc.createdAt || Date.now(),
+            };
+          },
         },
       },
-    },
-  });
+    });
 
-  return db;
+    return db;
+  } catch (error) {
+    console.error("Failed to initialize RxDB:", error);
+    throw error;
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,14 +146,19 @@ export async function addDocument(
   segments: string[],
   currentSegmentIndex: number = 0,
 ) {
-  const db = await getDb();
-  const doc = await db.documents.insert({
-    documentId,
-    segments,
-    currentSegmentIndex,
-    createdAt: Date.now(),
-  });
-  return doc.toJSON();
+  try {
+    const db = await getDb();
+    const doc = await db.documents.insert({
+      documentId,
+      segments,
+      currentSegmentIndex,
+      createdAt: Date.now(),
+    });
+    return doc.toJSON();
+  } catch (error) {
+    console.error(`Failed to add document ${documentId}:`, error);
+    throw error;
+  }
 }
 
 export async function upsertDocument(
@@ -131,14 +166,19 @@ export async function upsertDocument(
   segments: string[],
   currentSegmentIndex: number = 0,
 ) {
-  const db = await getDb();
-  const doc = await db.documents.upsert({
-    documentId,
-    segments,
-    currentSegmentIndex,
-    createdAt: Date.now(),
-  });
-  return doc.toJSON();
+  try {
+    const db = await getDb();
+    const doc = await db.documents.upsert({
+      documentId,
+      segments,
+      currentSegmentIndex,
+      createdAt: Date.now(),
+    });
+    return doc.toJSON();
+  } catch (error) {
+    console.error(`Failed to upsert document ${documentId}:`, error);
+    throw error;
+  }
 }
 
 export async function getRecentUploads(limit: number = 10) {

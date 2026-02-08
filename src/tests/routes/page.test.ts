@@ -90,7 +90,7 @@ describe("Root Page (+page.svelte)", () => {
 
     await waitFor(() => {
       expect(window.alert).toHaveBeenCalledWith(
-        "Failed to process PDF. Please try again.",
+        "Failed to process PDF: DB Error",
       );
     });
 

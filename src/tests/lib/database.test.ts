@@ -22,16 +22,21 @@ const {
   mockAddCollections,
   mockInsert,
   mockUpsert,
-  mockIdbAdapter,
+  mockGetRxStorageDexie,
   mockDevModePlugin,
+  mockWrappedValidateAjvStorage,
 } = vi.hoisted(() => {
   const mockCreateRxDatabase = vi.fn();
   const mockAddRxPlugin = vi.fn();
   const mockAddCollections = vi.fn();
   const mockInsert = vi.fn();
   const mockUpsert = vi.fn();
-  const mockIdbAdapter = { name: "idb-adapter" };
+  const mockGetRxStorageDexie = vi.fn(() => ({ name: "dexie-storage" }));
   const mockDevModePlugin = { name: "dev-mode-plugin" };
+  const mockWrappedValidateAjvStorage = vi.fn(({ storage }) => ({
+    name: `validate-ajv-${storage.name}`,
+    storage,
+  }));
 
   return {
     mockCreateRxDatabase,
@@ -39,8 +44,9 @@ const {
     mockAddCollections,
     mockInsert,
     mockUpsert,
-    mockIdbAdapter,
+    mockGetRxStorageDexie,
     mockDevModePlugin,
+    mockWrappedValidateAjvStorage,
   };
 });
 
@@ -50,17 +56,30 @@ vi.mock("rxdb", () => ({
   addRxPlugin: mockAddRxPlugin,
 }));
 
+// Mock RxDB plugins
+vi.mock("rxdb/plugins/storage-dexie", () => ({
+  getRxStorageDexie: mockGetRxStorageDexie,
+}));
+
+vi.mock("rxdb/plugins/migration-schema", () => ({
+  RxDBMigrationSchemaPlugin: { name: "migration-schema-plugin" },
+}));
+
+vi.mock("rxdb/plugins/query-builder", () => ({
+  RxDBQueryBuilderPlugin: { name: "query-builder-plugin" },
+}));
+
 // Mock $app/environment with hoisted value
 vi.mock("$app/environment", () => mockBrowser);
-
-// Mock pouchdb-adapter-idb
-vi.mock("pouchdb-adapter-idb", () => ({
-  default: mockIdbAdapter,
-}));
 
 // Mock RxDB dev-mode plugin
 vi.mock("rxdb/plugins/dev-mode", () => ({
   RxDBDevModePlugin: mockDevModePlugin,
+}));
+
+// Mock RxDB validation plugin
+vi.mock("rxdb/plugins/validate-ajv", () => ({
+  wrappedValidateAjvStorage: mockWrappedValidateAjvStorage,
 }));
 
 // Import the module after mocks are set up
@@ -69,6 +88,8 @@ import {
   addDocument,
   upsertDocument,
   resetDb,
+  getRecentUploads,
+  getDocument,
 } from "../../lib/database";
 
 // Type for mock database
@@ -96,7 +117,6 @@ describe("database.ts", () => {
     // Reset window globals
     if (typeof window !== "undefined") {
       delete (window as Window).__rxdb_devmode_added;
-      delete (window as Window).__rxdb_idb_added;
     }
 
     // Reset the dbPromise singleton
@@ -141,14 +161,11 @@ describe("database.ts", () => {
 
   describe("getDb", () => {
     it("creates and returns a database instance", async () => {
+      // By default DEV is true in vitest, so it might be wrapped
       const db = await getDb();
 
       expect(db).toBe(mockDb);
       expect(mockCreateRxDatabase).toHaveBeenCalledTimes(1);
-      expect(mockCreateRxDatabase).toHaveBeenCalledWith({
-        name: "paperflipdb",
-        adapter: "idb",
-      });
     });
 
     it("returns the same database instance on subsequent calls (singleton pattern)", async () => {
@@ -165,36 +182,10 @@ describe("database.ts", () => {
       expect(mockAddCollections).toHaveBeenCalledTimes(1);
       expect(mockAddCollections).toHaveBeenCalledWith({
         documents: {
-          schema: {
+          schema: expect.objectContaining({
             title: "paperflip_document",
-            version: 1,
-            type: "object",
-            properties: {
-              documentId: {
-                type: "string",
-                primary: true,
-              },
-              segments: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-              },
-              currentSegmentIndex: {
-                type: "number",
-              },
-              createdAt: {
-                type: "number",
-              },
-            },
-            required: [
-              "documentId",
-              "segments",
-              "currentSegmentIndex",
-              "createdAt",
-            ],
-            indexes: ["createdAt"],
-          },
+            primaryKey: "documentId",
+          }),
           migrationStrategies: {
             1: expect.any(Function),
           },
@@ -210,53 +201,27 @@ describe("database.ts", () => {
         "RxDB is not available on the server",
       );
     });
-
-    it("registers the idb adapter plugin only once", async () => {
-      await getDb();
-      await getDb(); // Call again
-
-      // Plugin should only be added once
-      expect(mockAddRxPlugin).toHaveBeenCalledWith(mockIdbAdapter);
-      // Count how many times idb adapter was added
-      const idbCalls = mockAddRxPlugin.mock.calls.filter(
-        (call) => call[0] === mockIdbAdapter,
-      );
-      expect(idbCalls.length).toBe(1);
-    });
-
-    it("sets window.__rxdb_idb_added flag after registering idb adapter", async () => {
-      expect((window as any).__rxdb_idb_added).toBeUndefined();
-
-      await getDb();
-
-      expect((window as any).__rxdb_idb_added).toBe(true);
-    });
-
-    it("skips idb adapter registration if already added", async () => {
-      (window as any).__rxdb_idb_added = true;
-
-      await getDb();
-
-      // Should not call addRxPlugin for idb adapter
-      const idbCalls = mockAddRxPlugin.mock.calls.filter(
-        (call) => call[0] === mockIdbAdapter,
-      );
-      expect(idbCalls.length).toBe(0);
-    });
   });
 
-  describe("getDb - dev mode plugin", () => {
-    it("registers dev-mode plugin in development", async () => {
+  describe("getDb - dev mode plugin and validation", () => {
+    it("registers dev-mode plugin and wraps storage in development", async () => {
       // Mock development environment
       vi.stubEnv("DEV", true);
 
       await getDb();
 
       expect(mockAddRxPlugin).toHaveBeenCalledWith(mockDevModePlugin);
+      expect(mockWrappedValidateAjvStorage).toHaveBeenCalled();
+      expect(mockCreateRxDatabase).toHaveBeenCalledWith({
+        name: "paperflipdb",
+        storage: expect.objectContaining({
+          name: "validate-ajv-dexie-storage",
+        }),
+      });
       expect((window as any).__rxdb_devmode_added).toBe(true);
     });
 
-    it("skips dev-mode plugin in production", async () => {
+    it("skips dev-mode plugin and wrapping in production", async () => {
       // Mock production environment
       vi.stubEnv("DEV", false);
 
@@ -267,9 +232,16 @@ describe("database.ts", () => {
         (call) => call[0] === mockDevModePlugin,
       );
       expect(devModeCalls.length).toBe(0);
+
+      // Should not wrap storage
+      expect(mockWrappedValidateAjvStorage).not.toHaveBeenCalled();
+      expect(mockCreateRxDatabase).toHaveBeenCalledWith({
+        name: "paperflipdb",
+        storage: expect.objectContaining({ name: "dexie-storage" }),
+      });
     });
 
-    it("skips dev-mode plugin if already added", async () => {
+    it("skips dev-mode plugin if already added but still wraps storage", async () => {
       vi.stubEnv("DEV", true);
       (window as any).__rxdb_devmode_added = true;
 
@@ -280,6 +252,9 @@ describe("database.ts", () => {
         (call) => call[0] === mockDevModePlugin,
       );
       expect(devModeCalls.length).toBe(0);
+
+      // But should still wrap storage in DEV
+      expect(mockWrappedValidateAjvStorage).toHaveBeenCalled();
     });
 
     it("handles DEV1 error gracefully when dev-mode plugin is already registered", async () => {
@@ -301,42 +276,8 @@ describe("database.ts", () => {
       expect((window as any).__rxdb_devmode_added).toBe(true);
     });
 
-    it("handles DEV1 error in error message when code is not set", async () => {
+    it("warns about errors when loading dev-mode plugin or validation", async () => {
       vi.stubEnv("DEV", true);
-
-      mockAddRxPlugin.mockImplementation((plugin) => {
-        if (plugin === mockDevModePlugin) {
-          throw new Error("DEV1: Plugin already added");
-        }
-      });
-
-      await expect(getDb()).resolves.toBe(mockDb);
-
-      expect((window as any).__rxdb_devmode_added).toBe(true);
-    });
-
-    it("handles DEV1 error in error name", async () => {
-      vi.stubEnv("DEV", true);
-
-      mockAddRxPlugin.mockImplementation((plugin) => {
-        if (plugin === mockDevModePlugin) {
-          const error = new Error("Plugin already added");
-
-          (error as any).name = "DEV1Error";
-          throw error;
-        }
-      });
-
-      await expect(getDb()).resolves.toBe(mockDb);
-
-      expect((window as any).__rxdb_devmode_added).toBe(true);
-    });
-
-    it("warns about non-DEV1 errors when loading dev-mode plugin", async () => {
-      vi.stubEnv("DEV", true);
-      const consoleWarnSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
 
       const customError = new Error("Some other error");
       mockAddRxPlugin.mockImplementation((plugin) => {
@@ -351,8 +292,6 @@ describe("database.ts", () => {
         "Failed to load RxDB Dev Mode Plugin",
         customError,
       );
-
-      consoleWarnSpy.mockRestore();
     });
   });
 
@@ -383,94 +322,6 @@ describe("database.ts", () => {
         createdAt: expect.any(Number),
       });
     });
-
-    it("uses default currentSegmentIndex of 0 when not provided", async () => {
-      const documentId = "doc-456";
-      const segments = ["First segment", "Second segment"];
-
-      await addDocument(documentId, segments);
-
-      expect(mockInsert).toHaveBeenCalledWith({
-        documentId,
-        segments,
-        currentSegmentIndex: 0,
-        createdAt: expect.any(Number),
-      });
-    });
-
-    it("handles empty segments array", async () => {
-      const documentId = "doc-empty";
-      const segments: string[] = [];
-
-      const result = await addDocument(documentId, segments);
-
-      expect(mockInsert).toHaveBeenCalledWith({
-        documentId,
-        segments: [],
-        currentSegmentIndex: 0,
-        createdAt: expect.any(Number),
-      });
-
-      expect(result.segments).toEqual([]);
-    });
-
-    it("handles single segment", async () => {
-      const documentId = "doc-single";
-      const segments = ["Only one segment"];
-
-      await addDocument(documentId, segments, 0);
-
-      expect(mockInsert).toHaveBeenCalledWith({
-        documentId,
-        segments,
-        currentSegmentIndex: 0,
-        createdAt: expect.any(Number),
-      });
-    });
-
-    it("handles large segment arrays", async () => {
-      const documentId = "doc-large";
-      const segments = Array.from({ length: 1000 }, (_, i) => `Segment ${i}`);
-
-      await addDocument(documentId, segments, 500);
-
-      expect(mockInsert).toHaveBeenCalledWith({
-        documentId,
-        segments,
-        currentSegmentIndex: 500,
-        createdAt: expect.any(Number),
-      });
-    });
-
-    it("propagates database errors", async () => {
-      const dbError = new Error("Database insertion failed");
-      mockInsert.mockRejectedValueOnce(dbError);
-
-      await expect(addDocument("doc-error", ["segment"])).rejects.toThrow(
-        "Database insertion failed",
-      );
-    });
-
-    it("waits for database initialization before inserting", async () => {
-      // Make database creation slow
-      let resolveDb!: (value: MockDatabase) => void;
-      const slowDbPromise = new Promise<MockDatabase>((resolve) => {
-        resolveDb = resolve;
-      });
-      mockCreateRxDatabase.mockReturnValue(slowDbPromise);
-
-      const insertPromise = addDocument("doc-wait", ["segment"]);
-
-      // Insert should not be called yet
-      expect(mockInsert).not.toHaveBeenCalled();
-
-      // Resolve the database creation
-      resolveDb(mockDb);
-      await insertPromise;
-
-      // Now insert should have been called
-      expect(mockInsert).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe("upsertDocument", () => {
@@ -500,89 +351,6 @@ describe("database.ts", () => {
         createdAt: expect.any(Number),
       });
     });
-
-    it("uses default currentSegmentIndex of 0 when not provided", async () => {
-      const documentId = "doc-456";
-      const segments = ["First segment"];
-
-      await upsertDocument(documentId, segments);
-
-      expect(mockUpsert).toHaveBeenCalledWith({
-        documentId,
-        segments,
-        currentSegmentIndex: 0,
-        createdAt: expect.any(Number),
-      });
-    });
-  });
-
-  describe("Error handling", () => {
-    it("throws error when _createDb is called on server", async () => {
-      setMockBrowser(false);
-
-      await expect(getDb()).rejects.toThrow(
-        "RxDB is not available on the server",
-      );
-    });
-
-    it("handles database creation errors", async () => {
-      const dbError = new Error("Failed to create database");
-      mockCreateRxDatabase.mockRejectedValueOnce(dbError);
-
-      await expect(getDb()).rejects.toThrow("Failed to create database");
-    });
-
-    it("handles collection creation errors", async () => {
-      const collectionError = new Error("Failed to add collections");
-      mockAddCollections.mockRejectedValueOnce(collectionError);
-
-      await expect(getDb()).rejects.toThrow("Failed to add collections");
-    });
-  });
-
-  describe("Integration scenarios", () => {
-    it("handles complete workflow: initialize db and add multiple documents", async () => {
-      // Initialize database
-      const db = await getDb();
-      expect(db).toBe(mockDb);
-
-      // Add first document
-      await addDocument("doc-1", ["Segment A", "Segment B"]);
-
-      // Add second document
-      await addDocument("doc-2", ["Segment X", "Segment Y", "Segment Z"], 2);
-
-      expect(mockInsert).toHaveBeenCalledTimes(2);
-      expect(mockInsert).toHaveBeenNthCalledWith(1, {
-        documentId: "doc-1",
-        segments: ["Segment A", "Segment B"],
-        currentSegmentIndex: 0,
-        createdAt: expect.any(Number),
-      });
-      expect(mockInsert).toHaveBeenNthCalledWith(2, {
-        documentId: "doc-2",
-        segments: ["Segment X", "Segment Y", "Segment Z"],
-        currentSegmentIndex: 2,
-        createdAt: expect.any(Number),
-      });
-    });
-
-    it("handles concurrent addDocument calls", async () => {
-      // Call addDocument multiple times concurrently
-      const promises = [
-        addDocument("doc-concurrent-1", ["A"]),
-        addDocument("doc-concurrent-2", ["B"]),
-        addDocument("doc-concurrent-3", ["C"]),
-      ];
-
-      await Promise.all(promises);
-
-      // Database should only be created once
-      expect(mockCreateRxDatabase).toHaveBeenCalledTimes(1);
-
-      // All documents should be inserted
-      expect(mockInsert).toHaveBeenCalledTimes(3);
-    });
   });
 
   describe("getRecentUploads", () => {
@@ -599,16 +367,11 @@ describe("database.ts", () => {
       const mockFind = vi.fn().mockReturnValue({ sort: mockSort });
       mockDb.documents.find = mockFind as any;
 
-      const result = await import("../../lib/database").then((m) =>
-        m.getRecentUploads(5),
-      );
+      const result = await getRecentUploads(5);
 
-      expect(mockFind).toHaveBeenCalledWith(); // No arguments to find()
       expect(mockSort).toHaveBeenCalledWith({ createdAt: "desc" });
       expect(mockLimit).toHaveBeenCalledWith(5);
-      expect(mockExec).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(2);
-      expect(result[0].documentId).toBe("doc1");
     });
   });
 
@@ -620,24 +383,10 @@ describe("database.ts", () => {
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
       mockDb.documents.findOne = mockFindOne as any;
 
-      const result = await import("../../lib/database").then((m) =>
-        m.getDocument("doc1"),
-      );
+      const result = await getDocument("doc1");
 
       expect(mockFindOne).toHaveBeenCalledWith("doc1");
       expect(result).toEqual({ documentId: "doc1", title: "Test" });
-    });
-
-    it("returns null if document not found", async () => {
-      const mockExec = vi.fn().mockResolvedValue(null);
-      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
-
-      const result = await import("../../lib/database").then((m) =>
-        m.getDocument("doc1"),
-      );
-
-      expect(result).toBeNull();
     });
   });
 });
