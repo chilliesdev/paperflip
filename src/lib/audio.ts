@@ -81,6 +81,7 @@ export function speakText(
   const textToSpeak = startIndex > 0 ? text.substring(startIndex) : text;
   utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.volume = get(isMuted) ? 0 : 1;
+  utterance.lang = "en-US";
   // You can set voice, pitch, rate here
   // utterance.voice = ...;
   // utterance.pitch = 1;
