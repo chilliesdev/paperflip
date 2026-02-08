@@ -1,5 +1,5 @@
 <script>
-  import { onMount, createEventDispatcher } from "svelte";
+  import { onMount, createEventDispatcher, tick } from "svelte";
   const dispatch = createEventDispatcher();
 
   export let modules = undefined;
@@ -19,9 +19,15 @@
   let className = "";
   export { className as class };
 
-  // Mock Swiper instance
+  /** @type {HTMLDivElement | undefined} */
+  let container;
+
+  /** @type {{ realIndex: number, activeIndex: number, slides: Element[], previousIndex: number | null, slideTo: Function, slideNext: Function, slidePrev: Function, on: Function, off: Function }} */
   const swiperInstance = {
     realIndex: 0,
+    activeIndex: 0,
+    slides: [],
+    previousIndex: null,
     slideTo: () => {},
     slideNext: () => {},
     slidePrev: () => {},
@@ -29,7 +35,16 @@
     off: () => {},
   };
 
-  onMount(() => {
+  onMount(async () => {
+    // Wait for slot to render
+    await tick();
+    if (container) {
+      // Find all mock slides
+      const slides = container.querySelectorAll(
+        '[data-testid="swiper-slide-mock"]',
+      );
+      swiperInstance.slides = Array.from(slides);
+    }
     // Dispatch init event
     dispatch("swiper", [swiperInstance]);
   });
@@ -39,7 +54,9 @@
    */
   function handleTestSlideChange(e) {
     // Update mock instance
+    swiperInstance.previousIndex = swiperInstance.activeIndex;
     swiperInstance.realIndex = e.detail.index;
+    swiperInstance.activeIndex = e.detail.index;
     // Dispatch component event
     dispatch("slideChange", [swiperInstance]);
   }
@@ -61,7 +78,10 @@
 </script>
 
 <!-- Add a listener for testing -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+  bind:this={container}
   data-testid="swiper-mock"
   class={className}
   use:testSlideChangeAction

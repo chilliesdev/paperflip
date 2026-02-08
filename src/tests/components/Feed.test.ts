@@ -108,12 +108,16 @@ describe("Feed Component", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByTestId("swiper-mock")).toBeInTheDocument();
 
-    // Check video source
-    const video = document.querySelector("video");
-    expect(video).toBeInTheDocument();
-    expect(video).toHaveAttribute(
+    // Check video source - now multiple videos
+    const videos = document.querySelectorAll("video");
+    expect(videos).toHaveLength(2);
+    expect(videos[0]).toHaveAttribute(
       "src",
       "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+    );
+    expect(videos[1]).toHaveAttribute(
+      "src",
+      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
     );
 
     // Check that slides are rendered
@@ -153,7 +157,7 @@ describe("Feed Component", () => {
     // Wait for mount and audio to start
     await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
 
-    // Verify play() was called during init
+    // Verify play() was called during init (on the video element)
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
 
     // Now speaking is true because speakText was called

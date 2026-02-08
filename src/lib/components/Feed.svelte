@@ -29,11 +29,6 @@
   let swiperInstance: any;
   let currentWord: string = "";
   let currentCharIndex: number = -1;
-  let currentVideoIndex: number = 0;
-  let videoElement: HTMLVideoElement;
-
-  // Non-reactive declaration for currentVideoSrc since index is static for now
-  const currentVideoSrc = videoSources[currentVideoIndex];
 
   function getSubtitleDisplay(text: string, charIndex: number): string {
     if (charIndex === -1) {
@@ -84,19 +79,40 @@
       .join(" ");
   }
 
+  function getActiveVideoElement(): HTMLVideoElement | null {
+    if (!swiperInstance) return null;
+    const activeSlide = swiperInstance.slides[swiperInstance.activeIndex];
+    return activeSlide ? activeSlide.querySelector("video") : null;
+  }
+
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
     swiperInstance = swiper;
     initializeTTS();
     if (segments.length > 0) {
-      if (videoElement) videoElement.play();
+      // Play the first video
+      const video = getActiveVideoElement();
+      if (video) video.play();
       speakCurrentSlide();
     }
   }
 
   function handleSlideChange() {
     if (swiperInstance && segments.length > 0) {
-      if (videoElement) videoElement.play();
+      // Pause previous video
+      if (typeof swiperInstance.previousIndex === "number") {
+        const prevSlide = swiperInstance.slides[swiperInstance.previousIndex];
+        const prevVideo = prevSlide?.querySelector("video");
+        if (prevVideo) {
+          prevVideo.pause();
+          prevVideo.currentTime = 0;
+        }
+      }
+
+      // Play current video
+      const video = getActiveVideoElement();
+      if (video) video.play();
+
       speakCurrentSlide();
     }
   }
@@ -115,25 +131,19 @@
   }
 
   function togglePlayback() {
-    // Robustness check: ensure videoElement exists
-    const el =
-      videoElement || (document.querySelector("video") as HTMLVideoElement);
+    const video = getActiveVideoElement();
 
     if (isSpeaking()) {
       if (isPaused()) {
         resumeTTS();
-        el?.play();
+        video?.play();
       } else {
         pauseTTS();
-        el?.pause();
+        video?.pause();
       }
     } else {
-      // If not speaking (and not paused), it might be stopped or not started.
-      // We can try to resume if it was just paused but isSpeaking returned false (unlikely for pause),
-      // or maybe restart?
-      // For now, let's just try resume/play which covers the 'paused' case if isSpeaking is false (browsers vary).
       resumeTTS();
-      el?.play();
+      video?.play();
     }
   }
 
@@ -150,15 +160,6 @@
   class="h-screen w-screen flex justify-center items-center relative overflow-hidden"
 >
   {#if segments.length > 0}
-    <video
-      bind:this={videoElement}
-      class="absolute top-0 left-0 w-full h-full object-cover -z-10"
-      src={currentVideoSrc}
-      autoplay
-      loop
-      muted
-      playsinline
-    ></video>
     <Swiper
       direction="vertical"
       slidesPerView={1}
@@ -172,8 +173,15 @@
     >
       {#each segments as segment, i (i)}
         <SwiperSlide
-          class="flex items-center justify-center p-4 relative bg-transparent"
+          class="flex items-center justify-center p-4 relative bg-black"
         >
+          <video
+            class="absolute top-0 left-0 w-full h-full object-cover"
+            src={videoSources[i % videoSources.length]}
+            loop
+            muted
+            playsinline
+          ></video>
           <div
             class="text-center text-2xl text-white z-10 p-4 bg-black bg-opacity-50 rounded"
           >
