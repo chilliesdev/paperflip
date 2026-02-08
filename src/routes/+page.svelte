@@ -6,7 +6,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
-  let isLoading: boolean = false;
+  let isLoading = false;
 
   async function handlePdfParsed({
     text,
@@ -53,20 +53,17 @@
   });
 </script>
 
-<div class="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+<div class="h-screen w-full bg-[#0a0a0a]">
   {#if isLoading}
-    <p class="text-xl">Loading and processing PDF...</p>
-  {:else}
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">PaperFlip</h1>
-    <div class="p-8 bg-white rounded-lg shadow-md w-full max-w-2xl">
-      <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">
-        Upload a PDF to get started
-      </h2>
-      <PdfUploader
-        onPdfParsed={handlePdfParsed}
-        onPdfError={handlePdfError}
-        onLoadDocument={handleLoadDocument}
-      />
+    <!-- Loading state overlay -->
+    <div class="flex items-center justify-center h-full text-white">
+      <p class="text-xl animate-pulse">Processing PDF...</p>
     </div>
+  {:else}
+    <PdfUploader
+      onPdfParsed={handlePdfParsed}
+      onPdfError={handlePdfError}
+      onLoadDocument={handleLoadDocument}
+    />
   {/if}
 </div>

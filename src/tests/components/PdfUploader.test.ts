@@ -46,7 +46,7 @@ describe("PdfUploader", () => {
 
   it("renders upload button", () => {
     render(PdfUploader);
-    const button = screen.getByLabelText("Upload PDF");
+    const button = screen.getByLabelText(/Open PDF/i);
     expect(button).toBeInTheDocument();
   });
 
@@ -63,7 +63,7 @@ describe("PdfUploader", () => {
     const file = new File(["dummy content"], "test.pdf", {
       type: "application/pdf",
     });
-    const input = screen.getByLabelText("Upload PDF") as HTMLInputElement;
+    const input = screen.getByLabelText(/Open PDF/i) as HTMLInputElement;
 
     // Wait for PDF.js to load (input becomes enabled)
     await waitFor(() => {
@@ -75,15 +75,15 @@ describe("PdfUploader", () => {
     });
     await fireEvent.change(input);
 
-    // Expect "Parsing..." loader
+    // Expect "Processing..." loader
     await waitFor(() => {
-      expect(screen.getByText("Parsing...")).toBeInTheDocument();
+      expect(screen.getByText("Processing...")).toBeInTheDocument();
     });
 
     // Wait for async operations and event dispatch
     await waitFor(() => {
-      expect(screen.queryByText("Parsing...")).not.toBeInTheDocument();
-      expect(screen.getByText("Upload PDF")).toBeInTheDocument();
+      expect(screen.queryByText("Processing...")).not.toBeInTheDocument();
+      expect(screen.getByText("Open PDF")).toBeInTheDocument();
       expect(onPdfParsed).toHaveBeenCalledWith({
         text: "Test Content",
         filename: "test.pdf",
@@ -102,7 +102,7 @@ describe("PdfUploader", () => {
     render(PdfUploader);
 
     await waitFor(() => {
-      expect(screen.getByText("Recent Uploads")).toBeInTheDocument();
+      expect(screen.getByText("Recent")).toBeInTheDocument();
       expect(screen.getByText("doc1.pdf")).toBeInTheDocument();
       expect(screen.getByText("doc2.pdf")).toBeInTheDocument();
     });

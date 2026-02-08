@@ -38,7 +38,7 @@ describe("PdfUploader Repro", () => {
     const file = new File(["dummy content"], "test.pdf", {
       type: "application/pdf",
     });
-    const input = screen.getByLabelText("Upload PDF") as HTMLInputElement;
+    const input = screen.getByLabelText(/Open PDF/i) as HTMLInputElement;
 
     // Wait for PDF.js to load (input becomes enabled)
     await waitFor(() => {
@@ -52,7 +52,7 @@ describe("PdfUploader Repro", () => {
 
     // Wait for async operations
     await waitFor(() => {
-      expect(screen.queryByText("Parsing...")).not.toBeInTheDocument();
+      expect(screen.queryByText("Processing...")).not.toBeInTheDocument();
     });
 
     // The FIX: Component should NOT call addDocument

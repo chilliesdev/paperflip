@@ -81,7 +81,7 @@ describe("Feed Component", () => {
     // Clear handlers
 
     // Reset video element mocks if necessary
-    HTMLMediaElement.prototype.play = vi.fn();
+    HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
     HTMLMediaElement.prototype.pause = vi.fn();
     (audio as any).__setSpeaking(false);
     (audio as any).__setPaused(false);
@@ -237,14 +237,15 @@ describe("Feed Component", () => {
 
     expect(boundaryCallback).toBeTypeOf("function");
 
-    // Simulate word boundary for "Hello"
-    boundaryCallback("Hello", 0, 5);
+    // Simulate callback with charIndex. The component uses charIndex to highlight.
+    // "Hello" is at index 0
+    boundaryCallback("Hello", 0);
 
     // Wait for update
     await waitFor(() => {
       const helloSpan = screen.getByText("Hello");
       expect(helloSpan.tagName).toBe("SPAN");
-      expect(helloSpan).toHaveClass("bg-[yellow]");
+      expect(helloSpan).toHaveClass("text-[#00ff88]");
     });
   });
 });
