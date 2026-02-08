@@ -62,13 +62,10 @@ vi.mock("../../lib/audio", () => {
   };
 });
 
-// Mock Swiper
-vi.mock("swiper/svelte", async () => {
-  const MockSwiper = (await import("../mocks/MockSwiper.svelte")).default;
-  const MockSwiperSlide = (await import("../mocks/MockSwiperSlide.svelte"))
-    .default;
-  return { Swiper: MockSwiper, SwiperSlide: MockSwiperSlide };
-});
+// Mock Swiper Element bundle
+vi.mock("swiper/element/bundle", () => ({
+  register: vi.fn(),
+}));
 
 // Mock Swiper modules
 vi.mock("swiper", () => ({
@@ -76,9 +73,22 @@ vi.mock("swiper", () => ({
 }));
 
 describe("Feed Component", () => {
+  const mockSwiperInstance = {
+    realIndex: 0,
+    activeIndex: 0,
+    slides: [],
+    previousIndex: null,
+    slideTo: vi.fn(),
+    slideNext: vi.fn(),
+    slidePrev: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Clear handlers
+    mockSwiperInstance.realIndex = 0;
+    mockSwiperInstance.activeIndex = 0;
 
     // Reset video element mocks if necessary
     HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
@@ -138,6 +148,14 @@ describe("Feed Component", () => {
     const segments = ["First Segment"];
     render(Feed, { segments });
 
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
     await waitFor(() => {
       expect(audio.speakText).toHaveBeenCalledWith(
         "First Segment",
@@ -156,6 +174,14 @@ describe("Feed Component", () => {
     const segments = ["Test Segment"];
     render(Feed, { segments });
 
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
     // Wait for mount and audio to start
     await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
 
@@ -168,8 +194,6 @@ describe("Feed Component", () => {
     // Reset mocks to ensure we are testing the toggle
     (HTMLMediaElement.prototype.play as any).mockClear();
     (HTMLMediaElement.prototype.pause as any).mockClear();
-
-    const swiper = screen.getByTestId("swiper-mock");
 
     // Click -> Expect Toggle (after delay)
     fireEvent.click(swiper);
@@ -197,6 +221,14 @@ describe("Feed Component", () => {
     const segments = ["Segment 1", "Segment 2"];
     render(Feed, { segments });
 
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
     // Wait for initial speech
     await waitFor(() =>
       expect(audio.speakText).toHaveBeenCalledWith(
@@ -205,17 +237,18 @@ describe("Feed Component", () => {
       ),
     );
 
-    const swiper = screen.getByTestId("swiper-mock");
-
     // Reset mocks to check new calls
     (audio.speakText as any).mockClear();
     (audio.stopTTS as any).mockClear();
 
     // Simulate slide change to index 1
-    const event = new CustomEvent("test-slide-change", {
-      detail: { index: 1 },
-    });
-    fireEvent(swiper, event);
+    mockSwiperInstance.realIndex = 1;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
 
     await waitFor(() => {
       expect(audio.stopTTS).toHaveBeenCalled();
@@ -229,6 +262,14 @@ describe("Feed Component", () => {
   it("highlights the spoken word", async () => {
     const segments = ["Hello world"];
     render(Feed, { segments });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
 
     await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
 

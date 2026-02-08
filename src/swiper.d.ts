@@ -1,4 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { SwiperContainer, SwiperSlide } from "swiper/element";
+
+declare global {
+  namespace svelteHTML {
+    interface IntrinsicElements {
+      "swiper-container": any;
+      "swiper-slide": any;
+    }
+  }
+}
+
 declare module "swiper" {
   const Swiper: any;
   const Mousewheel: any;
@@ -8,8 +19,6 @@ declare module "swiper" {
   export default Swiper;
 }
 
-declare module "swiper/svelte" {
-  const Swiper: any;
-  const SwiperSlide: any;
-  export { Swiper, SwiperSlide };
+declare module "swiper/element/bundle" {
+  export function register(): void;
 }

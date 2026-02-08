@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { Swiper, SwiperSlide } from "swiper/svelte";
-  import { Mousewheel } from "swiper";
+  import { register } from "swiper/element/bundle";
   import {
     initializeTTS,
     speakText,
@@ -13,10 +12,6 @@
   import { videoSources } from "$lib/constants";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
-
-  // Import Swiper styles
-  import "swiper/css";
-  import "swiper/css/mousewheel";
 
   export let segments: string[] = [];
 
@@ -36,9 +31,11 @@
     }
   }
 
-  function handleSlideChange() {
-    if (swiperInstance && segments.length > 0) {
-      activeIndex = swiperInstance.realIndex;
+  function handleSlideChange(e: CustomEvent) {
+    if (segments.length > 0) {
+      const [swiper] = e.detail;
+      swiperInstance = swiper;
+      activeIndex = swiper.realIndex;
       speakCurrentSlide();
     }
   }
@@ -71,6 +68,7 @@
   }
 
   onMount(async () => {
+    register();
     initializeTTS();
   });
 
@@ -83,19 +81,19 @@
   class="h-screen w-screen flex justify-center items-center relative overflow-hidden bg-black"
 >
   {#if segments.length > 0}
-    <Swiper
+    <swiper-container
       direction="vertical"
-      slidesPerView={1}
-      spaceBetween={0}
+      slides-per-view={1}
+      space-between={0}
       mousewheel={true}
-      modules={[Mousewheel]}
       class="mySwiper w-full h-full"
-      on:swiper={handleSwiperInit}
-      on:slideChange={handleSlideChange}
+      data-testid="swiper-mock"
+      on:swiperinit={handleSwiperInit}
+      on:swiperslidechange={handleSlideChange}
       on:click={togglePlayback}
     >
       {#each segments as segment, i (i)}
-        <SwiperSlide class="w-full h-full">
+        <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
           <FeedSlide
             {segment}
             index={i}
@@ -105,9 +103,9 @@
             currentCharIndex={i === activeIndex ? currentCharIndex : -1}
             videoSource={videoSources[i % videoSources.length]}
           />
-        </SwiperSlide>
+        </swiper-slide>
       {/each}
-    </Swiper>
+    </swiper-container>
   {:else}
     <div class="flex flex-col items-center justify-center h-full text-white">
       <p class="text-xl">Upload a PDF to see the feed!</p>
