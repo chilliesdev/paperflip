@@ -83,13 +83,11 @@
   });
 </script>
 
-<div
-  class="h-screen w-screen flex justify-center items-center relative overflow-hidden bg-black"
->
+<div class="w-full h-full relative bg-black">
   {#if segments.length > 0}
-    <!-- Page Indicator (Fixed Overlay) -->
+    <!-- Page Indicator -->
     <div
-      class="absolute top-8 left-36 z-40 backdrop-blur-xl bg-black/40 px-4 py-2 rounded-full border border-white/20 pointer-events-none"
+      class="absolute top-8 left-1/2 -translate-x-[110%] z-40 backdrop-blur-xl bg-black/40 px-4 py-2 rounded-full border border-white/20 pointer-events-none"
     >
       <p class="text-white text-sm font-medium">
         Short {activeIndex + 1} / {segments.length}

@@ -122,13 +122,15 @@
       </div>
     </div>
 
-    <!-- Swipe Up Hint (only on first slide or if inactive) -->
-    {#if index === 0 && !isActive}
+    <!-- Swipe Up Hint (only on first slide when active) -->
+    {#if index === 0 && isActive}
       <div
-        class="absolute bottom-32 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-60 animate-bounce"
+        class="absolute bottom-40 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-80 animate-bounce z-30"
       >
-        <ChevronUp class="w-8 h-8 text-white" />
-        <p class="text-white text-sm font-medium">Swipe up</p>
+        <ChevronUp class="w-10 h-10 text-[#00ff88]" />
+        <p class="text-white text-sm font-bold drop-shadow-lg">
+          Swipe up to continue
+        </p>
       </div>
     {/if}
   </div>

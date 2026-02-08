@@ -64,17 +64,19 @@
   });
 </script>
 
-<div class="h-screen w-full bg-[#0a0a0a]">
+<div class="h-screen w-full bg-[#0a0a0a] flex justify-center items-center">
   {#if isLoading}
     <!-- Loading state overlay -->
     <div class="flex items-center justify-center h-full text-white">
       <p class="text-xl animate-pulse">Processing PDF...</p>
     </div>
   {:else}
-    <PdfUploader
-      onPdfParsed={handlePdfParsed}
-      onPdfError={handlePdfError}
-      onLoadDocument={handleLoadDocument}
-    />
+    <div class="h-full aspect-[9/16] max-w-full bg-black shadow-2xl relative">
+      <PdfUploader
+        onPdfParsed={handlePdfParsed}
+        onPdfError={handlePdfError}
+        onLoadDocument={handleLoadDocument}
+      />
+    </div>
   {/if}
 </div>
