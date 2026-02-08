@@ -112,7 +112,7 @@
 </script>
 
 <div
-  class="h-full bg-gradient-to-b from-[#0a0a0a] to-[#1a1a2e] flex flex-col text-white font-sans overflow-hidden relative"
+  class="h-full bg-gradient-to-b from-brand-bg to-brand-surface flex flex-col text-white font-sans overflow-hidden relative"
 >
   <!-- Header -->
   <div class="px-6 pt-12 pb-6">
@@ -120,9 +120,9 @@
       in:fly={{ y: -20, duration: 500 }}
       class="text-5xl font-black tracking-tight text-white"
     >
-      Paper<span class="text-[#00ff88]">Flip</span>
+      Paper<span class="text-brand-primary">Flip</span>
     </div>
-    <p class="text-gray-400 mt-2 text-sm">
+    <p class="text-brand-text-muted mt-2 text-sm">
       Transform PDFs into immersive stories
     </p>
   </div>
@@ -130,13 +130,15 @@
   <!-- Privacy Badge -->
   <div
     in:scale={{ start: 0.9, duration: 500, delay: 100 }}
-    class="mx-6 mb-8 px-4 py-3 rounded-2xl bg-gradient-to-r from-[#00ff88]/10 to-[#00bfff]/10 border border-[#00ff88]/30 backdrop-blur-sm"
+    class="mx-6 mb-8 px-4 py-3 rounded-2xl bg-gradient-to-r from-brand-primary/10 to-brand-secondary/10 border border-brand-primary/30 backdrop-blur-sm"
   >
     <div class="flex items-center gap-3">
-      <Shield class="w-5 h-5 text-[#00ff88]" />
+      <Shield class="w-5 h-5 text-brand-primary" />
       <div>
         <p class="text-white text-sm font-semibold">100% On-Device</p>
-        <p class="text-gray-400 text-xs">No Cloud Uploads • Zero Tracking</p>
+        <p class="text-brand-text-muted text-xs">
+          No Cloud Uploads • Zero Tracking
+        </p>
       </div>
     </div>
   </div>
@@ -144,7 +146,7 @@
   <!-- Upload Zone -->
   <div in:fly={{ y: 20, duration: 500, delay: 200 }} class="mx-6 mb-8">
     <label
-      class="block w-full aspect-[4/3] rounded-3xl bg-gradient-to-br from-[#00ff88] to-[#00bfff] p-[2px] shadow-2xl shadow-[#00ff88]/20 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      class="block w-full aspect-[4/3] rounded-3xl bg-gradient-to-br from-brand-primary to-brand-secondary p-[2px] shadow-2xl shadow-brand-primary/20 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
     >
       <input
         type="file"
@@ -154,28 +156,30 @@
         class="hidden"
       />
       <div
-        class="w-full h-full rounded-3xl bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1e] flex flex-col items-center justify-center gap-4 border-2 border-dashed border-[#00ff88]/30 hover:border-[#00ff88]/60 transition-colors"
+        class="w-full h-full rounded-3xl bg-gradient-to-br from-brand-surface to-brand-surface-dark flex flex-col items-center justify-center gap-4 border-2 border-dashed border-brand-primary/30 hover:border-brand-primary/60 transition-colors"
       >
         {#if isLoading}
           <div
-            class="w-20 h-20 rounded-full bg-gradient-to-br from-[#00ff88] to-[#00bfff] flex items-center justify-center animate-pulse"
+            class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center animate-pulse"
           >
-            <Clock class="w-10 h-10 text-[#0a0a0a]" />
+            <Clock class="w-10 h-10 text-brand-bg" />
           </div>
           <div class="text-center">
             <p class="text-white text-xl font-bold">Processing...</p>
           </div>
         {:else}
           <div
-            class="w-20 h-20 rounded-full bg-gradient-to-br from-[#00ff88] to-[#00bfff] flex items-center justify-center"
+            class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center"
           >
-            <Upload class="w-10 h-10 text-[#0a0a0a]" />
+            <Upload class="w-10 h-10 text-brand-bg" />
           </div>
           <div class="text-center">
             <p class="text-white text-xl font-bold">Open PDF</p>
-            <p class="text-gray-400 text-sm mt-1">Tap to browse files</p>
+            <p class="text-brand-text-muted text-sm mt-1">
+              Tap to browse files
+            </p>
           </div>
-          <div class="flex items-center gap-2 text-[#00ff88] text-xs">
+          <div class="flex items-center gap-2 text-brand-primary text-xs">
             <Clock class="w-3 h-3" />
             <span>Instant • Zero Latency</span>
           </div>
@@ -201,25 +205,25 @@
         >
           <div class="flex items-start gap-3">
             <div
-              class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00ff88]/20 to-[#00bfff]/20 flex items-center justify-center flex-shrink-0"
+              class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-primary/20 to-brand-secondary/20 flex items-center justify-center flex-shrink-0"
             >
-              <FileText class="w-5 h-5 text-[#00ff88]" />
+              <FileText class="w-5 h-5 text-brand-primary" />
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-white text-sm font-medium truncate">{file.name}</p>
               <div class="flex items-center gap-2 mt-1">
-                <p class="text-gray-400 text-xs">
+                <p class="text-brand-text-muted text-xs">
                   Part {file.currentPage} of {file.totalPages}
                 </p>
                 <span class="text-gray-600">•</span>
-                <p class="text-[#00ff88] text-xs font-medium">
+                <p class="text-brand-primary text-xs font-medium">
                   {file.progress}% watched
                 </p>
               </div>
               <!-- Progress Bar -->
               <div class="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-gradient-to-r from-[#00ff88] to-[#00bfff]"
+                  class="h-full bg-gradient-to-r from-brand-primary to-brand-secondary"
                   style="width: {file.progress}%"
                 ></div>
               </div>

@@ -113,7 +113,7 @@ describe("FeedSlide Component", () => {
       const hello = screen.getByText("Hello");
       const world = screen.getByText("world");
 
-      expect(hello).toHaveClass("text-[#00ff88]"); // Active style
+      expect(hello).toHaveClass("text-brand-primary"); // Active style
       expect(world).toHaveClass("text-white/50"); // Future style
     });
 
@@ -130,7 +130,7 @@ describe("FeedSlide Component", () => {
       const world = screen.getByText("world");
 
       expect(hello).toHaveClass("text-white/80"); // Past style
-      expect(world).toHaveClass("text-[#00ff88]"); // Active style
+      expect(world).toHaveClass("text-brand-primary"); // Active style
     });
 
     it("handles currentCharIndex = -1 (no active words)", () => {
@@ -143,8 +143,8 @@ describe("FeedSlide Component", () => {
       const hello = screen.getByText("Hello");
       const world = screen.getByText("world");
 
-      expect(hello).not.toHaveClass("text-[#00ff88]");
-      expect(world).not.toHaveClass("text-[#00ff88]");
+      expect(hello).not.toHaveClass("text-brand-primary");
+      expect(world).not.toHaveClass("text-brand-primary");
     });
   });
 

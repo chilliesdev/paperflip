@@ -90,7 +90,7 @@
   {#if isActive && currentWordIdx > -1}
     <div transition:scale class="absolute top-8 right-8 z-20">
       <div
-        class="w-14 h-14 rounded-full bg-gradient-to-br from-[#00ff88] to-[#00bfff] flex items-center justify-center shadow-lg shadow-[#00ff88]/30 animate-pulse"
+        class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg shadow-brand-primary/30 animate-pulse"
       >
         <Volume2 class="w-6 h-6 text-black" />
       </div>
@@ -111,7 +111,7 @@
           {@const past = globalIdx < currentWordIdx}
           <span
             class="inline-block transition-all duration-200 mx-[2px] {active
-              ? 'text-[#00ff88] font-bold scale-110 drop-shadow-[0_0_12px_rgba(0,255,136,0.6)]'
+              ? 'text-brand-primary font-bold scale-110 drop-shadow-[0_0_12px_var(--brand-primary)]'
               : past
                 ? 'text-white/80'
                 : 'text-white/50'}"
@@ -127,7 +127,7 @@
       <div
         class="absolute bottom-40 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-80 animate-bounce z-30"
       >
-        <ChevronUp class="w-10 h-10 text-[#00ff88]" />
+        <ChevronUp class="w-10 h-10 text-brand-primary" />
         <p class="text-white text-sm font-bold drop-shadow-lg">
           Swipe up to continue
         </p>
@@ -139,7 +139,7 @@
   <div class="absolute bottom-0 left-0 right-0 z-20">
     <div class="h-1 bg-white/10">
       <div
-        class="h-full bg-gradient-to-r from-[#00ff88] to-[#00bfff] transition-all duration-300 ease-out"
+        class="h-full bg-gradient-to-r from-brand-primary to-brand-secondary transition-all duration-300 ease-out"
         style="width: {progress}%"
       ></div>
     </div>

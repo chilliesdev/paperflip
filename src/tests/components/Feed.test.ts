@@ -294,7 +294,7 @@ describe("Feed Component", () => {
     await waitFor(() => {
       const helloSpan = screen.getByText("Hello");
       expect(helloSpan.tagName).toBe("SPAN");
-      expect(helloSpan).toHaveClass("text-[#00ff88]");
+      expect(helloSpan).toHaveClass("text-brand-primary");
     });
   });
 

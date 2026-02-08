@@ -64,7 +64,7 @@
   });
 </script>
 
-<div class="h-screen w-full bg-[#0a0a0a] flex justify-center items-center">
+<div class="h-screen w-full bg-brand-bg flex justify-center items-center">
   {#if isLoading}
     <!-- Loading state overlay -->
     <div class="flex items-center justify-center h-full text-white">

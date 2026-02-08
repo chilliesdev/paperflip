@@ -36,7 +36,7 @@
 </script>
 
 <div
-  class="h-screen w-full bg-[#0a0a0a] flex justify-center items-center overflow-hidden"
+  class="h-screen w-full bg-brand-bg flex justify-center items-center overflow-hidden"
 >
   <div class="h-full aspect-[9/16] max-w-full bg-black shadow-2xl relative">
     <a
@@ -69,7 +69,7 @@
         class="flex flex-col items-center justify-center h-full text-center p-6"
       >
         <p class="text-xl text-red-500 mb-4">{error}</p>
-        <a href={resolve("/")} class="text-[#00ff88] underline">Go back</a>
+        <a href={resolve("/")} class="text-brand-primary underline">Go back</a>
       </div>
     {:else if segmentedData.length > 0}
       <Feed segments={segmentedData} />
@@ -80,7 +80,7 @@
         <p class="text-white text-xl mb-4">
           No content found for this document.
         </p>
-        <a href={resolve("/")} class="text-[#00ff88] underline">Go back</a>
+        <a href={resolve("/")} class="text-brand-primary underline">Go back</a>
       </div>
     {/if}
   </div>
