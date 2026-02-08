@@ -10,6 +10,7 @@
   export let currentCharIndex: number;
   export let videoSource: string;
   import { videoAssetUrls } from "$lib/stores/assets";
+  import { wordCount } from "$lib/constants";
 
   let videoEl: HTMLVideoElement;
   let words: { word: string; start: number; end: number }[] = [];
@@ -61,6 +62,12 @@
   // Progress based on word index
   $: progress =
     words.length > 0 ? ((currentWordIdx + 1) / words.length) * 100 : 0;
+
+  $: startIndex =
+    currentWordIdx === -1
+      ? 0
+      : Math.floor(currentWordIdx / wordCount) * wordCount;
+  $: visibleWords = words.slice(startIndex, startIndex + wordCount);
 </script>
 
 <div class="w-full h-full relative overflow-hidden bg-black">
@@ -106,9 +113,10 @@
       class="backdrop-blur-xl bg-black/60 rounded-2xl px-6 py-8 border border-white/10 shadow-xl max-w-[90%] mx-auto"
     >
       <div class="text-base leading-relaxed text-center font-medium">
-        {#each words as w, i (i)}
-          {@const active = i === currentWordIdx}
-          {@const past = i < currentWordIdx}
+        {#each visibleWords as w, i (startIndex + i)}
+          {@const globalIdx = startIndex + i}
+          {@const active = globalIdx === currentWordIdx}
+          {@const past = globalIdx < currentWordIdx}
           <span
             class="inline-block transition-all duration-200 mx-[2px] {active
               ? 'text-[#00ff88] font-bold scale-110 drop-shadow-[0_0_12px_rgba(0,255,136,0.6)]'

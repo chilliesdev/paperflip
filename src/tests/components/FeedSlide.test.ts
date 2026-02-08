@@ -56,6 +56,31 @@ describe("FeedSlide Component", () => {
       expect(screen.getByText("world")).toBeInTheDocument();
     });
 
+    it("renders only wordCount words if segment is long", () => {
+      const longSegment = "one two three four five six seven eight nine ten";
+      render(FeedSlide, { ...defaultProps, segment: longSegment });
+
+      // Since wordCount is 8, we expect words 1-8 to be present, and 9-10 to be absent
+      expect(screen.getByText("one")).toBeInTheDocument();
+      expect(screen.getByText("eight")).toBeInTheDocument();
+      expect(screen.queryByText("nine")).not.toBeInTheDocument();
+      expect(screen.queryByText("ten")).not.toBeInTheDocument();
+    });
+
+    it("shifts the window when currentCharIndex moves to the next set of words", () => {
+      const longSegment = "one two three four five six seven eight nine ten";
+      // one(0-3), two(4-7), three(8-13), four(14-18), five(19-23), six(24-27), seven(28-33), eight(34-39), nine(40-44)
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: longSegment,
+        currentCharIndex: 41, // Index of 'i' in 'nine'
+      });
+
+      expect(screen.queryByText("one")).not.toBeInTheDocument();
+      expect(screen.getByText("nine")).toBeInTheDocument();
+      expect(screen.getByText("ten")).toBeInTheDocument();
+    });
+
     it("shows swipe hint only on first slide when inactive", () => {
       // Case 1: First slide, inactive -> Should show
       const { unmount } = render(FeedSlide, {
