@@ -21,6 +21,7 @@ export function initializeTTS() {
 export function speakText(
   text: string,
   onBoundary?: (word: string, charIndex: number, charLength: number) => void,
+  onEnd?: () => void,
 ) {
   if (!synth) {
     console.warn("SpeechSynthesis not initialized.");
@@ -67,6 +68,7 @@ export function speakText(
       currentBoundaryCallback = null;
       manualSpeaking = false;
       manualPaused = false;
+      if (onEnd) onEnd();
     }
   };
 
@@ -78,6 +80,7 @@ export function speakText(
       currentBoundaryCallback = null;
       manualSpeaking = false;
       manualPaused = false;
+      if (onEnd) onEnd();
     }
   };
 

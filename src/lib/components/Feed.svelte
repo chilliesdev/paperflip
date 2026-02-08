@@ -45,9 +45,15 @@
     currentCharIndex = -1;
     const currentSegment = segments[swiperInstance.realIndex];
     if (currentSegment) {
-      speakText(currentSegment, (_word, charIndex) => {
-        currentCharIndex = charIndex;
-      });
+      speakText(
+        currentSegment,
+        (_word, charIndex) => {
+          currentCharIndex = charIndex;
+        },
+        () => {
+          isPlaying = false;
+        },
+      );
       isPlaying = true;
     }
   }

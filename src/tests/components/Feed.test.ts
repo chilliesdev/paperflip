@@ -19,7 +19,7 @@ vi.mock("../../lib/audio", () => {
     initializeTTS: vi.fn(() => {
       initialized = true;
     }),
-    speakText: vi.fn(() => {
+    speakText: vi.fn((text, onBoundary, onEnd) => {
       if (!initialized) {
         console.warn("SpeechSynthesis not initialized.");
         return;
@@ -160,6 +160,7 @@ describe("Feed Component", () => {
       expect(audio.speakText).toHaveBeenCalledWith(
         "First Segment",
         expect.any(Function),
+        expect.any(Function),
       );
     });
   });
@@ -234,6 +235,7 @@ describe("Feed Component", () => {
       expect(audio.speakText).toHaveBeenCalledWith(
         "Segment 1",
         expect.any(Function),
+        expect.any(Function),
       ),
     );
 
@@ -254,6 +256,7 @@ describe("Feed Component", () => {
       expect(audio.stopTTS).toHaveBeenCalled();
       expect(audio.speakText).toHaveBeenCalledWith(
         "Segment 2",
+        expect.any(Function),
         expect.any(Function),
       );
     });
@@ -289,6 +292,41 @@ describe("Feed Component", () => {
       const helloSpan = screen.getByText("Hello");
       expect(helloSpan.tagName).toBe("SPAN");
       expect(helloSpan).toHaveClass("text-[#00ff88]");
+    });
+  });
+
+  it("pauses video when speech ends", async () => {
+    const segments = ["Test segment"];
+    render(Feed, { segments });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Verify video is playing
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+
+    // Get the onEnd callback
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const onEndCallback = mockCalls[0][2];
+    expect(onEndCallback).toBeTypeOf("function");
+
+    // Reset play/pause mocks
+    (HTMLMediaElement.prototype.play as any).mockClear();
+    (HTMLMediaElement.prototype.pause as any).mockClear();
+
+    // Trigger onEnd
+    onEndCallback();
+
+    // Verify video is paused
+    await waitFor(() => {
+      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
   });
 });

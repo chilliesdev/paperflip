@@ -273,6 +273,41 @@ describe("audio.ts", () => {
       speakText("New text");
       expect(cancelSpy).not.toHaveBeenCalled();
     });
+
+    it("calls onEnd callback when speech ends", () => {
+      const onEnd = vi.fn();
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+
+      speakText("Test", undefined, onEnd);
+
+      const utterance = speakSpy.mock
+        .calls[0][0] as MockSpeechSynthesisUtterance;
+
+      // Trigger onend
+      utterance.onend!();
+
+      expect(onEnd).toHaveBeenCalled();
+    });
+
+    it("calls onEnd callback when speech errors", () => {
+      const onEnd = vi.fn();
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+
+      speakText("Test", undefined, onEnd);
+
+      const utterance = speakSpy.mock
+        .calls[0][0] as MockSpeechSynthesisUtterance;
+
+      // Simulate error
+      const errorEvent = {
+        error: "network",
+        message: "Network error",
+      } as unknown as SpeechSynthesisErrorEvent;
+
+      utterance.onerror!(errorEvent);
+
+      expect(onEnd).toHaveBeenCalled();
+    });
   });
 
   describe("stopTTS", () => {
