@@ -123,8 +123,10 @@ describe("Feed Component", () => {
     // Check that slides are rendered
     const slides = screen.getAllByTestId("swiper-slide-mock");
     expect(slides).toHaveLength(2);
-    expect(slides[0]).toHaveTextContent("Segment 1");
-    expect(slides[1]).toHaveTextContent("Segment 2");
+    expect(slides[0]).toHaveTextContent(/Short 1 \/ 2/);
+    expect(slides[0]).toHaveTextContent(/Segment\s*1/);
+    expect(slides[1]).toHaveTextContent(/Short 2 \/ 2/);
+    expect(slides[1]).toHaveTextContent(/Segment\s*2/);
   });
 
   it("initializes TTS on mount", async () => {

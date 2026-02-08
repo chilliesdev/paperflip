@@ -5,53 +5,40 @@
   import { isLoading, loadingStatus } from "$lib/stores/loading";
   import { waitForVoices } from "$lib/audio";
   import { videoSources } from "$lib/constants";
+  import { videoAssetUrls } from "$lib/stores/assets";
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
 
   let { children } = $props();
 
   onMount(async () => {
+    if (Object.keys($videoAssetUrls).length > 0) {
+      isLoading.set(false);
+      return;
+    }
     try {
       loadingStatus.set("Initializing voices...");
       await waitForVoices();
 
       loadingStatus.set("Loading videos...");
-      const promises = videoSources.map((src) => {
-        return new Promise<void>((resolve) => {
-          const vid = document.createElement("video");
-          vid.src = src;
-          vid.preload = "auto";
-          vid.muted = true; // maximize auto-loading chance
+      const urls: Record<string, string> = {};
 
-          if (vid.readyState >= 3) {
-            resolve();
-            return;
-          }
-
-          const onCanPlay = () => {
-            vid.removeEventListener("canplay", onCanPlay);
-            vid.removeEventListener("error", onError);
-            resolve();
-          };
-          const onError = () => {
-            console.error("Failed to load", src);
-            vid.removeEventListener("canplay", onCanPlay);
-            vid.removeEventListener("error", onError);
-            resolve(); // Don't block app
-          };
-
-          vid.addEventListener("canplay", onCanPlay);
-          vid.addEventListener("error", onError);
-
-          // Timeout 8s
-          setTimeout(() => {
-            vid.removeEventListener("canplay", onCanPlay);
-            vid.removeEventListener("error", onError);
-            resolve();
-          }, 8000);
-        });
+      const promises = videoSources.map(async (src) => {
+        try {
+          const response = await fetch(src);
+          if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          urls[src] = url;
+        } catch (e) {
+          console.error(`Failed to fetch video: ${src}`, e);
+          // Fallback to original source if fetch fails
+          urls[src] = src;
+        }
       });
 
       await Promise.all(promises);
+      videoAssetUrls.set(urls);
     } catch (e) {
       console.error("Loading error", e);
     } finally {

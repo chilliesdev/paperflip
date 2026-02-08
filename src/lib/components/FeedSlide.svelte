@@ -9,10 +9,13 @@
   export let isPlaying: boolean = true;
   export let currentCharIndex: number;
   export let videoSource: string;
+  import { videoAssetUrls } from "$lib/stores/assets";
 
   let videoEl: HTMLVideoElement;
   let words: { word: string; start: number; end: number }[] = [];
   let currentWordIdx = -1;
+
+  $: cachedSource = $videoAssetUrls[videoSource] || videoSource;
 
   $: if (videoEl) {
     if (isActive && isPlaying) {
@@ -66,7 +69,7 @@
     <video
       bind:this={videoEl}
       class="w-full h-full object-cover opacity-80"
-      src={videoSource}
+      src={cachedSource}
       loop
       muted
       playsinline
@@ -114,7 +117,7 @@
                 : 'text-white/50'}"
           >
             {w.word}
-          </span>{" "}
+          </span>
         {/each}
       </div>
     </div>
