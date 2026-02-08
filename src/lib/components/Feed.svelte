@@ -9,17 +9,23 @@
     resumeTTS,
     isPaused,
   } from "$lib/audio";
+  import { updateDocumentProgress } from "$lib/database";
   import { videoSources } from "$lib/constants";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
   export let segments: string[] = [];
+  export let initialIndex: number = 0;
+  export let initialProgress: number = 0;
+  export let documentId: string = "";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swiperInstance: any;
   let currentCharIndex: number = -1;
-  let activeIndex = 0;
+  let activeIndex = initialIndex;
+  let currentSegmentProgress = 0;
   let isPlaying = false;
+  let isFirstPlay = true;
 
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
@@ -35,24 +41,53 @@
     if (segments.length > 0) {
       const [swiper] = e.detail;
       swiperInstance = swiper;
+      // Save progress of previous slide (which is technically just saving the *fact* we moved, usually with 0 progress for new slide)
+      // But we want to ensure we save the LAST known state before moving.
+      // However, usually moving to next slide resets progress to 0 for that new slide.
+      // So we save the NEW index and 0 progress.
       activeIndex = swiper.realIndex;
+      currentSegmentProgress = 0; // Reset progress for new slide
+      saveProgress(); // Persist the move immediately
       speakCurrentSlide();
+    }
+  }
+
+  function saveProgress() {
+    if (documentId) {
+      updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
     }
   }
 
   function speakCurrentSlide() {
     stopTTS(); // Stop any previous speech
     currentCharIndex = -1;
+
+    // Determine start index:
+    // If it's the very first play and we are on the initial index, use initialProgress.
+    // Otherwise, start from 0.
+    let startIndex = 0;
+    if (isFirstPlay && activeIndex === initialIndex) {
+      startIndex = initialProgress;
+      isFirstPlay = false;
+    }
+
+    currentSegmentProgress = startIndex;
     const currentSegment = segments[swiperInstance.realIndex];
     if (currentSegment) {
       speakText(
         currentSegment,
         (_word, charIndex) => {
           currentCharIndex = charIndex;
+          currentSegmentProgress = charIndex;
         },
         () => {
           isPlaying = false;
+          // When finished, set progress to the end of segment
+          // This ensures granular progress reflects completion
+          currentSegmentProgress = currentSegment.length;
+          saveProgress();
         },
+        startIndex,
       );
       isPlaying = true;
     }
@@ -62,6 +97,7 @@
     if (isPlaying) {
       pauseTTS();
       isPlaying = false;
+      saveProgress(); // Save when paused
     } else {
       if (isPaused()) {
         resumeTTS();
@@ -80,6 +116,7 @@
 
   onDestroy(() => {
     stopTTS();
+    saveProgress(); // Save on exit
   });
 </script>
 
@@ -99,6 +136,7 @@
       slides-per-view={1}
       space-between={0}
       mousewheel={true}
+      initial-slide={initialIndex}
       class="mySwiper w-full h-full"
       data-testid="swiper-mock"
       on:swiperinit={handleSwiperInit}

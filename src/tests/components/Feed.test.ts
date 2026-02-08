@@ -8,6 +8,7 @@ import {
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Feed from "../../lib/components/Feed.svelte";
 import * as audio from "../../lib/audio";
+import * as database from "../../lib/database";
 
 // Mock the audio module
 vi.mock("../../lib/audio", () => {
@@ -62,6 +63,11 @@ vi.mock("../../lib/audio", () => {
   };
 });
 
+// Mock database module
+vi.mock("../../lib/database", () => ({
+  updateDocumentProgress: vi.fn(),
+}));
+
 // Mock Swiper Element bundle
 vi.mock("swiper/element/bundle", () => ({
   register: vi.fn(),
@@ -100,6 +106,237 @@ describe("Feed Component", () => {
 
   afterEach(() => {
     cleanup();
+  });
+
+  it("TC-FEED-001: Initialize with Saved Progress", async () => {
+    const segments = ["Segment 0", "Segment 1", "Segment 2"];
+    render(Feed, {
+      segments,
+      initialIndex: 2,
+      initialProgress: 50,
+      documentId: "doc-1",
+    });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    // Simulate swiper init with index 2
+    mockSwiperInstance.activeIndex = 2;
+    mockSwiperInstance.realIndex = 2;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => {
+      // Should speak "Segment 2" starting from index 50
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 2",
+        expect.any(Function),
+        expect.any(Function),
+        50,
+      );
+    });
+  });
+
+  it("TC-FEED-002: Save on Pause", async () => {
+    const segments = ["Segment 1"];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get callback to simulate progress
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const boundaryCallback = mockCalls[mockCalls.length - 1][1];
+
+    // Simulate reaching char index 100
+    boundaryCallback("word", 100);
+
+    // Click to pause (toggle)
+    fireEvent.click(swiper);
+
+    await waitFor(() => {
+      expect(audio.pauseTTS).toHaveBeenCalled();
+      expect(database.updateDocumentProgress).toHaveBeenCalledWith(
+        "doc-1",
+        0,
+        100,
+      );
+    });
+  });
+
+  it("TC-FEED-003: Save on Slide Change", async () => {
+    const segments = ["Segment 1", "Segment 2"];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() =>
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 1",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Number),
+      ),
+    );
+
+    // Reset calls
+    (database.updateDocumentProgress as any).mockClear();
+    (audio.stopTTS as any).mockClear();
+
+    // Swipe to slide 2 (index 1)
+    mockSwiperInstance.realIndex = 1;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => {
+      // 1. Should save progress for new slide (index=1, progress=0)
+      // Note: Implementation details show it saves the NEW index with 0 progress.
+      expect(database.updateDocumentProgress).toHaveBeenCalledWith(
+        "doc-1",
+        1,
+        0,
+      );
+
+      // 2. TTS stops for slide 1 and starts for slide 2 from beginning
+      expect(audio.stopTTS).toHaveBeenCalled();
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 2",
+        expect.any(Function),
+        expect.any(Function),
+        0, // Starts from 0
+      );
+    });
+  });
+
+  it("TC-FEED-004: Save on Unmount", async () => {
+    const segments = ["Segment 1", "Segment 2", "Segment 3"];
+    // Starting at slide 3 (index 2)
+    const { unmount } = render(Feed, {
+      segments,
+      initialIndex: 2,
+      documentId: "doc-1",
+    });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 2;
+    mockSwiperInstance.activeIndex = 2;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get callback and simulate progress
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const boundaryCallback = mockCalls[mockCalls.length - 1][1];
+    boundaryCallback("word", 25);
+
+    // Unmount
+    unmount();
+
+    // Should call updateDocumentProgress with last known index and progress
+    expect(database.updateDocumentProgress).toHaveBeenCalledWith(
+      "doc-1",
+      2,
+      25,
+    );
+  });
+
+  it("TC-FEED-005: Resume Only Once", async () => {
+    const segments = ["Segment 0", "Segment 1"];
+    render(Feed, {
+      segments,
+      initialIndex: 0,
+      initialProgress: 50,
+      documentId: "doc-1",
+    });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    mockSwiperInstance.activeIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // 1. First play of slide 0 starts at 50
+    await waitFor(() => {
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 0",
+        expect.any(Function),
+        expect.any(Function),
+        50,
+      );
+    });
+
+    // Reset calls
+    (audio.speakText as any).mockClear();
+
+    // Swipe to slide 1
+    mockSwiperInstance.realIndex = 1;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => {
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 1",
+        expect.any(Function),
+        expect.any(Function),
+        0,
+      );
+    });
+
+    // Reset calls
+    (audio.speakText as any).mockClear();
+
+    // Swipe back to slide 0
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // 2. Second play of slide 0 starts at 0 (beginning)
+    await waitFor(() => {
+      expect(audio.speakText).toHaveBeenCalledWith(
+        "Segment 0",
+        expect.any(Function),
+        expect.any(Function),
+        0, // Should be 0, not 50
+      );
+    });
   });
 
   it("renders 'Upload a PDF' message when segments are empty", () => {
@@ -162,6 +399,7 @@ describe("Feed Component", () => {
         "First Segment",
         expect.any(Function),
         expect.any(Function),
+        expect.any(Number),
       );
     });
   });
@@ -237,6 +475,7 @@ describe("Feed Component", () => {
         "Segment 1",
         expect.any(Function),
         expect.any(Function),
+        expect.any(Number),
       ),
     );
 
@@ -259,6 +498,7 @@ describe("Feed Component", () => {
         "Segment 2",
         expect.any(Function),
         expect.any(Function),
+        expect.any(Number),
       );
       // Indicator should update
       expect(screen.getByText(/Short 2 \/ 2/)).toBeInTheDocument();
@@ -330,6 +570,38 @@ describe("Feed Component", () => {
     // Verify video is paused
     await waitFor(() => {
       expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+    });
+  });
+
+  it("TC-FEED-006: Save 100% progress on segment end", async () => {
+    const segments = ["Segment 1"];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get the onEnd callback
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const onEndCallback = mockCalls[0][2];
+
+    // Trigger onEnd
+    onEndCallback();
+
+    // Should save 100% progress (length of "Segment 1" is 9)
+    await waitFor(() => {
+      expect(database.updateDocumentProgress).toHaveBeenCalledWith(
+        "doc-1",
+        0,
+        9,
+      );
     });
   });
 });
