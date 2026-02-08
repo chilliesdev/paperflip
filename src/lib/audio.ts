@@ -123,3 +123,31 @@ export function resetTTS() {
   manualSpeaking = false;
   manualPaused = false;
 }
+
+export function waitForVoices(): Promise<void> {
+  return new Promise((resolve) => {
+    initializeTTS(); // Ensure synth is initialized
+
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      resolve(); // Not supported, just proceed
+      return;
+    }
+
+    if (synth.getVoices().length > 0) {
+      resolve();
+      return;
+    }
+
+    const handler = () => {
+      synth.removeEventListener("voiceschanged", handler);
+      resolve();
+    };
+    synth.addEventListener("voiceschanged", handler);
+
+    // Fallback timeout in case voiceschanged never fires
+    setTimeout(() => {
+      synth.removeEventListener("voiceschanged", handler);
+      resolve();
+    }, 2000);
+  });
+}

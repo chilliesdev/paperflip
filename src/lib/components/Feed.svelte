@@ -11,6 +11,7 @@
     isSpeaking,
     isPaused,
   } from "$lib/audio";
+  import { videoSources } from "$lib/constants";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
   // Import Swiper styles
@@ -18,12 +19,6 @@
   import "swiper/css/mousewheel";
 
   export let segments: string[] = [];
-
-  const videoSources = [
-    "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
-    "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
-    // Add more video paths here
-  ];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swiperInstance: any;
