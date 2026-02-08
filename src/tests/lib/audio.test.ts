@@ -182,7 +182,7 @@ describe("audio.ts", () => {
       } as SpeechSynthesisEvent;
 
       utterance.onboundary!(boundaryEvent);
-      expect(onBoundary).toHaveBeenCalledWith("Hello");
+      expect(onBoundary).toHaveBeenCalledWith("Hello", 0, 5);
 
       // Simulate boundary event for the word "world"
       const boundaryEvent2 = {
@@ -192,7 +192,7 @@ describe("audio.ts", () => {
       } as SpeechSynthesisEvent;
 
       utterance.onboundary!(boundaryEvent2);
-      expect(onBoundary).toHaveBeenCalledWith("world");
+      expect(onBoundary).toHaveBeenCalledWith("world", 6, 5);
       expect(onBoundary).toHaveBeenCalledTimes(2);
     });
 
@@ -453,7 +453,7 @@ describe("audio.ts", () => {
 
       // Only callback2 should be called (callback1 was cleared when utterance was cancelled)
       expect(callback1).not.toHaveBeenCalled();
-      expect(callback2).toHaveBeenCalledWith("Second");
+      expect(callback2).toHaveBeenCalledWith("Second", 0, 6);
     });
 
     it("handles race condition where previous utterance onend fires after new speakText", () => {

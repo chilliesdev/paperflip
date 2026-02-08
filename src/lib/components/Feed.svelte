@@ -28,32 +28,60 @@
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swiperInstance: any;
   let currentWord: string = "";
+  let currentCharIndex: number = -1;
   let currentVideoIndex: number = 0;
   let videoElement: HTMLVideoElement;
 
   // Non-reactive declaration for currentVideoSrc since index is static for now
   const currentVideoSrc = videoSources[currentVideoIndex];
 
-  function getHighlightedText(text: string, highlightWord: string): string {
-    if (!highlightWord) return text;
-    const words = text.split(/(\s+)/); // Split by spaces, keeping spaces
-    return words
-      .map((word) => {
-        // Basic sanitization for word comparison
-        const cleanedWord = word
-          .replace(/[.,!?;:]/g, "")
-          .trim()
-          .toLowerCase();
-        const cleanedHighlightWord = highlightWord
-          .replace(/[.,!?;:]/g, "")
-          .trim()
-          .toLowerCase();
-        if (cleanedWord === cleanedHighlightWord) {
-          return `<span class="bg-[yellow] text-black px-[2px] rounded-[3px]">${word}</span>`;
+  function getSubtitleDisplay(text: string, charIndex: number): string {
+    if (charIndex === -1) {
+      // Show first 3 words by default if not started
+      return text.trim().split(/\s+/).slice(0, 3).join(" ");
+    }
+
+    // 1. Find all words and their positions
+    const words: { word: string; start: number; end: number }[] = [];
+    const wordRegex = /\S+/g;
+    let match;
+    while ((match = wordRegex.exec(text)) !== null) {
+      words.push({
+        word: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+
+    if (words.length === 0) return "";
+
+    // 2. Find current word index
+    let currentWordIdx = words.findIndex(
+      (w) => charIndex >= w.start && charIndex < w.end,
+    );
+    if (currentWordIdx === -1) {
+      // Fallback: find the closest word
+      currentWordIdx = words.findIndex((w) => charIndex < w.start);
+      if (currentWordIdx === -1) currentWordIdx = words.length - 1;
+    }
+
+    // 3. Static chunking (TikTok style): 3 words at a time
+    const chunkSize = 3;
+    const groupIdx = Math.floor(currentWordIdx / chunkSize);
+    const startIdx = groupIdx * chunkSize;
+    const endIdx = Math.min(startIdx + chunkSize, words.length);
+
+    const windowWords = words.slice(startIdx, endIdx);
+
+    return windowWords
+      .map((w, idx) => {
+        const isCurrent = startIdx + idx === currentWordIdx;
+        if (isCurrent) {
+          return `<span class="bg-[yellow] text-black px-[2px] rounded-[3px]">${w.word}</span>`;
         }
-        return word;
+        return w.word;
       })
-      .join("");
+      .join(" ");
   }
 
   function handleSwiperInit(e: CustomEvent) {
@@ -76,10 +104,12 @@
   function speakCurrentSlide() {
     stopTTS(); // Stop any previous speech
     currentWord = ""; // Reset current word highlight
+    currentCharIndex = -1;
     const currentSegment = segments[swiperInstance.realIndex];
     if (currentSegment) {
-      speakText(currentSegment, (word) => {
+      speakText(currentSegment, (word, charIndex) => {
         currentWord = word;
+        currentCharIndex = charIndex;
       });
     }
   }
@@ -148,7 +178,7 @@
             class="text-center text-2xl text-white z-10 p-4 bg-black bg-opacity-50 rounded"
           >
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html getHighlightedText(segment, currentWord)}
+            {@html getSubtitleDisplay(segment, currentCharIndex)}
           </div>
         </SwiperSlide>
       {/each}

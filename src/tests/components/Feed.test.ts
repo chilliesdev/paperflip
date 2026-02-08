@@ -234,7 +234,7 @@ describe("Feed Component", () => {
     expect(boundaryCallback).toBeTypeOf("function");
 
     // Simulate word boundary for "Hello"
-    boundaryCallback("Hello");
+    boundaryCallback("Hello", 0, 5);
 
     // Wait for update
     await waitFor(() => {

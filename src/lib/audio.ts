@@ -2,7 +2,9 @@
 
 let synth: SpeechSynthesis;
 let utterance: SpeechSynthesisUtterance | null = null;
-let currentBoundaryCallback: ((word: string) => void) | null = null;
+let currentBoundaryCallback:
+  | ((word: string, charIndex: number, charLength: number) => void)
+  | null = null;
 
 // Manual state tracking to avoid browser inconsistencies
 let manualSpeaking = false;
@@ -16,7 +18,10 @@ export function initializeTTS() {
   }
 }
 
-export function speakText(text: string, onBoundary?: (word: string) => void) {
+export function speakText(
+  text: string,
+  onBoundary?: (word: string, charIndex: number, charLength: number) => void,
+) {
   if (!synth) {
     console.warn("SpeechSynthesis not initialized.");
     return;
@@ -44,7 +49,7 @@ export function speakText(text: string, onBoundary?: (word: string) => void) {
           event.charIndex,
           event.charIndex + event.charLength,
         );
-        currentBoundaryCallback(word);
+        currentBoundaryCallback(word, event.charIndex, event.charLength);
       }
     };
   } else {
