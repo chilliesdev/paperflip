@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Volume2, ChevronUp } from "lucide-svelte";
+  import { Volume2, VolumeX, ChevronUp } from "lucide-svelte";
   import { scale } from "svelte/transition";
 
   export let segment: string;
@@ -10,6 +10,7 @@
   export let videoSource: string;
   import { videoAssetUrls } from "$lib/stores/assets";
   import { wordCount } from "$lib/constants";
+  import { isMuted } from "$lib/stores/audio";
 
   let videoEl: HTMLVideoElement;
   let words: { word: string; start: number; end: number }[] = [];
@@ -67,6 +68,11 @@
       ? 0
       : Math.floor(currentWordIdx / wordCount) * wordCount;
   $: visibleWords = words.slice(startIndex, startIndex + wordCount);
+
+  function toggleMute(e: MouseEvent) {
+    e.stopPropagation();
+    isMuted.update((v) => !v);
+  }
 </script>
 
 <div class="w-full h-full relative overflow-hidden bg-black">
@@ -77,7 +83,7 @@
       class="w-full h-full object-cover opacity-80"
       src={cachedSource}
       loop
-      muted
+      muted={$isMuted}
       playsinline
     ></video>
     <!-- Gradient Overlay -->
@@ -88,13 +94,18 @@
 
   <!-- Floating TTS Indicator (Top Right) -->
   {#if isActive && currentWordIdx > -1}
-    <div transition:scale class="absolute top-8 right-8 z-20">
-      <div
-        class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg shadow-brand-primary/30 animate-pulse"
-      >
+    <button
+      transition:scale
+      class="absolute top-8 right-8 z-20 w-14 h-14 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg shadow-brand-primary/30 animate-pulse hover:scale-110 transition-transform active:scale-95"
+      on:click={toggleMute}
+      aria-label={$isMuted ? "Unmute" : "Mute"}
+    >
+      {#if $isMuted}
+        <VolumeX class="w-6 h-6 text-black" />
+      {:else}
         <Volume2 class="w-6 h-6 text-black" />
-      </div>
-    </div>
+      {/if}
+    </button>
   {/if}
 
   <!-- Glassmorphism Text Container -->
