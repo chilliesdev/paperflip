@@ -146,6 +146,26 @@ describe("FeedSlide Component", () => {
       expect(hello).not.toHaveClass("text-brand-primary");
       expect(world).not.toHaveClass("text-brand-primary");
     });
+
+    it("highlights a range of words when highlightEndIndex is provided (Dictation Mode)", () => {
+      // "Hello" (0-5), "world" (6-11).
+      // "Hello world" length is 11.
+      // Range: 0 to 11.
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 0,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        highlightEndIndex: 11,
+      });
+
+      const hello = screen.getByText("Hello");
+      const world = screen.getByText("world");
+
+      expect(hello).toHaveClass("text-brand-primary");
+      expect(world).toHaveClass("text-brand-primary");
+    });
   });
 
   describe("Video Playback", () => {
