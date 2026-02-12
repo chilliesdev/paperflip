@@ -19,6 +19,23 @@ const config = {
       precompress: false,
       strict: true,
     }),
+    csp: {
+      directives: {
+        "default-src": ["self"],
+        "script-src": ["self"],
+        "style-src": ["self", "unsafe-inline"],
+        "img-src": ["self", "data:", "blob:"],
+        "media-src": [
+          "self",
+          "https://hcidefilvllxloywohwf.supabase.co",
+          "blob:",
+        ],
+        "connect-src": ["self", "https://hcidefilvllxloywohwf.supabase.co"],
+        "worker-src": ["self", "blob:"],
+        "object-src": ["none"],
+        "base-uri": ["self"],
+      },
+    },
   },
 };
 
