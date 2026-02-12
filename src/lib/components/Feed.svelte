@@ -185,6 +185,13 @@
     }
   }
 
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      if (e.key === " ") e.preventDefault();
+      togglePlayback();
+    }
+  }
+
   onMount(async () => {
     register();
     initializeTTS();
@@ -219,6 +226,9 @@
       on:swiperinit={handleSwiperInit}
       on:swiperslidechange={handleSlideChange}
       on:click={togglePlayback}
+      on:keydown={handleKeydown}
+      role="button"
+      tabindex="0"
     >
       {#each segments as segment, i (i)}
         <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
