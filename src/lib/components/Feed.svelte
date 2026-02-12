@@ -26,6 +26,7 @@
   let currentSegmentProgress = 0;
   let isPlaying = false;
   let isFirstPlay = true;
+  let saveTimeout: ReturnType<typeof setTimeout> | undefined;
 
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
@@ -52,9 +53,21 @@
     }
   }
 
-  function saveProgress() {
-    if (documentId) {
+  function saveProgress(immediate = false) {
+    if (!documentId) return;
+
+    if (immediate) {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = undefined;
+      }
       updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
+    } else {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
+        saveTimeout = undefined;
+      }, 1000);
     }
   }
 
@@ -85,7 +98,7 @@
           // When finished, set progress to the end of segment
           // This ensures granular progress reflects completion
           currentSegmentProgress = currentSegment.length;
-          saveProgress();
+          saveProgress(true);
         },
         startIndex,
       );
@@ -97,7 +110,7 @@
     if (isPlaying) {
       pauseTTS();
       isPlaying = false;
-      saveProgress(); // Save when paused
+      saveProgress(true); // Save when paused
     } else {
       if (isPaused()) {
         resumeTTS();
@@ -116,7 +129,7 @@
 
   onDestroy(() => {
     stopTTS();
-    saveProgress(); // Save on exit
+    saveProgress(true); // Save on exit
   });
 </script>
 
