@@ -144,7 +144,6 @@ describe("Feed Dictation Mode", () => {
     expect(audio.speakText).toHaveBeenCalledTimes(1);
 
     // Get the boundary callback
-
     const boundaryCallback = (audio.speakText as any).mock.calls[0][1];
 
     // Fire a boundary event before timeout
@@ -185,7 +184,6 @@ describe("Feed Dictation Mode", () => {
     );
 
     // Get the onEnd callback for the first sentence
-
     const onEnd1 = (audio.speakText as any).mock.calls[0][2];
 
     // Trigger end of first sentence
