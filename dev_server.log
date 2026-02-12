@@ -1,9 +1,0 @@
-
-> paperflip@0.0.1 dev
-> vite dev --port 3001
-
-
-  VITE v7.3.1  ready in 1380 ms
-
-  ➜  Local:   http://localhost:3001/
-  ➜  Network: use --host to expose
