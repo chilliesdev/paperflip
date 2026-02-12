@@ -133,7 +133,9 @@
             : globalIdx === currentWordIdx}
           {@const past = w.end <= currentCharIndex}
           <span
-            class="inline-block transition-all duration-200 {active ? 'mx-1.5' : 'mx-[2px]'} {active
+            class="inline-block transition-all duration-200 {active
+              ? 'mx-1.5'
+              : 'mx-[2px]'} {active
               ? 'text-brand-primary font-bold scale-110 drop-shadow-[0_0_12px_var(--brand-primary)]'
               : past
                 ? 'text-white/80'

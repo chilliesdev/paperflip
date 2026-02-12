@@ -14,7 +14,6 @@ import { get } from "svelte/store";
 
 // Mock audio store
 vi.mock("../../lib/stores/audio", async (importOriginal) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const actual: any = await importOriginal();
   const { writable } = await import("svelte/store");
   return {
@@ -66,7 +65,6 @@ vi.mock("swiper", () => ({
 }));
 
 describe("Feed Dictation Mode", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockSwiperInstance: any = {
     realIndex: 0,
     activeIndex: 0,
@@ -146,7 +144,6 @@ describe("Feed Dictation Mode", () => {
     expect(audio.speakText).toHaveBeenCalledTimes(1);
 
     // Get the boundary callback
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const boundaryCallback = (audio.speakText as any).mock.calls[0][1];
 
     // Fire a boundary event before timeout
@@ -187,7 +184,6 @@ describe("Feed Dictation Mode", () => {
     );
 
     // Get the onEnd callback for the first sentence
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onEnd1 = (audio.speakText as any).mock.calls[0][2];
 
     // Trigger end of first sentence
