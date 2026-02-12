@@ -166,6 +166,28 @@ describe("FeedSlide Component", () => {
       expect(hello).toHaveClass("text-brand-primary");
       expect(world).toHaveClass("text-brand-primary");
     });
+
+    it("shows entire long sentence in Dictation Mode regardless of wordCount limit", () => {
+      // wordCount is 8.
+      // Create a sentence with 10 words.
+      const longSentence = "one two three four five six seven eight nine ten";
+      // Length calculation: 3+1+3+1+5+1+4+1+4+1+3+1+5+1+5+1+4+1+3 = 48 (approx)
+
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: longSentence,
+        currentCharIndex: 0,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        highlightEndIndex: longSentence.length,
+      });
+
+      // All words should be visible
+      expect(screen.getByText("one")).toBeInTheDocument();
+      expect(screen.getByText("eight")).toBeInTheDocument(); // 8th word
+      expect(screen.getByText("nine")).toBeInTheDocument(); // 9th word - usually hidden
+      expect(screen.getByText("ten")).toBeInTheDocument(); // 10th word - usually hidden
+    });
   });
 
   describe("Video Playback", () => {

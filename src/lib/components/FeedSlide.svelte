@@ -68,7 +68,15 @@
     currentWordIdx === -1
       ? 0
       : Math.floor(currentWordIdx / wordCount) * wordCount;
-  $: visibleWords = words.slice(startIndex, startIndex + wordCount);
+
+  // In dictation mode, we want to show all words in the current sentence (range).
+  // If highlightEndIndex is set, find all words within [currentCharIndex, highlightEndIndex].
+  $: visibleWords =
+    highlightEndIndex !== undefined
+      ? words.filter(
+          (w) => w.start >= currentCharIndex && w.end <= highlightEndIndex,
+        )
+      : words.slice(startIndex, startIndex + wordCount);
 
   function toggleMute(e: MouseEvent) {
     e.stopPropagation();
