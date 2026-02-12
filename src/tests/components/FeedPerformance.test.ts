@@ -102,7 +102,10 @@ describe("Feed Performance", () => {
       // Now index 5 is active. Range +/- 2 means 3, 4, 5, 6, 7.
       // So 5 video elements should be present.
       const videos = document.querySelectorAll("video");
-      expect(videos.length, `Expected <= 5 videos but found ${videos.length}`).toBeLessThanOrEqual(5);
+      expect(
+        videos.length,
+        `Expected <= 5 videos but found ${videos.length}`,
+      ).toBeLessThanOrEqual(5);
 
       // Verify specific segments are present/absent
       // Segment 5 should be present
