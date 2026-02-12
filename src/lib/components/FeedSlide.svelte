@@ -7,6 +7,7 @@
   export let isActive: boolean;
   export let isPlaying: boolean = true;
   export let currentCharIndex: number;
+  export let highlightEndIndex: number | undefined = undefined;
   export let videoSource: string;
   import { videoAssetUrls } from "$lib/stores/assets";
   import { wordCount } from "$lib/constants";
@@ -67,7 +68,15 @@
     currentWordIdx === -1
       ? 0
       : Math.floor(currentWordIdx / wordCount) * wordCount;
-  $: visibleWords = words.slice(startIndex, startIndex + wordCount);
+
+  // In dictation mode, we want to show all words in the current sentence (range).
+  // If highlightEndIndex is set, find all words within [currentCharIndex, highlightEndIndex].
+  $: visibleWords =
+    highlightEndIndex !== undefined
+      ? words.filter(
+          (w) => w.start >= currentCharIndex && w.end <= highlightEndIndex,
+        )
+      : words.slice(startIndex, startIndex + wordCount);
 
   function toggleMute(e: MouseEvent) {
     e.stopPropagation();
@@ -118,10 +127,13 @@
       <div class="text-base leading-relaxed text-center font-medium">
         {#each visibleWords as w, i (startIndex + i)}
           {@const globalIdx = startIndex + i}
-          {@const active = globalIdx === currentWordIdx}
-          {@const past = globalIdx < currentWordIdx}
+          {@const isDictation = highlightEndIndex !== undefined}
+          {@const active = isDictation
+            ? w.start >= currentCharIndex && w.end <= (highlightEndIndex ?? 0)
+            : globalIdx === currentWordIdx}
+          {@const past = w.end <= currentCharIndex}
           <span
-            class="inline-block transition-all duration-200 mx-[2px] {active
+            class="inline-block transition-all duration-200 {active ? 'mx-1.5' : 'mx-[2px]'} {active
               ? 'text-brand-primary font-bold scale-110 drop-shadow-[0_0_12px_var(--brand-primary)]'
               : past
                 ? 'text-white/80'
