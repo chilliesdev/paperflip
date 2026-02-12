@@ -3,10 +3,12 @@
   import { getDb, upsertDocument } from "$lib/database";
   import { segmentText } from "$lib/segmenter";
   import PdfUploader from "$lib/components/PdfUploader.svelte";
+  import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
   let isLoading = false;
+  let errorMessage = "";
 
   async function handlePdfParsed({
     text,
@@ -40,9 +42,9 @@
       goto(feedUrl);
     } catch (error) {
       console.error("Error processing PDF:", error);
-      const errorMessage =
+      const errorMsg =
         error instanceof Error ? error.message : JSON.stringify(error);
-      alert(`Failed to process PDF: ${errorMessage}`);
+      errorMessage = `Failed to process PDF: ${errorMsg}`;
     } finally {
       isLoading = false;
     }
@@ -50,7 +52,7 @@
 
   function handlePdfError({ error }: { error: string }) {
     console.error("PDF Upload Error:", error);
-    alert(`Error: ${error}`);
+    errorMessage = `Error: ${error}`;
     isLoading = false;
   }
 
@@ -78,5 +80,14 @@
         onLoadDocument={handleLoadDocument}
       />
     </div>
+  {/if}
+
+  {#if errorMessage}
+    <ErrorMessage
+      message={errorMessage}
+      onClear={() => {
+        errorMessage = "";
+      }}
+    />
   {/if}
 </div>

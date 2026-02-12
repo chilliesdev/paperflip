@@ -89,9 +89,9 @@ describe("Root Page (+page.svelte)", () => {
     fireEvent.click(screen.getByTestId("trigger-parsed"));
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(
-        "Failed to process PDF: DB Error",
-      );
+      expect(
+        screen.getByText("Failed to process PDF: DB Error"),
+      ).toBeInTheDocument();
     });
 
     // Should revert loading state
@@ -104,7 +104,7 @@ describe("Root Page (+page.svelte)", () => {
     fireEvent.click(screen.getByTestId("trigger-error"));
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith("Error: Mock Error");
+      expect(screen.getByText("Error: Mock Error")).toBeInTheDocument();
     });
   });
 
