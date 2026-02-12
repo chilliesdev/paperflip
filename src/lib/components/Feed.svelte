@@ -145,14 +145,19 @@
     >
       {#each segments as segment, i (i)}
         <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
-          <FeedSlide
-            {segment}
-            index={i}
-            isActive={i === activeIndex}
-            {isPlaying}
-            currentCharIndex={i === activeIndex ? currentCharIndex : -1}
-            videoSource={videoSources[i % videoSources.length]}
-          />
+          {#if Math.abs(i - activeIndex) <= 2}
+            <FeedSlide
+              {segment}
+              index={i}
+              isActive={i === activeIndex}
+              {isPlaying}
+              currentCharIndex={i === activeIndex ? currentCharIndex : -1}
+              videoSource={videoSources[i % videoSources.length]}
+            />
+          {:else}
+            <!-- Render placeholder for off-screen slides to save memory -->
+            <div class="w-full h-full bg-black"></div>
+          {/if}
         </swiper-slide>
       {/each}
     </swiper-container>
