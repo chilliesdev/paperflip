@@ -146,6 +146,77 @@ describe("FeedSlide Component", () => {
       expect(hello).not.toHaveClass("text-brand-primary");
       expect(world).not.toHaveClass("text-brand-primary");
     });
+
+    it("highlights a range of words when highlightEndIndex is provided (Dictation Mode)", () => {
+      // "Hello" (0-5), "world" (6-11).
+      // "Hello world" length is 11.
+      // Range: 0 to 11.
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 0,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        highlightEndIndex: 11,
+      });
+
+      const hello = screen.getByText("Hello");
+      const world = screen.getByText("world");
+
+      expect(hello).toHaveClass("text-brand-primary");
+      expect(world).toHaveClass("text-brand-primary");
+    });
+
+    it("shows entire long sentence in Dictation Mode regardless of wordCount limit", () => {
+      // wordCount is 8.
+      // Create a sentence with 10 words.
+      const longSentence = "one two three four five six seven eight nine ten";
+      // Length calculation: 3+1+3+1+5+1+4+1+4+1+3+1+5+1+5+1+4+1+3 = 48 (approx)
+
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: longSentence,
+        currentCharIndex: 0,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        highlightEndIndex: longSentence.length,
+      });
+
+      // All words should be visible
+      expect(screen.getByText("one")).toBeInTheDocument();
+      expect(screen.getByText("eight")).toBeInTheDocument(); // 8th word
+      expect(screen.getByText("nine")).toBeInTheDocument(); // 9th word - usually hidden
+      expect(screen.getByText("ten")).toBeInTheDocument(); // 10th word - usually hidden
+    });
+
+    it("applies wider margin to active words", () => {
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 0,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        highlightEndIndex: 11,
+      });
+
+      const hello = screen.getByText("Hello");
+      // Active words should have mx-1.5 to compensate for scale-110
+      expect(hello).toHaveClass("mx-1.5");
+      expect(hello).not.toHaveClass("mx-[2px]");
+    });
+
+    it("applies narrow margin to inactive words", () => {
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: -1,
+      });
+
+      const hello = screen.getByText("Hello");
+      // Inactive words should have mx-[2px]
+      expect(hello).toHaveClass("mx-[2px]");
+      expect(hello).not.toHaveClass("mx-1.5");
+    });
   });
 
   describe("Video Playback", () => {

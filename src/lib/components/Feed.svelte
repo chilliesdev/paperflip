@@ -9,6 +9,8 @@
     resumeTTS,
     isPaused,
   } from "$lib/audio";
+  import { isDictationMode } from "$lib/stores/audio";
+  import { splitSentences } from "$lib/segmenter";
   import { updateDocumentProgress } from "$lib/database";
   import { videoSources } from "$lib/constants";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
@@ -22,11 +24,12 @@
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swiperInstance: any;
   let currentCharIndex: number = -1;
+  let highlightEndIndex: number | undefined = undefined;
   let activeIndex = initialIndex;
   let currentSegmentProgress = 0;
   let isPlaying = false;
   let isFirstPlay = true;
-  let saveTimeout: ReturnType<typeof setTimeout> | undefined;
+  let boundaryCheckTimeout: ReturnType<typeof setTimeout>;
 
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
@@ -73,7 +76,9 @@
 
   function speakCurrentSlide() {
     stopTTS(); // Stop any previous speech
+    if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
     currentCharIndex = -1;
+    highlightEndIndex = undefined;
 
     // Determine start index:
     // If it's the very first play and we are on the initial index, use initialProgress.
@@ -86,24 +91,94 @@
 
     currentSegmentProgress = startIndex;
     const currentSegment = segments[swiperInstance.realIndex];
-    if (currentSegment) {
-      speakText(
-        currentSegment,
-        (_word, charIndex) => {
-          currentCharIndex = charIndex;
-          currentSegmentProgress = charIndex;
-        },
-        () => {
-          isPlaying = false;
-          // When finished, set progress to the end of segment
-          // This ensures granular progress reflects completion
-          currentSegmentProgress = currentSegment.length;
-          saveProgress(true);
-        },
-        startIndex,
-      );
-      isPlaying = true;
+    if (!currentSegment) return;
+
+    if ($isDictationMode) {
+      speakDictation(currentSegment, startIndex);
+    } else {
+      speakKaraoke(currentSegment, startIndex);
     }
+  }
+
+  function speakKaraoke(text: string, startIndex: number) {
+    let boundaryFired = false;
+
+    // Start checking for boundary events support
+    boundaryCheckTimeout = setTimeout(() => {
+      if (!boundaryFired && isPlaying) {
+        console.warn("Boundary events missing, switching to Dictation Mode");
+        stopTTS();
+        isDictationMode.set(true);
+        speakCurrentSlide(); // Restart in dictation mode
+      }
+    }, 1500);
+
+    speakText(
+      text,
+      (_word, charIndex) => {
+        boundaryFired = true;
+        if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
+        currentCharIndex = charIndex;
+        currentSegmentProgress = charIndex;
+      },
+      () => {
+        if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
+        isPlaying = false;
+        // When finished, set progress to the end of segment
+        // This ensures granular progress reflects completion
+        currentSegmentProgress = text.length;
+        saveProgress();
+      },
+      startIndex,
+    );
+    isPlaying = true;
+  }
+
+  function speakDictation(text: string, startIndex: number) {
+    const sentences = splitSentences(text);
+    // Find sentences that haven't finished yet (end > startIndex)
+    const sentenceQueue = sentences.filter((s) => s.end > startIndex);
+    playNextSentence(sentenceQueue, startIndex);
+  }
+
+  function playNextSentence(
+    queue: { text: string; start: number; end: number }[],
+    originalStartIndex: number,
+  ) {
+    if (queue.length === 0) {
+      isPlaying = false;
+      // We assume completion of the segment
+      currentSegmentProgress = segments[swiperInstance.realIndex].length;
+      saveProgress();
+      return;
+    }
+
+    const currentSentence = queue[0];
+    const remaining = queue.slice(1);
+
+    // Update Highlight: highlight the whole sentence
+    currentCharIndex = currentSentence.start;
+    highlightEndIndex = currentSentence.end;
+    currentSegmentProgress = currentSentence.start;
+
+    // Calculate offset if we are resuming mid-sentence
+    // If originalStartIndex is within this sentence, start from there.
+    // Else (for subsequent sentences, we don't have an offset
+    const offset = Math.max(0, originalStartIndex - currentSentence.start);
+
+    isPlaying = true;
+
+    speakText(
+      currentSentence.text,
+      undefined, // No boundary needed
+      () => {
+        // On end of this sentence
+        if (!isPlaying) return; // If stopped externally
+        // For subsequent sentences, we don't have an offset
+        playNextSentence(remaining, 0);
+      },
+      offset,
+    );
   }
 
   function togglePlayback() {
@@ -129,7 +204,8 @@
 
   onDestroy(() => {
     stopTTS();
-    saveProgress(true); // Save on exit
+    if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
+    saveProgress(); // Save on exit
   });
 </script>
 
@@ -158,14 +234,22 @@
     >
       {#each segments as segment, i (i)}
         <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
-          <FeedSlide
-            {segment}
-            index={i}
-            isActive={i === activeIndex}
-            {isPlaying}
-            currentCharIndex={i === activeIndex ? currentCharIndex : -1}
-            videoSource={videoSources[i % videoSources.length]}
-          />
+          {#if Math.abs(i - activeIndex) <= 2}
+            <FeedSlide
+              {segment}
+              index={i}
+              isActive={i === activeIndex}
+              {isPlaying}
+              currentCharIndex={i === activeIndex ? currentCharIndex : -1}
+              highlightEndIndex={i === activeIndex
+                ? highlightEndIndex
+                : undefined}
+              videoSource={videoSources[i % videoSources.length]}
+            />
+          {:else}
+            <!-- Render placeholder for off-screen slides to save memory -->
+            <div class="w-full h-full bg-black"></div>
+          {/if}
         </swiper-slide>
       {/each}
     </swiper-container>
