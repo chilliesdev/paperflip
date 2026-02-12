@@ -29,7 +29,18 @@ export function segmentText(text: string): string[] {
             currentChunk.length > 0
           ) {
             segments.push(currentChunk.trim());
-            currentChunk = segment;
+            currentChunk = "";
+          }
+
+          if (segment.length > 1000) {
+            for (let i = 0; i < segment.length; i += 1000) {
+              const chunk = segment.substring(i, i + 1000);
+              if (i + 1000 < segment.length) {
+                segments.push(chunk.trim());
+              } else {
+                currentChunk = chunk;
+              }
+            }
           } else {
             currentChunk += segment;
           }

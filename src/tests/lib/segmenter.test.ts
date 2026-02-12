@@ -87,4 +87,17 @@ describe("segmentText", () => {
     expect(segments.length).toBeGreaterThanOrEqual(2);
     expect(segments[0].length).toBeLessThanOrEqual(1000);
   });
+
+  it("splits a single word > 1000 characters into smaller chunks", () => {
+    const giantWord = "a".repeat(2000);
+    const segments = segmentText(giantWord);
+
+    expect(segments.length).toBeGreaterThanOrEqual(2);
+    segments.forEach((segment) => {
+      expect(segment.length).toBeLessThanOrEqual(1000);
+    });
+
+    // Reconstruct to verify no data loss
+    expect(segments.join("")).toEqual(giantWord);
+  });
 });
