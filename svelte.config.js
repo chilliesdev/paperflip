@@ -13,8 +13,8 @@ const config = {
     adapter: adapter({
       // default options are shown. On some platforms
       // these options are set automatically — see below
-      pages: "build",
-      assets: "build",
+      pages: "public",
+      assets: "public",
       fallback: "index.html", // Use 'index.html' or '404.html' for SPA mode
       precompress: false,
       strict: true,
