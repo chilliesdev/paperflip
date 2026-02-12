@@ -1,0 +1,10 @@
+services:
+  - type: static
+    name: paperflip
+    buildCommand: npm install && npm run build
+    publishPath: build
+    envVars:
+      - key: SKIP_INSTALL_DEPS
+        value: false
+      - key: NODE_ENV
+        value: production
