@@ -188,6 +188,35 @@ describe("FeedSlide Component", () => {
       expect(screen.getByText("nine")).toBeInTheDocument(); // 9th word - usually hidden
       expect(screen.getByText("ten")).toBeInTheDocument(); // 10th word - usually hidden
     });
+
+    it("applies wider margin to active words", () => {
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 0,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        highlightEndIndex: 11,
+      });
+
+      const hello = screen.getByText("Hello");
+      // Active words should have mx-1.5 to compensate for scale-110
+      expect(hello).toHaveClass("mx-1.5");
+      expect(hello).not.toHaveClass("mx-[2px]");
+    });
+
+    it("applies narrow margin to inactive words", () => {
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: -1,
+      });
+
+      const hello = screen.getByText("Hello");
+      // Inactive words should have mx-[2px]
+      expect(hello).toHaveClass("mx-[2px]");
+      expect(hello).not.toHaveClass("mx-1.5");
+    });
   });
 
   describe("Video Playback", () => {
