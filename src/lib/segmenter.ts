@@ -1,5 +1,30 @@
 // paperflip/src/lib/segmenter.ts
 
+let wordSegmenter: Intl.Segmenter | null | undefined;
+let sentenceSegmenter: Intl.Segmenter | null | undefined;
+
+function getWordSegmenter(): Intl.Segmenter | null {
+  if (wordSegmenter !== undefined) return wordSegmenter;
+
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    wordSegmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+  } else {
+    wordSegmenter = null;
+  }
+  return wordSegmenter;
+}
+
+function getSentenceSegmenter(): Intl.Segmenter | null {
+  if (sentenceSegmenter !== undefined) return sentenceSegmenter;
+
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    sentenceSegmenter = new Intl.Segmenter(undefined, { granularity: "sentence" });
+  } else {
+    sentenceSegmenter = null;
+  }
+  return sentenceSegmenter;
+}
+
 /**
  * Splits raw text into segments (e.g., paragraphs or sentences).
  * @param text The raw text to segment.
@@ -10,10 +35,7 @@ export function segmentText(text: string): string[] {
   // Split by one or more blank lines to get initial paragraphs
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
 
-  const segmenter =
-    typeof Intl !== "undefined" && Intl.Segmenter
-      ? new Intl.Segmenter(undefined, { granularity: "word" })
-      : null;
+  const segmenter = getWordSegmenter();
 
   for (const paragraph of paragraphs) {
     if (paragraph.length <= 1000) {
@@ -23,6 +45,8 @@ export function segmentText(text: string): string[] {
       let currentChunk = "";
       if (segmenter) {
         // Use Intl.Segmenter to split by words for more natural breaks
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - TS types for Intl.Segmenter might be missing in some environments
         for (const { segment } of segmenter.segment(paragraph)) {
           if (
             (currentChunk + segment).length > 1000 &&
@@ -59,11 +83,9 @@ export function splitSentences(
   text: string,
 ): { text: string; start: number; end: number }[] {
   const sentences: { text: string; start: number; end: number }[] = [];
+  const segmenter = getSentenceSegmenter();
 
-  if (typeof Intl !== "undefined" && Intl.Segmenter) {
-    const segmenter = new Intl.Segmenter(undefined, {
-      granularity: "sentence",
-    });
+  if (segmenter) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - TS types for Intl.Segmenter might be missing in some environments
     for (const { segment, index } of segmenter.segment(text)) {
