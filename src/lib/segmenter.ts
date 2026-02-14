@@ -26,22 +26,43 @@ export function segmentText(text: string): string[] {
       segments.push(paragraph.trim());
     } else {
       // Paragraph is too long, split into ~1000 character chunks
-      let currentChunk = "";
+      let currentChunkParts: string[] = [];
+      let currentLength = 0;
+
       if (segmenter) {
         // Use Intl.Segmenter to split by words for more natural breaks
         for (const { segment } of segmenter.segment(paragraph)) {
-          if (
-            (currentChunk + segment).length > 1000 &&
-            currentChunk.length > 0
-          ) {
-            segments.push(currentChunk.trim());
-            currentChunk = segment;
+          const segmentLen = segment.length;
+
+          if (currentLength + segmentLen > 1000) {
+            if (currentLength > 0) {
+              segments.push(currentChunkParts.join("").trim());
+              currentChunkParts = [];
+              currentLength = 0;
+            }
+
+            if (segmentLen > 1000) {
+              // The segment itself is too long, split it into 1000-char chunks
+              for (let i = 0; i < segmentLen; i += 1000) {
+                const chunk = segment.slice(i, i + 1000);
+                if (chunk.length === 1000) {
+                  segments.push(chunk.trim());
+                } else {
+                  currentChunkParts = [chunk];
+                  currentLength = chunk.length;
+                }
+              }
+            } else {
+              currentChunkParts.push(segment);
+              currentLength += segmentLen;
+            }
           } else {
-            currentChunk += segment;
+            currentChunkParts.push(segment);
+            currentLength += segmentLen;
           }
         }
-        if (currentChunk.length > 0) {
-          segments.push(currentChunk.trim());
+        if (currentLength > 0) {
+          segments.push(currentChunkParts.join("").trim());
         }
       } else {
         // Fallback for environments without Intl.Segmenter or for simpler char-based split
