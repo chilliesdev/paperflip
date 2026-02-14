@@ -89,15 +89,19 @@
       const loadingTask = pdfjsLib.getDocument(arrayBuffer);
       const pdf = await loadingTask.promise;
 
-      let textContent = "";
+      // Performance optimization: Use array join instead of string concatenation in loop
+      // to avoid O(n^2) memory copying for large PDFs.
+      const pageTexts: string[] = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const text = await page.getTextContent();
-        textContent += text.items
+        const pageText = text.items
           .map((item) => ("str" in item ? item.str : ""))
           .join(" ");
+        pageTexts.push(pageText);
       }
 
+      const textContent = pageTexts.join(" ");
       onPdfParsed({ text: textContent, filename: file.name });
       debugStatus = "Done";
     } catch (error: unknown) {
