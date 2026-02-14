@@ -16,18 +16,20 @@
   import FeedSlide from "$lib/components/FeedSlide.svelte";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
-  export let segments: string[] = [];
-  export let initialIndex: number = 0;
-  export let initialProgress: number = 0;
-  export let documentId: string = "";
+  let {
+    segments = [],
+    initialIndex = 0,
+    initialProgress = 0,
+    documentId = "",
+  } = $props();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let swiperInstance: any;
-  let currentCharIndex: number = -1;
-  let highlightEndIndex: number | undefined = undefined;
-  let activeIndex = initialIndex;
+  let swiperInstance: any = $state();
+  let currentCharIndex: number = $state(-1);
+  let highlightEndIndex: number | undefined = $state(undefined);
+  let activeIndex = $state(initialIndex);
   let currentSegmentProgress = 0;
-  let isPlaying = false;
+  let isPlaying = $state(false);
   let isFirstPlay = true;
   let boundaryCheckTimeout: ReturnType<typeof setTimeout>;
   let saveTimeout: ReturnType<typeof setTimeout>;
@@ -226,9 +228,9 @@
       initial-slide={initialIndex}
       class="mySwiper w-full h-full"
       data-testid="swiper-mock"
-      on:swiperinit={handleSwiperInit}
-      on:swiperslidechange={handleSlideChange}
-      on:click={togglePlayback}
+      onswiperinit={handleSwiperInit}
+      onswiperslidechange={handleSlideChange}
+      onclick={togglePlayback}
     >
       {#each segments as segment, i (i)}
         <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
