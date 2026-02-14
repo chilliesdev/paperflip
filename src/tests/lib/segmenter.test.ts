@@ -38,21 +38,12 @@ describe("segmentText", () => {
     // Should be split into at least 2 segments
     expect(segments.length).toBeGreaterThanOrEqual(2);
 
-    // Each segment should be <= 1000 characters (plus a bit of margin if word boundary makes it slightly longer,
-    // but the logic says currentChunk + segment > 1000 pushes, so currentChunk <= 1000 usually)
-    // Actually the code does: if ((currentChunk + segment).length > 1000) -> push currentChunk.
-    // So pushed chunks are <= 1000 unless a single word is massive.
     segments.forEach((segment) => {
       expect(segment.length).toBeLessThanOrEqual(1000);
       expect(segment.length).toBeGreaterThan(0);
     });
 
-    // Reconstruct to verify no data loss (approximate check as whitespace might change slightly due to trim)
-    // segmentText trimming might remove leading/trailing space of the chunks.
-    // The original logic: segments.push(currentChunk.trim());
-    // So checking concatenated length vs original length (ignoring outer whitespace)
     const joined = segments.join(" ");
-    // We might lose specific internal spacing if the split happened exactly at a space, but let's check content.
     expect(joined.replace(/\s+/g, "")).toEqual(
       longParagraph.replace(/\s+/g, ""),
     );
@@ -65,19 +56,6 @@ describe("segmentText", () => {
   });
 
   it("handles a single segment that is slightly larger than 1000 characters", () => {
-    // 'a' * 1001. Since 'a' is a "word", it might not split if it's one giant word depending on how Intl.Segmenter works?
-    // Intl.Segmenter with 'word' granularity handles "words". "aaaa..." is one word.
-    // If it's one giant word, the current logic:
-    // for (const { segment } of segmenter.segment(paragraph))
-    // If the whole thing is one segment, it enters loop once.
-    // (currentChunk + segment).length > 1000 -> true.
-    // segments.push(currentChunk.trim()) -> pushes empty string! -> filtered out later?
-    // currentChunk = segment.
-    // Loop ends.
-    // segments.push(currentChunk.trim()) -> pushes the giant word.
-    // So it fails to split giant words.
-
-    // Let's test with separate words.
     const part1 = "a".repeat(500) + " ";
     const part2 = "b".repeat(500) + " ";
     const part3 = "c".repeat(10);
@@ -86,6 +64,19 @@ describe("segmentText", () => {
     const segments = segmentText(text);
     expect(segments.length).toBeGreaterThanOrEqual(2);
     expect(segments[0].length).toBeLessThanOrEqual(1000);
+  });
+
+  it("splits a single word that exceeds 1000 characters", () => {
+    // 2500 'a's
+    const longWord = "a".repeat(2500);
+    const segments = segmentText(longWord);
+
+    // Should be split into 3 segments: 1000, 1000, 500
+    expect(segments.length).toBe(3);
+    expect(segments[0].length).toBe(1000);
+    expect(segments[1].length).toBe(1000);
+    expect(segments[2].length).toBe(500);
+    expect(segments.join("")).toBe(longWord);
   });
 });
 

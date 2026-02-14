@@ -30,12 +30,25 @@ export function segmentText(text: string): string[] {
       if (segmenter) {
         // Use Intl.Segmenter to split by words for more natural breaks
         for (const { segment } of segmenter.segment(paragraph)) {
-          if (
-            (currentChunk + segment).length > 1000 &&
-            currentChunk.length > 0
-          ) {
-            segments.push(currentChunk.trim());
-            currentChunk = segment;
+          if ((currentChunk + segment).length > 1000) {
+            if (currentChunk.length > 0) {
+              segments.push(currentChunk.trim());
+              currentChunk = "";
+            }
+
+            if (segment.length > 1000) {
+              // The segment itself is too long, split it into 1000-char chunks
+              for (let i = 0; i < segment.length; i += 1000) {
+                const chunk = segment.slice(i, i + 1000);
+                if (chunk.length === 1000) {
+                  segments.push(chunk);
+                } else {
+                  currentChunk = chunk;
+                }
+              }
+            } else {
+              currentChunk = segment;
+            }
           } else {
             currentChunk += segment;
           }
