@@ -3,7 +3,7 @@ services:
     name: paperflip
     env: static
     buildCommand: npm install && npm run build
-    staticPublishPath: ./public
+    staticPublishPath: ./build
     headers:
       - path: /_app/*
         name: Cache-Control
