@@ -3,10 +3,12 @@
   import { getDb, upsertDocument } from "$lib/database";
   import { segmentText } from "$lib/segmenter";
   import PdfUploader from "$lib/components/PdfUploader.svelte";
+  import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
-  let isLoading = false;
+  let isLoading = $state(false);
+  let errorMessage: string | null = $state(null);
 
   async function handlePdfParsed({
     text,
@@ -16,6 +18,7 @@
     filename: string;
   }) {
     isLoading = true;
+    errorMessage = null; // Clear any previous errors
     try {
       console.log("Segmenting text...");
       const newSegmentedData = segmentText(text);
@@ -40,9 +43,9 @@
       goto(feedUrl);
     } catch (error) {
       console.error("Error processing PDF:", error);
-      const errorMessage =
+      const msg =
         error instanceof Error ? error.message : JSON.stringify(error);
-      alert(`Failed to process PDF: ${errorMessage}`);
+      errorMessage = `Failed to process PDF: ${msg}`;
     } finally {
       isLoading = false;
     }
@@ -50,7 +53,7 @@
 
   function handlePdfError({ error }: { error: string }) {
     console.error("PDF Upload Error:", error);
-    alert(`Error: ${error}`);
+    errorMessage = `Error: ${error}`;
     isLoading = false;
   }
 
@@ -64,7 +67,18 @@
   });
 </script>
 
-<div class="h-screen w-full bg-brand-bg flex justify-center items-center">
+<div
+  class="h-screen w-full bg-brand-bg flex justify-center items-center relative"
+>
+  {#if errorMessage}
+    <ErrorMessage
+      message={errorMessage}
+      onDismiss={() => {
+        errorMessage = null;
+      }}
+    />
+  {/if}
+
   {#if isLoading}
     <!-- Loading state overlay -->
     <div class="flex items-center justify-center h-full text-white">

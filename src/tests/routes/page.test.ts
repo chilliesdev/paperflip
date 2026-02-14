@@ -8,7 +8,7 @@ import {
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Page from "../../routes/+page.svelte";
 import * as database from "../../lib/database";
-import * as segmenter from "../../lib/segmenter";
+
 import * as navigation from "$app/navigation";
 
 // Mock external modules
@@ -18,7 +18,7 @@ vi.mock("../../lib/database", () => ({
 }));
 
 vi.mock("../../lib/segmenter", () => ({
-  segmentText: vi.fn((text) => ["Segment 1", "Segment 2"]),
+  segmentText: vi.fn((_text) => ["Segment 1", "Segment 2"]),
 }));
 
 vi.mock("$app/navigation", () => ({
@@ -39,8 +39,7 @@ vi.mock("../../lib/components/PdfUploader.svelte", async () => {
 describe("Root Page (+page.svelte)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock window.alert
-    vi.stubGlobal("alert", vi.fn());
+    // No need to mock alert anymore
   });
 
   afterEach(() => {
@@ -89,9 +88,11 @@ describe("Root Page (+page.svelte)", () => {
     fireEvent.click(screen.getByTestId("trigger-parsed"));
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(
-        "Failed to process PDF: DB Error",
-      );
+      // Expect ErrorMessage component to be visible
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      expect(
+        screen.getByText("Failed to process PDF: DB Error"),
+      ).toBeInTheDocument();
     });
 
     // Should revert loading state
@@ -104,7 +105,8 @@ describe("Root Page (+page.svelte)", () => {
     fireEvent.click(screen.getByTestId("trigger-error"));
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith("Error: Mock Error");
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      expect(screen.getByText("Error: Mock Error")).toBeInTheDocument();
     });
   });
 
