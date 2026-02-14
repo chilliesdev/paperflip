@@ -41,7 +41,7 @@ export function segmentText(text: string): string[] {
               for (let i = 0; i < segment.length; i += 1000) {
                 const chunk = segment.slice(i, i + 1000);
                 if (chunk.length === 1000) {
-                  segments.push(chunk);
+                  segments.push(chunk.trim());
                 } else {
                   currentChunk = chunk;
                 }
