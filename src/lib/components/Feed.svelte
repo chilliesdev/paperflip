@@ -30,6 +30,7 @@
   let isPlaying = false;
   let isFirstPlay = true;
   let boundaryCheckTimeout: ReturnType<typeof setTimeout>;
+  let saveTimeout: ReturnType<typeof setTimeout>;
 
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
@@ -51,14 +52,22 @@
       // So we save the NEW index and 0 progress.
       activeIndex = swiper.realIndex;
       currentSegmentProgress = 0; // Reset progress for new slide
-      saveProgress(); // Persist the move immediately
+      saveProgress(); // Persist the move (debounced by default)
       speakCurrentSlide();
     }
   }
 
-  function saveProgress() {
-    if (documentId) {
+  function saveProgress(immediate = false) {
+    if (!documentId) return;
+
+    if (saveTimeout) clearTimeout(saveTimeout);
+
+    if (immediate) {
       updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
+    } else {
+      saveTimeout = setTimeout(() => {
+        updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
+      }, 1000);
     }
   }
 
@@ -115,7 +124,7 @@
         // When finished, set progress to the end of segment
         // This ensures granular progress reflects completion
         currentSegmentProgress = text.length;
-        saveProgress();
+        saveProgress(true); // Immediate save on completion
       },
       startIndex,
     );
@@ -137,7 +146,7 @@
       isPlaying = false;
       // We assume completion of the segment
       currentSegmentProgress = segments[swiperInstance.realIndex].length;
-      saveProgress();
+      saveProgress(true); // Immediate save on completion
       return;
     }
 
@@ -173,7 +182,7 @@
     if (isPlaying) {
       pauseTTS();
       isPlaying = false;
-      saveProgress(); // Save when paused
+      saveProgress(true); // Immediate save when paused
     } else {
       if (isPaused()) {
         resumeTTS();
@@ -193,7 +202,8 @@
   onDestroy(() => {
     stopTTS();
     if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
-    saveProgress(); // Save on exit
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveProgress(true); // Immediate save on exit
   });
 </script>
 

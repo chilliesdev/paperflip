@@ -106,6 +106,7 @@ describe("Feed Component", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   it("TC-FEED-001: Initialize with Saved Progress", async () => {
@@ -175,6 +176,7 @@ describe("Feed Component", () => {
   });
 
   it("TC-FEED-003: Save on Slide Change", async () => {
+    vi.useFakeTimers();
     const segments = ["Segment 1", "Segment 2"];
     render(Feed, { segments, documentId: "doc-1" });
 
@@ -208,6 +210,9 @@ describe("Feed Component", () => {
         detail: [mockSwiperInstance],
       }),
     );
+
+    // Advance timers to trigger debounce
+    vi.advanceTimersByTime(1100);
 
     await waitFor(() => {
       // 1. Should save progress for new slide (index=1, progress=0)
@@ -458,6 +463,7 @@ describe("Feed Component", () => {
   });
 
   it("changes slide and speaks new segment", async () => {
+    vi.useFakeTimers();
     const segments = ["Segment 1", "Segment 2"];
     render(Feed, { segments });
 
@@ -491,6 +497,9 @@ describe("Feed Component", () => {
         detail: [mockSwiperInstance],
       }),
     );
+
+    // Advance timers
+    vi.advanceTimersByTime(1100);
 
     await waitFor(() => {
       expect(audio.stopTTS).toHaveBeenCalled();
@@ -603,5 +612,61 @@ describe("Feed Component", () => {
         9,
       );
     });
+  });
+
+  it("TC-FEED-007: Debounce Progress Save", async () => {
+    vi.useFakeTimers();
+    const segments = ["Segment 1", "Segment 2", "Segment 3"];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Initial load triggers speakText
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Clear initial calls
+    (database.updateDocumentProgress as any).mockClear();
+
+    // Swipe rapidly: 0 -> 1 -> 2
+    mockSwiperInstance.realIndex = 1;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    mockSwiperInstance.realIndex = 2;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Should NOT have called updateDocumentProgress yet
+    expect(database.updateDocumentProgress).not.toHaveBeenCalled();
+
+    // Fast-forward time by 500ms (less than debounce)
+    vi.advanceTimersByTime(500);
+    expect(database.updateDocumentProgress).not.toHaveBeenCalled();
+
+    // Fast-forward time by another 600ms (total 1100ms)
+    vi.advanceTimersByTime(600);
+
+    // Should have called updateDocumentProgress ONCE with the FINAL state
+    expect(database.updateDocumentProgress).toHaveBeenCalledTimes(1);
+    expect(database.updateDocumentProgress).toHaveBeenCalledWith(
+      "doc-1",
+      2, // Final index
+      0,
+    );
   });
 });
