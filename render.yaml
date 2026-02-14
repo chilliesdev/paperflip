@@ -4,3 +4,10 @@ services:
     env: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./public
+    headers:
+      - path: /_app/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: Cache-Control
+        value: no-cache
