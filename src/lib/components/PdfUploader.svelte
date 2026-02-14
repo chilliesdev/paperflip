@@ -13,18 +13,17 @@
   }
 
   // Props
-  export let onPdfParsed: (event: {
-    text: string;
-    filename: string;
-  }) => void = () => {};
-  export let onPdfError: (event: { error: string }) => void = () => {};
-  export let onLoadDocument: (event: { documentId: string }) => void = () => {};
+  let {
+    onPdfParsed = () => {},
+    onPdfError = () => {},
+    onLoadDocument = () => {},
+  } = $props();
 
   // State
-  let isLoading = false;
-  let pdfjsLib: typeof import("pdfjs-dist") | null = null;
-  let recentUploads: RecentUpload[] = [];
-  let debugStatus = "";
+  let isLoading = $state(false);
+  let pdfjsLib = $state<typeof import("pdfjs-dist") | null>(null);
+  let recentUploads = $state<RecentUpload[]>([]);
+  let debugStatus = $state("");
 
   async function loadRecentUploads() {
     try {

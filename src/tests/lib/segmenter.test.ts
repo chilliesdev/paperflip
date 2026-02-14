@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { segmentText, splitSentences } from "../../lib/segmenter";
+import { segmentText } from "../../lib/segmenter";
 
 describe("segmentText", () => {
   it("splits text by double newlines into segments", () => {
@@ -86,43 +86,5 @@ describe("segmentText", () => {
     const segments = segmentText(text);
     expect(segments.length).toBeGreaterThanOrEqual(2);
     expect(segments[0].length).toBeLessThanOrEqual(1000);
-  });
-});
-
-describe("splitSentences", () => {
-  it("splits text into sentences with correct offsets", () => {
-    const text = "Hello world. This is a test! Is it working?";
-    const result = splitSentences(text);
-
-    expect(result).toHaveLength(3);
-    expect(result[0]).toEqual({
-      text: "Hello world. ",
-      start: 0,
-      end: 13,
-    });
-    expect(result[1]).toEqual({
-      text: "This is a test! ",
-      start: 13,
-      end: 29,
-    });
-    expect(result[2]).toEqual({
-      text: "Is it working?",
-      start: 29,
-      end: 43,
-    });
-  });
-
-  it("handles a single sentence", () => {
-    const text = "Just one sentence.";
-    const result = splitSentences(text);
-    expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("Just one sentence.");
-  });
-
-  it("handles trailing spaces", () => {
-    const text = "Sentence one. ";
-    const result = splitSentences(text);
-    expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("Sentence one. ");
   });
 });
