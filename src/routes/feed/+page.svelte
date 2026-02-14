@@ -5,12 +5,12 @@
   import { getDocument, getDb } from "$lib/database";
   import Feed from "$lib/components/Feed.svelte";
 
-  let segmentedData: string[] = [];
-  let startSegmentIndex: number = 0;
-  let startSegmentProgress: number = 0;
-  let currentDocumentId: string = "";
-  let isLoading: boolean = true;
-  let error: string | null = null;
+  let segmentedData: string[] = $state([]);
+  let startSegmentIndex: number = $state(0);
+  let startSegmentProgress: number = $state(0);
+  let currentDocumentId: string = $state("");
+  let isLoading: boolean = $state(true);
+  let error: string | null = $state(null);
 
   onMount(async () => {
     const documentId = $page.url.searchParams.get("id");
