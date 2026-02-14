@@ -1,0 +1,16 @@
+$ vite dev
+5:52:04 PM [vite] (client) Forced re-optimization of dependencies
+
+  VITE v7.3.1  ready in 1678 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+5:53:30 PM [vite] (client) ✨ new dependencies optimized: vite-plugin-node-polyfills/shims/buffer, vite-plugin-node-polyfills/shims/global, vite-plugin-node-polyfills/shims/process
+5:53:30 PM [vite] (client) ✨ optimized dependencies changed. reloading
+5:53:30 PM [vite] (client) hmr update /src/app.css
+5:53:30 PM [vite] (ssr) page reload dev_server.log
+5:54:14 PM [vite] (client) hmr update /src/routes/+page.svelte, /src/app.css
+5:54:14 PM [vite] (ssr) page reload src/routes/+page.svelte
+5:54:14 PM [vite] (client) hmr update /src/app.css
+5:54:14 PM [vite] (ssr) page reload dev_server.log
+error: script "dev" exited with code 143
