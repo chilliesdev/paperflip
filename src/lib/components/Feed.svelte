@@ -57,7 +57,7 @@
     }
   }
 
-  function saveProgress(immediate = false) {
+  function saveProgress(immediate: boolean = false) {
     if (!documentId) return;
 
     if (saveTimeout) clearTimeout(saveTimeout);
