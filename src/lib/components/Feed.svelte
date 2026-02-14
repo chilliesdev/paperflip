@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
   import { register } from "swiper/element/bundle";
   import {
     initializeTTS,
@@ -27,7 +27,7 @@
   let swiperInstance: any = $state();
   let currentCharIndex: number = $state(-1);
   let highlightEndIndex: number | undefined = $state(undefined);
-  let activeIndex = $state(initialIndex);
+  let activeIndex = $state(untrack(() => initialIndex));
   let currentSegmentProgress = 0;
   let isPlaying = $state(false);
   let isFirstPlay = true;
@@ -196,6 +196,13 @@
     }
   }
 
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      togglePlayback();
+    }
+  }
+
   onMount(async () => {
     register();
     initializeTTS();
@@ -220,6 +227,8 @@
       </p>
     </div>
 
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <swiper-container
       direction="vertical"
       slides-per-view={1}
@@ -231,6 +240,10 @@
       onswiperinit={handleSwiperInit}
       onswiperslidechange={handleSlideChange}
       onclick={togglePlayback}
+      role="region"
+      aria-label="Video Feed"
+      tabindex="0"
+      onkeydown={handleKeydown}
     >
       {#each segments as segment, i (i)}
         <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
