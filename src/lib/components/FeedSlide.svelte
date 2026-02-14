@@ -1,82 +1,87 @@
 <script lang="ts">
   import { Volume2, VolumeX, ChevronUp } from "lucide-svelte";
   import { scale } from "svelte/transition";
-
-  export let segment: string;
-  export let index: number;
-  export let isActive: boolean;
-  export let isPlaying: boolean = true;
-  export let currentCharIndex: number;
-  export let highlightEndIndex: number | undefined = undefined;
-  export let videoSource: string;
   import { videoAssetUrls } from "$lib/stores/assets";
   import { wordCount } from "$lib/constants";
   import { isMuted } from "$lib/stores/audio";
 
-  let videoEl: HTMLVideoElement;
-  let words: { word: string; start: number; end: number }[] = [];
-  let currentWordIdx = -1;
+  let {
+    segment,
+    index,
+    isActive,
+    isPlaying = true,
+    currentCharIndex,
+    highlightEndIndex = undefined,
+    videoSource,
+  } = $props();
 
-  $: cachedSource = $videoAssetUrls[videoSource] || videoSource;
+  let videoEl: HTMLVideoElement | undefined = $state();
 
-  $: if (videoEl) {
-    if (isActive && isPlaying) {
-      videoEl.play().catch(() => {});
-    } else {
-      videoEl.pause();
-    }
-  }
+  let cachedSource = $derived($videoAssetUrls[videoSource] || videoSource);
 
-  $: {
-    if (segment) {
-      words = [];
-      const wordRegex = /\S+/g;
-      let match;
-      while ((match = wordRegex.exec(segment)) !== null) {
-        words.push({
-          word: match[0],
-          start: match.index,
-          end: match.index + match[0].length,
-        });
+  $effect(() => {
+    if (videoEl) {
+      if (isActive && isPlaying) {
+        videoEl.play().catch(() => {});
+      } else {
+        videoEl.pause();
       }
     }
-  }
+  });
 
-  $: {
+  let words = $derived.by(() => {
+    if (!segment) return [];
+    const w: { word: string; start: number; end: number }[] = [];
+    const wordRegex = /\S+/g;
+    let match;
+    while ((match = wordRegex.exec(segment)) !== null) {
+      w.push({
+        word: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+    return w;
+  });
+
+  let currentWordIdx = $derived.by(() => {
     if (currentCharIndex === -1 || !isActive) {
-      currentWordIdx = -1;
-    } else {
-      // Find current word index based on char index
-      currentWordIdx = words.findIndex(
-        (w) => currentCharIndex >= w.start && currentCharIndex < w.end,
-      );
-      if (currentWordIdx === -1) {
-        // Fallback: find the closest word that started before charIndex
-        currentWordIdx = words.findIndex((w) => currentCharIndex < w.start) - 1;
-        // If still -1 (before first word) or wasn't found (end of text?), handle edges
-        if (currentWordIdx < -1) currentWordIdx = words.length - 1;
-        if (currentWordIdx === -2) currentWordIdx = -1; // Before first word
-      }
+      return -1;
     }
-  }
+    // Find current word index based on char index
+    let idx = words.findIndex(
+      (w) => currentCharIndex >= w.start && currentCharIndex < w.end,
+    );
+    if (idx === -1) {
+      // Fallback: find the closest word that started before charIndex
+      idx = words.findIndex((w) => currentCharIndex < w.start) - 1;
+      // If still -1 (before first word) or wasn't found (end of text?), handle edges
+      if (idx < -1) idx = words.length - 1;
+      if (idx === -2) idx = -1; // Before first word
+    }
+    return idx;
+  });
 
   // Progress based on word index
-  $: progress =
-    words.length > 0 ? ((currentWordIdx + 1) / words.length) * 100 : 0;
+  let progress = $derived(
+    words.length > 0 ? ((currentWordIdx + 1) / words.length) * 100 : 0,
+  );
 
-  $: startIndex =
+  let startIndex = $derived(
     currentWordIdx === -1
       ? 0
-      : Math.floor(currentWordIdx / wordCount) * wordCount;
+      : Math.floor(currentWordIdx / wordCount) * wordCount,
+  );
 
   // In dictation mode, we want to show all words in the current sentence (range).
   // If highlightEndIndex is set, find all words within [currentCharIndex, highlightEndIndex].
-  $: visibleWords =
+  let visibleWords = $derived(
     highlightEndIndex !== undefined
       ? words.filter(
           (w) => w.start >= currentCharIndex && w.end <= highlightEndIndex,
         )
-      : words.slice(startIndex, startIndex + wordCount);
+      : words.slice(startIndex, startIndex + wordCount),
+  );
 
   function toggleMute(e: MouseEvent) {
     e.stopPropagation();
@@ -106,7 +111,7 @@
     <button
       transition:scale
       class="absolute top-8 right-8 z-20 w-14 h-14 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg shadow-brand-primary/30 animate-pulse hover:scale-110 transition-transform active:scale-95"
-      on:click={toggleMute}
+      onclick={toggleMute}
       aria-label={$isMuted ? "Unmute" : "Mute"}
     >
       {#if $isMuted}
