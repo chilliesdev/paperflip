@@ -1,5 +1,8 @@
 // paperflip/src/lib/segmenter.ts
 
+let cachedWordSegmenter: Intl.Segmenter | null = null;
+let cachedSentenceSegmenter: Intl.Segmenter | null = null;
+
 /**
  * Splits raw text into segments (e.g., paragraphs or sentences).
  * @param text The raw text to segment.
@@ -10,10 +13,13 @@ export function segmentText(text: string): string[] {
   // Split by one or more blank lines to get initial paragraphs
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
 
-  const segmenter =
-    typeof Intl !== "undefined" && Intl.Segmenter
-      ? new Intl.Segmenter(undefined, { granularity: "word" })
-      : null;
+  let segmenter: Intl.Segmenter | null = null;
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    if (!cachedWordSegmenter) {
+      cachedWordSegmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+    }
+    segmenter = cachedWordSegmenter;
+  }
 
   for (const paragraph of paragraphs) {
     if (paragraph.length <= 1000) {
@@ -61,9 +67,12 @@ export function splitSentences(
   const sentences: { text: string; start: number; end: number }[] = [];
 
   if (typeof Intl !== "undefined" && Intl.Segmenter) {
-    const segmenter = new Intl.Segmenter(undefined, {
-      granularity: "sentence",
-    });
+    if (!cachedSentenceSegmenter) {
+      cachedSentenceSegmenter = new Intl.Segmenter(undefined, {
+        granularity: "sentence",
+      });
+    }
+    const segmenter = cachedSentenceSegmenter;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - TS types for Intl.Segmenter might be missing in some environments
     for (const { segment, index } of segmenter.segment(text)) {
