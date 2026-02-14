@@ -16,7 +16,9 @@ export function segmentText(text: string): string[] {
   let segmenter: Intl.Segmenter | null = null;
   if (typeof Intl !== "undefined" && Intl.Segmenter) {
     if (!cachedWordSegmenter) {
-      cachedWordSegmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+      cachedWordSegmenter = new Intl.Segmenter(undefined, {
+        granularity: "word",
+      });
     }
     segmenter = cachedWordSegmenter;
   }
