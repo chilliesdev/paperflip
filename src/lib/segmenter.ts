@@ -26,7 +26,7 @@ export function segmentText(text: string): string[] {
       segments.push(paragraph.trim());
     } else {
       // Paragraph is too long, split into ~1000 character chunks
-      let currentChunk = "";
+      let currentChunkParts: string[] = [];
       let currentLength = 0;
 
       if (segmenter) {
@@ -36,8 +36,8 @@ export function segmentText(text: string): string[] {
 
           if (currentLength + segmentLen > 1000) {
             if (currentLength > 0) {
-              segments.push(currentChunk.trim());
-              currentChunk = "";
+              segments.push(currentChunkParts.join("").trim());
+              currentChunkParts = [];
               currentLength = 0;
             }
 
@@ -48,21 +48,21 @@ export function segmentText(text: string): string[] {
                 if (chunk.length === 1000) {
                   segments.push(chunk.trim());
                 } else {
-                  currentChunk = chunk;
+                  currentChunkParts = [chunk];
                   currentLength = chunk.length;
                 }
               }
             } else {
-              currentChunk = segment;
-              currentLength = segmentLen;
+              currentChunkParts.push(segment);
+              currentLength += segmentLen;
             }
           } else {
-            currentChunk += segment;
+            currentChunkParts.push(segment);
             currentLength += segmentLen;
           }
         }
         if (currentLength > 0) {
-          segments.push(currentChunk.trim());
+          segments.push(currentChunkParts.join("").trim());
         }
       } else {
         // Fallback for environments without Intl.Segmenter or for simpler char-based split
