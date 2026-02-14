@@ -67,8 +67,12 @@
   });
 </script>
 
+<svelte:head>
+  <title>PaperFlip - PDF to Immersive Story</title>
+</svelte:head>
+
 <div
-  class="h-screen w-full bg-brand-bg flex justify-center items-center relative"
+  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden text-white font-display"
 >
   {#if errorMessage}
     <ErrorMessage
@@ -81,16 +85,14 @@
 
   {#if isLoading}
     <!-- Loading state overlay -->
-    <div class="flex items-center justify-center h-full text-white">
+    <div class="flex items-center justify-center flex-grow text-white">
       <p class="text-xl animate-pulse">Processing PDF...</p>
     </div>
   {:else}
-    <div class="h-full aspect-[9/16] max-w-full bg-black shadow-2xl relative">
-      <PdfUploader
-        onPdfParsed={handlePdfParsed}
-        onPdfError={handlePdfError}
-        onLoadDocument={handleLoadDocument}
-      />
-    </div>
+    <PdfUploader
+      onPdfParsed={handlePdfParsed}
+      onPdfError={handlePdfError}
+      onLoadDocument={handleLoadDocument}
+    />
   {/if}
 </div>

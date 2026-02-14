@@ -33,7 +33,11 @@ describe("PdfUploader Repro", () => {
   });
 
   it("reproduces bug: component calls addDocument directly", async () => {
-    render(PdfUploader);
+    render(PdfUploader, {
+      onPdfParsed: vi.fn(),
+      onPdfError: vi.fn(),
+      onLoadDocument: vi.fn(),
+    });
 
     const file = new File(["dummy content"], "test.pdf", {
       type: "application/pdf",

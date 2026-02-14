@@ -102,7 +102,7 @@ describe("PdfUploader", () => {
     render(PdfUploader);
 
     await waitFor(() => {
-      expect(screen.getByText("Recent")).toBeInTheDocument();
+      expect(screen.getByText("Recent Stories")).toBeInTheDocument();
       expect(screen.getByText("doc1.pdf")).toBeInTheDocument();
       expect(screen.getByText("doc2.pdf")).toBeInTheDocument();
     });
@@ -151,11 +151,12 @@ describe("PdfUploader", () => {
       await waitFor(() => {
         expect(screen.getByText("doc-granular.pdf")).toBeInTheDocument();
         // Check for "45% watched"
-        expect(screen.getByText("45% watched")).toBeInTheDocument();
+        expect(screen.getByText(/45% watched/)).toBeInTheDocument();
         // Check progress bar width (approximate check via style)
-        const progressBar =
-          screen.getByText("45% watched").parentElement?.nextElementSibling
-            ?.firstElementChild;
+        // In new UI, the progress bar is in the next sibling div of the paragraph containing the text
+        const textElement = screen.getByText(/45% watched/);
+        const progressBarContainer = textElement.nextElementSibling;
+        const progressBar = progressBarContainer?.firstElementChild;
         expect(progressBar).toHaveStyle("width: 45%");
       });
     });
@@ -176,8 +177,8 @@ describe("PdfUploader", () => {
 
       await waitFor(() => {
         expect(screen.getByText("doc-zero.pdf")).toBeInTheDocument();
-        expect(screen.getByText("0% watched")).toBeInTheDocument();
-        expect(screen.getByText("Part 1 of 2")).toBeInTheDocument();
+        expect(screen.getByText(/0% watched/)).toBeInTheDocument();
+        expect(screen.getByText(/Part 1 of 2/)).toBeInTheDocument();
       });
     });
 
@@ -198,7 +199,7 @@ describe("PdfUploader", () => {
       await waitFor(() => {
         expect(screen.getByText("doc-complete.pdf")).toBeInTheDocument();
         // 0 + 4/4 = 1. 1/1 * 100 = 100%
-        expect(screen.getByText("100% watched")).toBeInTheDocument();
+        expect(screen.getByText(/100% watched/)).toBeInTheDocument();
       });
     });
   });
