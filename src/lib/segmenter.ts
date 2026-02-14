@@ -27,33 +27,41 @@ export function segmentText(text: string): string[] {
     } else {
       // Paragraph is too long, split into ~1000 character chunks
       let currentChunk = "";
+      let currentLength = 0;
+
       if (segmenter) {
         // Use Intl.Segmenter to split by words for more natural breaks
         for (const { segment } of segmenter.segment(paragraph)) {
-          if ((currentChunk + segment).length > 1000) {
-            if (currentChunk.length > 0) {
+          const segmentLen = segment.length;
+
+          if (currentLength + segmentLen > 1000) {
+            if (currentLength > 0) {
               segments.push(currentChunk.trim());
               currentChunk = "";
+              currentLength = 0;
             }
 
-            if (segment.length > 1000) {
+            if (segmentLen > 1000) {
               // The segment itself is too long, split it into 1000-char chunks
-              for (let i = 0; i < segment.length; i += 1000) {
+              for (let i = 0; i < segmentLen; i += 1000) {
                 const chunk = segment.slice(i, i + 1000);
                 if (chunk.length === 1000) {
                   segments.push(chunk.trim());
                 } else {
                   currentChunk = chunk;
+                  currentLength = chunk.length;
                 }
               }
             } else {
               currentChunk = segment;
+              currentLength = segmentLen;
             }
           } else {
             currentChunk += segment;
+            currentLength += segmentLen;
           }
         }
-        if (currentChunk.length > 0) {
+        if (currentLength > 0) {
           segments.push(currentChunk.trim());
         }
       } else {
