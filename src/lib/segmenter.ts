@@ -1,82 +1,97 @@
 // paperflip/src/lib/segmenter.ts
 
-let cachedWordSegmenter: Intl.Segmenter | null = null;
 let cachedSentenceSegmenter: Intl.Segmenter | null = null;
 
+const MAX_SEGMENT_LENGTH = 1000;
+
 /**
- * Splits raw text into segments (e.g., paragraphs or sentences).
- * @param text The raw text to segment.
- * @returns An array of text segments.
+ * Splits raw text into manageable segments for processing.
+ *
+ * The segmentation process follows these rules:
+ * 1. Initially splits text into paragraphs using double newlines.
+ * 2. Paragraphs shorter than MAX_SEGMENT_LENGTH (1000 chars) are kept as-is.
+ * 3. Longer paragraphs are split into sentences using Intl.Segmenter.
+ * 4. Sentences are recombined into chunks that stay within the 1000 character limit.
+ * 5. If a single sentence exceeds 1000 characters, it is force-split at the nearest
+ *    word boundary (space).
+ *
+ * @param text - The raw input text to be segmented.
+ * @returns An array of trimmed text segments, each within the length limit.
  */
 export function segmentText(text: string): string[] {
-  const segments: string[] = [];
-  // Split by one or more blank lines to get initial paragraphs
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
-
-  let segmenter: Intl.Segmenter | null = null;
-  if (typeof Intl !== "undefined" && Intl.Segmenter) {
-    if (!cachedWordSegmenter) {
-      cachedWordSegmenter = new Intl.Segmenter(undefined, {
-        granularity: "word",
-      });
-    }
-    segmenter = cachedWordSegmenter;
-  }
+  const segments: string[] = [];
 
   for (const paragraph of paragraphs) {
-    if (paragraph.length <= 1000) {
+    if (paragraph.length <= MAX_SEGMENT_LENGTH) {
       segments.push(paragraph.trim());
-    } else {
-      // Paragraph is too long, split into ~1000 character chunks
-      let currentChunkParts: string[] = [];
-      let currentLength = 0;
+      continue;
+    }
 
-      if (segmenter) {
-        // Use Intl.Segmenter to split by words for more natural breaks
-        for (const { segment } of segmenter.segment(paragraph)) {
-          const segmentLen = segment.length;
+    // Paragraph is too long, split into sentences and recombine
+    const sentences = splitSentences(paragraph);
+    let currentChunk = "";
 
-          if (currentLength + segmentLen > 1000) {
-            if (currentLength > 0) {
-              segments.push(currentChunkParts.join("").trim());
-              currentChunkParts = [];
-              currentLength = 0;
-            }
-
-            if (segmentLen > 1000) {
-              // The segment itself is too long, split it into 1000-char chunks
-              for (let i = 0; i < segmentLen; i += 1000) {
-                const chunk = segment.slice(i, i + 1000);
-                if (chunk.length === 1000) {
-                  segments.push(chunk.trim());
-                } else {
-                  currentChunkParts = [chunk];
-                  currentLength = chunk.length;
-                }
-              }
-            } else {
-              currentChunkParts.push(segment);
-              currentLength += segmentLen;
-            }
-          } else {
-            currentChunkParts.push(segment);
-            currentLength += segmentLen;
-          }
+    for (const { text: sentence } of sentences) {
+      if (sentence.length > MAX_SEGMENT_LENGTH) {
+        if (currentChunk) {
+          segments.push(currentChunk.trim());
+          currentChunk = "";
         }
-        if (currentLength > 0) {
-          segments.push(currentChunkParts.join("").trim());
+        segments.push(...chunkText(sentence, MAX_SEGMENT_LENGTH));
+      } else if ((currentChunk + sentence).length > MAX_SEGMENT_LENGTH) {
+        if (currentChunk) {
+          segments.push(currentChunk.trim());
         }
+        currentChunk = sentence;
       } else {
-        // Fallback for environments without Intl.Segmenter or for simpler char-based split
-        // This is less ideal as it might split words
-        for (let i = 0; i < paragraph.length; i += 1000) {
-          segments.push(paragraph.substring(i, i + 1000).trim());
-        }
+        currentChunk += sentence;
       }
+    }
+
+    if (currentChunk.trim()) {
+      segments.push(currentChunk.trim());
     }
   }
 
-  return segments.filter((s) => s.length > 0); // Filter out any empty segments
+  return segments.filter((s) => s.length > 0);
+}
+
+/**
+ * Splits a long string into chunks of a maximum length, attempting to break at spaces.
+ * Used as a fallback when a single sentence exceeds the maximum allowed segment length.
+ *
+ * @param text - The long text string to split.
+ * @param maxLength - The maximum allowed length for each chunk.
+ * @returns An array of text chunks.
+ */
+function chunkText(text: string, maxLength: number): string[] {
+  const chunks: string[] = [];
+  let start = 0;
+
+  while (start < text.length) {
+    let end = Math.min(start + maxLength, text.length);
+
+    if (end < text.length) {
+      const lastSpace = text.lastIndexOf(" ", end);
+      if (lastSpace > start) {
+        end = lastSpace;
+      }
+    }
+
+    const chunk = text.slice(start, end).trim();
+    if (chunk.length > 0) {
+      chunks.push(chunk);
+    }
+
+    start = end;
+    // Skip leading spaces for the next chunk
+    while (start < text.length && text[start] === " ") {
+      start++;
+    }
+  }
+
+  return chunks;
 }
 
 /**

@@ -66,6 +66,28 @@ describe("segmentText", () => {
     expect(segments[0].length).toBeLessThanOrEqual(1000);
   });
 
+  it("does not split between sentences when long paragraph is split", () => {
+    // Each sentence is ~75 chars.
+    const sentence =
+      "This is a relatively long sentence that should stay together if possible. ";
+    const sentences = [];
+    for (let i = 0; i < 30; i++) {
+      sentences.push(sentence);
+    }
+    const longParagraph = sentences.join("");
+    // 30 * 74 = 2220 chars.
+
+    const segments = segmentText(longParagraph);
+
+    expect(segments.length).toBeGreaterThanOrEqual(3);
+    segments.forEach((segment) => {
+      expect(segment.length).toBeLessThanOrEqual(1000);
+      // Each segment should end with the sentence terminator and space (trimmed)
+      // Since segmentText calls .trim() on the result, it should end with the period.
+      expect(segment).toMatch(/[.!?]$/);
+    });
+  });
+
   it("splits a single word that exceeds 1000 characters", () => {
     // 2500 'a's
     const longWord = "a".repeat(2500);
