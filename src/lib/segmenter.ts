@@ -30,27 +30,31 @@ export function segmentText(text: string): string[] {
 
     // Paragraph is too long, split into sentences and recombine
     const sentences = splitSentences(paragraph);
-    let currentChunk = "";
+    let currentChunkParts: string[] = [];
+    let currentChunkLength = 0;
 
     for (const { text: sentence } of sentences) {
       if (sentence.length > MAX_SEGMENT_LENGTH) {
-        if (currentChunk) {
-          segments.push(currentChunk.trim());
-          currentChunk = "";
+        if (currentChunkParts.length > 0) {
+          segments.push(currentChunkParts.join("").trim());
+          currentChunkParts = [];
+          currentChunkLength = 0;
         }
         segments.push(...chunkText(sentence, MAX_SEGMENT_LENGTH));
-      } else if ((currentChunk + sentence).length > MAX_SEGMENT_LENGTH) {
-        if (currentChunk) {
-          segments.push(currentChunk.trim());
+      } else if (currentChunkLength + sentence.length > MAX_SEGMENT_LENGTH) {
+        if (currentChunkParts.length > 0) {
+          segments.push(currentChunkParts.join("").trim());
         }
-        currentChunk = sentence;
+        currentChunkParts = [sentence];
+        currentChunkLength = sentence.length;
       } else {
-        currentChunk += sentence;
+        currentChunkParts.push(sentence);
+        currentChunkLength += sentence.length;
       }
     }
 
-    if (currentChunk.trim()) {
-      segments.push(currentChunk.trim());
+    if (currentChunkParts.length > 0) {
+      segments.push(currentChunkParts.join("").trim());
     }
   }
 
