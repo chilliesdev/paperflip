@@ -62,9 +62,14 @@
     return idx;
   });
 
-  // Progress based on word index
+  // Progress based on character index for smoother animation
   let progress = $derived(
-    words.length > 0 ? ((currentWordIdx + 1) / words.length) * 100 : 0,
+    segment.length > 0
+      ? Math.min(
+          100,
+          (Math.max(0, currentCharIndex) / segment.length) * 100,
+        )
+      : 0,
   );
 
   let startIndex = $derived(

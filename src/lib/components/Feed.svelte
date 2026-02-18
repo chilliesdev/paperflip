@@ -125,6 +125,7 @@
         isPlaying = false;
         // When finished, set progress to the end of segment
         // This ensures granular progress reflects completion
+        currentCharIndex = text.length;
         currentSegmentProgress = text.length;
         saveProgress(true); // Immediate save on completion
       },
@@ -147,6 +148,7 @@
     if (queue.length === 0) {
       isPlaying = false;
       // We assume completion of the segment
+      currentCharIndex = segments[swiperInstance.realIndex].length;
       currentSegmentProgress = segments[swiperInstance.realIndex].length;
       saveProgress(true); // Immediate save on completion
       return;

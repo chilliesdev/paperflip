@@ -251,4 +251,30 @@ describe("FeedSlide Component", () => {
       expect(video).toHaveAttribute("src", cachedUrl);
     });
   });
+
+  describe("Progress Bar", () => {
+    it("calculates progress based on character index", () => {
+      // "Hello world" length is 11.
+      // At index 5 (' '), progress should be 5/11 * 100 = 45.4545...%
+
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 5,
+      });
+
+      const progressBar = document.querySelector(".bg-gradient-to-r");
+      expect(progressBar).not.toBeNull();
+
+      const style = progressBar?.getAttribute("style");
+      // Extract the width percentage
+      const match = style?.match(/width: ([\d.]+)%/);
+      expect(match).not.toBeNull();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const percentage = parseFloat(match![1]);
+
+      // Expect approximately 45.45%
+      expect(percentage).toBeCloseTo(45.45, 1);
+    });
+  });
 });

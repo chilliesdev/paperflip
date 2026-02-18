@@ -669,4 +669,36 @@ describe("Feed Component", () => {
       0,
     );
   });
+
+  it("TC-FEED-008: Sets progress to 100% when playback finishes", async () => {
+    const segments = ["Hello world"]; // Length 11
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Wait for speakText to be called
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get the onEnd callback
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const onEndCallback = mockCalls[0][2];
+    expect(onEndCallback).toBeTypeOf("function");
+
+    // Trigger onEnd
+    onEndCallback();
+
+    // Now check the progress bar width.
+    await waitFor(() => {
+      const progressBar = document.querySelector(".bg-gradient-to-r");
+      expect(progressBar).not.toBeNull();
+      const style = progressBar?.getAttribute("style");
+      expect(style).toContain("width: 100%");
+    });
+  });
 });
