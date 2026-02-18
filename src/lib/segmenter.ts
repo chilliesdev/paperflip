@@ -30,27 +30,39 @@ export function segmentText(text: string): string[] {
 
     // Paragraph is too long, split into sentences and recombine
     const sentences = splitSentences(paragraph);
-    let currentChunk = "";
+    // Performance optimization: Use array accumulation to avoid O(n^2) string concatenation
+    let currentChunkParts: string[] = [];
+    let currentChunkLength = 0;
 
     for (const { text: sentence } of sentences) {
       if (sentence.length > MAX_SEGMENT_LENGTH) {
-        if (currentChunk) {
-          segments.push(currentChunk.trim());
-          currentChunk = "";
+        // Flush current chunk if any
+        if (currentChunkParts.length > 0) {
+          segments.push(currentChunkParts.join("").trim());
+          currentChunkParts = [];
+          currentChunkLength = 0;
         }
         segments.push(...chunkText(sentence, MAX_SEGMENT_LENGTH));
-      } else if ((currentChunk + sentence).length > MAX_SEGMENT_LENGTH) {
-        if (currentChunk) {
-          segments.push(currentChunk.trim());
+      } else if (currentChunkLength + sentence.length > MAX_SEGMENT_LENGTH) {
+        // Current chunk would exceed limit, flush it
+        if (currentChunkParts.length > 0) {
+          segments.push(currentChunkParts.join("").trim());
         }
-        currentChunk = sentence;
+        // Start new chunk
+        currentChunkParts = [sentence];
+        currentChunkLength = sentence.length;
       } else {
-        currentChunk += sentence;
+        // Append to current chunk
+        currentChunkParts.push(sentence);
+        currentChunkLength += sentence.length;
       }
     }
 
-    if (currentChunk.trim()) {
-      segments.push(currentChunk.trim());
+    if (currentChunkParts.length > 0) {
+      const finalChunk = currentChunkParts.join("").trim();
+      if (finalChunk) {
+        segments.push(finalChunk);
+      }
     }
   }
 
@@ -114,7 +126,7 @@ export function splitSentences(
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - TS types for Intl.Segmenter might be missing in some environments
     for (const { segment, index } of segmenter.segment(text)) {
-      if (segment.trim().length > 0) {
+      if (/\S/.test(segment)) {
         sentences.push({
           text: segment,
           start: index,
@@ -127,7 +139,7 @@ export function splitSentences(
     const regex = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
     let match;
     while ((match = regex.exec(text)) !== null) {
-      if (match[0].trim().length > 0) {
+      if (/\S/.test(match[0])) {
         sentences.push({
           text: match[0],
           start: match.index,
