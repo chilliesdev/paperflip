@@ -236,3 +236,7 @@ export async function updateDocumentProgress(
 export function resetDb() {
   dbPromise = null;
 }
+
+export async function getAllDocuments() {
+  return getRecentUploads(1000);
+}
