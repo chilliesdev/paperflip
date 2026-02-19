@@ -4,12 +4,20 @@
   let { document } = $props();
 
   const progress = $derived.by(() => {
-    if (!document.segments || document.segments.length === 0) return 0;
+    const totalSegments = document.segments?.length || 0;
+    if (totalSegments === 0) return 0;
+
+    const currentIdx = document.currentSegmentIndex || 0;
+    const currentProgress = document.currentSegmentProgress || 0;
+    const currentSegmentLength = document.segments[currentIdx]?.length || 1;
+
+    // Calculate percentage within current segment
+    const segmentPercentage = currentProgress / currentSegmentLength;
+
+    // Calculate total percentage
     return Math.min(
       100,
-      Math.round(
-        (document.currentSegmentIndex / document.segments.length) * 100
-      )
+      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100)
     );
   });
 

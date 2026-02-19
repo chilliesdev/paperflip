@@ -17,7 +17,9 @@ describe("Settings Page", () => {
     // Since we are not mocking BottomNavigation, it renders real links
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Library")).toBeInTheDocument();
-    // Settings text is also in title, but BottomNavigation has it too.
-    // The link text is "Settings".
+    // Verify Settings link specifically
+    expect(
+      screen.getByRole("link", { name: /Settings/i })
+    ).toBeInTheDocument();
   });
 });

@@ -49,6 +49,10 @@
             <h3 class="text-lg font-bold text-white">Recently Viewed</h3>
             <button
               class="text-xs font-semibold text-brand-primary uppercase tracking-wider hover:text-brand-secondary transition-colors"
+              onclick={() =>
+                document
+                  .getElementById("all-documents")
+                  ?.scrollIntoView({ behavior: "smooth" })}
             >
               See All
             </button>
@@ -63,7 +67,9 @@
         </section>
       {/if}
 
-      <DocumentList documents={filteredDocs} bind:viewMode />
+      <div id="all-documents">
+        <DocumentList documents={filteredDocs} bind:viewMode />
+      </div>
     </main>
 
     <BottomNavigation activeTab="library" />

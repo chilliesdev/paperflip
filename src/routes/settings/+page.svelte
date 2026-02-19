@@ -7,7 +7,7 @@
 </svelte:head>
 
 <div
-  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden pb-10 text-white font-display"
+  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden pb-24 text-white font-display"
 >
   <header class="pt-12 pb-6 px-6">
     <h1 class="text-3xl font-extrabold tracking-tight text-white">

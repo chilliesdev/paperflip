@@ -19,6 +19,7 @@
       type="text"
       bind:value={searchQuery}
       placeholder="Search your stories..."
+      aria-label="Search your stories"
       class="w-full bg-brand-surface/40 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-primary/50 focus:ring-1 focus:ring-brand-primary/50 transition-all"
     />
   </div>
