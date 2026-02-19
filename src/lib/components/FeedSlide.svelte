@@ -6,12 +6,13 @@
   import { isMuted } from "$lib/stores/audio";
 
   let {
-    segment,
+    segment = "",
     index,
     isActive,
     isPlaying = true,
     currentCharIndex,
     highlightEndIndex = undefined,
+    highlightStartIndex = undefined,
     videoSource,
   } = $props();
 
@@ -62,9 +63,14 @@
     return idx;
   });
 
-  // Progress based on word index
+  // Progress based on character index for smoother animation
   let progress = $derived(
-    words.length > 0 ? ((currentWordIdx + 1) / words.length) * 100 : 0,
+    segment.length > 0
+      ? Math.min(
+          100,
+          (Math.max(0, currentCharIndex) / segment.length) * 100,
+        )
+      : 0,
   );
 
   let startIndex = $derived(
@@ -74,11 +80,12 @@
   );
 
   // In dictation mode, we want to show all words in the current sentence (range).
-  // If highlightEndIndex is set, find all words within [currentCharIndex, highlightEndIndex].
+  // If highlightEndIndex is set, find all words within [start, highlightEndIndex].
+  // Uses highlightStartIndex if provided, else falls back to currentCharIndex.
   let visibleWords = $derived(
     highlightEndIndex !== undefined
       ? words.filter(
-          (w) => w.start >= currentCharIndex && w.end <= highlightEndIndex,
+          (w) => w.start >= (highlightStartIndex ?? currentCharIndex) && w.end <= highlightEndIndex,
         )
       : words.slice(startIndex, startIndex + wordCount),
   );
