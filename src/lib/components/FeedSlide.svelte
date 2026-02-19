@@ -4,9 +4,11 @@
   import { videoAssetUrls } from "$lib/stores/assets";
   import { wordCount } from "$lib/constants";
   import { isMuted } from "$lib/stores/audio";
+  import type { Word } from "$lib/text-utils";
 
   let {
     segment = "",
+    words = [] as Word[],
     index,
     isActive,
     isPlaying = true,
@@ -30,21 +32,6 @@
     }
   });
 
-  let words = $derived.by(() => {
-    if (!segment) return [];
-    const w: { word: string; start: number; end: number }[] = [];
-    const wordRegex = /\S+/g;
-    let match;
-    while ((match = wordRegex.exec(segment)) !== null) {
-      w.push({
-        word: match[0],
-        start: match.index,
-        end: match.index + match[0].length,
-      });
-    }
-    return w;
-  });
-
   let currentWordIdx = $derived.by(() => {
     if (currentCharIndex === -1 || !isActive) {
       return -1;
@@ -66,10 +53,7 @@
   // Progress based on character index for smoother animation
   let progress = $derived(
     segment.length > 0
-      ? Math.min(
-          100,
-          (Math.max(0, currentCharIndex) / segment.length) * 100,
-        )
+      ? Math.min(100, (Math.max(0, currentCharIndex) / segment.length) * 100)
       : 0,
   );
 
@@ -85,7 +69,9 @@
   let visibleWords = $derived(
     highlightEndIndex !== undefined
       ? words.filter(
-          (w) => w.start >= (highlightStartIndex ?? currentCharIndex) && w.end <= highlightEndIndex,
+          (w) =>
+            w.start >= (highlightStartIndex ?? currentCharIndex) &&
+            w.end <= highlightEndIndex,
         )
       : words.slice(startIndex, startIndex + wordCount),
   );

@@ -13,6 +13,7 @@
   import { splitSentences } from "$lib/segmenter";
   import { updateDocumentProgress } from "$lib/database";
   import { videoSources } from "$lib/constants";
+  import { parseWords } from "$lib/text-utils";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
@@ -22,6 +23,10 @@
     initialProgress = 0,
     documentId = "",
   } = $props();
+
+  let parsedSegments = $derived(
+    segments.map((s) => ({ text: s, words: parseWords(s) })),
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swiperInstance: any = $state();
@@ -260,11 +265,12 @@
       tabindex="0"
       onkeydown={handleKeydown}
     >
-      {#each segments as segment, i (i)}
+      {#each parsedSegments as { text: segment, words }, i (i)}
         <swiper-slide class="w-full h-full" data-testid="swiper-slide-mock">
           {#if Math.abs(i - activeIndex) <= 2}
             <FeedSlide
               {segment}
+              {words}
               index={i}
               isActive={i === activeIndex}
               {isPlaying}
@@ -272,7 +278,9 @@
               highlightEndIndex={i === activeIndex
                 ? highlightEndIndex
                 : undefined}
-              highlightStartIndex={i === activeIndex ? highlightStartIndex : undefined}
+              highlightStartIndex={i === activeIndex
+                ? highlightStartIndex
+                : undefined}
               videoSource={videoSources[i % videoSources.length]}
             />
           {:else}

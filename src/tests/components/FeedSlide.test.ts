@@ -2,7 +2,7 @@ import { render, screen, cleanup } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import FeedSlide from "../../lib/components/FeedSlide.svelte";
 import { videoAssetUrls } from "../../lib/stores/assets";
-import { get } from "svelte/store";
+import { parseWords } from "../../lib/text-utils";
 
 // Mock the assets store
 vi.mock("../../lib/stores/assets", async () => {
@@ -27,8 +27,10 @@ describe("FeedSlide Component", () => {
     cleanup();
   });
 
+  const defaultSegment = "Hello world this is a test";
   const defaultProps = {
-    segment: "Hello world this is a test",
+    segment: defaultSegment,
+    words: parseWords(defaultSegment),
     index: 0,
     isActive: true,
     isPlaying: true,
@@ -45,14 +47,23 @@ describe("FeedSlide Component", () => {
     });
 
     it("renders segment text split into words", () => {
-      render(FeedSlide, { ...defaultProps, segment: "Hello world" });
+      const segment = "Hello world";
+      render(FeedSlide, {
+        ...defaultProps,
+        segment,
+        words: parseWords(segment),
+      });
       expect(screen.getByText("Hello")).toBeInTheDocument();
       expect(screen.getByText("world")).toBeInTheDocument();
     });
 
     it("renders only wordCount words if segment is long", () => {
       const longSegment = "one two three four five six seven eight nine ten";
-      render(FeedSlide, { ...defaultProps, segment: longSegment });
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: longSegment,
+        words: parseWords(longSegment),
+      });
 
       // Since wordCount is 8, we expect words 1-8 to be present, and 9-10 to be absent
       expect(screen.getByText("one")).toBeInTheDocument();
@@ -67,6 +78,7 @@ describe("FeedSlide Component", () => {
       render(FeedSlide, {
         ...defaultProps,
         segment: longSegment,
+        words: parseWords(longSegment),
         currentCharIndex: 41, // Index of 'i' in 'nine'
       });
 
@@ -104,9 +116,11 @@ describe("FeedSlide Component", () => {
     it("highlights the active word based on currentCharIndex", () => {
       // "Hello" is 5 chars. Index 0-4 should highlight "Hello".
       // "world" starts at index 6 (space at 5).
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 2,
       });
 
@@ -120,9 +134,11 @@ describe("FeedSlide Component", () => {
     it("marks past words correctly", () => {
       // "Hello" (0-5), "world" (6-11).
       // Index 7 is inside "world".
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 7,
       });
 
@@ -134,9 +150,11 @@ describe("FeedSlide Component", () => {
     });
 
     it("handles currentCharIndex = -1 (no active words)", () => {
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: -1,
       });
 
@@ -151,12 +169,12 @@ describe("FeedSlide Component", () => {
       // "Hello" (0-5), "world" (6-11).
       // "Hello world" length is 11.
       // Range: 0 to 11.
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 0,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         highlightEndIndex: 11,
       });
 
@@ -176,9 +194,8 @@ describe("FeedSlide Component", () => {
       render(FeedSlide, {
         ...defaultProps,
         segment: longSentence,
+        words: parseWords(longSentence),
         currentCharIndex: 0,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         highlightEndIndex: longSentence.length,
       });
 
@@ -190,12 +207,12 @@ describe("FeedSlide Component", () => {
     });
 
     it("applies wider margin to active words", () => {
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 0,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         highlightEndIndex: 11,
       });
 
@@ -206,9 +223,11 @@ describe("FeedSlide Component", () => {
     });
 
     it("applies narrow margin to inactive words", () => {
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: -1,
       });
 
@@ -256,10 +275,11 @@ describe("FeedSlide Component", () => {
     it("calculates progress based on character index", () => {
       // "Hello world" length is 11.
       // At index 5 (' '), progress should be 5/11 * 100 = 45.4545...%
-
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 5,
       });
 
@@ -270,8 +290,8 @@ describe("FeedSlide Component", () => {
       // Extract the width percentage
       const match = style?.match(/width: ([\d.]+)%/);
       expect(match).not.toBeNull();
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const percentage = parseFloat(match![1]);
+
+      const percentage = parseFloat(match ? match[1] : "0");
 
       // Expect approximately 45.45%
       expect(percentage).toBeCloseTo(45.45, 1);
@@ -282,14 +302,15 @@ describe("FeedSlide Component", () => {
     it("handles undefined segment gracefully", () => {
       const defaultProps = {
         segment: "Hello world this is a test",
+        words: parseWords("Hello world this is a test"),
         index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
         videoSource: "http://example.com/video.mp4",
       };
-      // @ts-ignore
-      render(FeedSlide, { ...defaultProps, segment: undefined });
+      // @ts-expect-error - Testing graceful handling of missing required props
+      render(FeedSlide, { ...defaultProps, segment: undefined, words: [] });
       const video = document.querySelector("video");
       expect(video).toBeInTheDocument();
       // Should not throw and should render empty text container
@@ -301,24 +322,15 @@ describe("FeedSlide Component", () => {
 
   describe("Dictation Mode Enhancements", () => {
     it("uses highlightStartIndex to determine visible words range", () => {
-      const defaultProps = {
-        segment: "Hello world this is a test",
-        index: 0,
-        isActive: true,
-        isPlaying: true,
-        currentCharIndex: -1,
-        videoSource: "http://example.com/video.mp4",
-      };
-
       // "Hello world" length is 11.
       // range: 0-11.
       // If we provide highlightStartIndex=0 and currentCharIndex=5 (progress mid-way).
-
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 5,
-        // @ts-ignore
         highlightEndIndex: 11,
         highlightStartIndex: 0,
       });
@@ -341,24 +353,15 @@ describe("FeedSlide Component", () => {
     });
 
     it("defaults to currentCharIndex if highlightStartIndex is missing", () => {
-      const defaultProps = {
-        segment: "Hello world this is a test",
-        index: 0,
-        isActive: true,
-        isPlaying: true,
-        currentCharIndex: -1,
-        videoSource: "http://example.com/video.mp4",
-      };
-
       // "Hello world"
       // If highlightStartIndex is undefined, it falls back to currentCharIndex.
       // If currentCharIndex=6 ("world"), "Hello" should be hidden.
-
+      const segment = "Hello world";
       render(FeedSlide, {
         ...defaultProps,
-        segment: "Hello world",
+        segment,
+        words: parseWords(segment),
         currentCharIndex: 6,
-        // @ts-ignore
         highlightEndIndex: 11,
       });
 
