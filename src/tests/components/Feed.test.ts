@@ -755,4 +755,46 @@ describe("Feed Component", () => {
     // Reset mode
     isDictationMode.set(false);
   });
+
+  it("TC-FEED-010: Updates progress bar during Dictation Mode playback", async () => {
+    // Enable Dictation Mode
+    isDictationMode.set(true);
+
+    const segments = ["Hello world"]; // Length 11
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Wait for speakText to be called
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get the boundary callback
+    const mockCalls = (audio.speakText as any).mock.calls;
+    // playNextSentence calls speakText(text, boundaryCallback, onEndCallback, offset)
+    const args = mockCalls[0];
+    const boundaryCallback = args[1]; // Now it is defined!
+    expect(boundaryCallback).toBeTypeOf("function");
+
+    // Simulate boundary callback at index 5 (space)
+    boundaryCallback("Hello", 5);
+
+    // Check progress bar style
+    await waitFor(() => {
+      const progressBar = document.querySelector(".bg-gradient-to-r");
+      expect(progressBar).not.toBeNull();
+      const style = progressBar?.getAttribute("style");
+      // "Hello world" length 11. 5/11 ~ 45%
+      expect(style).toMatch(/width: 45\./);
+    });
+
+    // Reset mode
+    isDictationMode.set(false);
+  });
 });

@@ -277,8 +277,6 @@ describe("FeedSlide Component", () => {
       expect(percentage).toBeCloseTo(45.45, 1);
     });
   });
-});
-
 
   describe("Safety", () => {
     it("handles undefined segment gracefully", () => {
@@ -300,3 +298,72 @@ describe("FeedSlide Component", () => {
       expect(textContainer?.textContent?.trim()).toBe("");
     });
   });
+
+  describe("Dictation Mode Enhancements", () => {
+    it("uses highlightStartIndex to determine visible words range", () => {
+      const defaultProps = {
+        segment: "Hello world this is a test",
+        index: 0,
+        isActive: true,
+        isPlaying: true,
+        currentCharIndex: -1,
+        videoSource: "http://example.com/video.mp4",
+      };
+
+      // "Hello world" length is 11.
+      // range: 0-11.
+      // If we provide highlightStartIndex=0 and currentCharIndex=5 (progress mid-way).
+
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 5,
+        // @ts-ignore
+        highlightEndIndex: 11,
+        highlightStartIndex: 0,
+      });
+
+      // Both "Hello" (0-5) and "world" (6-11) should be visible because
+      // filter uses (w.start >= highlightStartIndex) -> 0 >= 0 (true)
+      // If it used currentCharIndex(5), "Hello"(0) would be hidden.
+
+      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(screen.getByText("world")).toBeInTheDocument();
+
+      // Progress calculation uses currentCharIndex(5) -> ~45%
+      const progressBar = document.querySelector(".bg-gradient-to-r");
+      expect(progressBar).not.toBeNull();
+      const style = progressBar?.getAttribute("style");
+      const match = style?.match(/width: ([\d.]+)%/);
+      const percentage = parseFloat(match![1]);
+      expect(percentage).toBeGreaterThan(40);
+      expect(percentage).toBeLessThan(50);
+    });
+
+    it("defaults to currentCharIndex if highlightStartIndex is missing", () => {
+      const defaultProps = {
+        segment: "Hello world this is a test",
+        index: 0,
+        isActive: true,
+        isPlaying: true,
+        currentCharIndex: -1,
+        videoSource: "http://example.com/video.mp4",
+      };
+
+      // "Hello world"
+      // If highlightStartIndex is undefined, it falls back to currentCharIndex.
+      // If currentCharIndex=6 ("world"), "Hello" should be hidden.
+
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "Hello world",
+        currentCharIndex: 6,
+        // @ts-ignore
+        highlightEndIndex: 11,
+      });
+
+      expect(screen.queryByText("Hello")).not.toBeInTheDocument();
+      expect(screen.getByText("world")).toBeInTheDocument();
+    });
+  });
+});

@@ -12,6 +12,7 @@
     isPlaying = true,
     currentCharIndex,
     highlightEndIndex = undefined,
+    highlightStartIndex = undefined,
     videoSource,
   } = $props();
 
@@ -79,11 +80,12 @@
   );
 
   // In dictation mode, we want to show all words in the current sentence (range).
-  // If highlightEndIndex is set, find all words within [currentCharIndex, highlightEndIndex].
+  // If highlightEndIndex is set, find all words within [start, highlightEndIndex].
+  // Uses highlightStartIndex if provided, else falls back to currentCharIndex.
   let visibleWords = $derived(
     highlightEndIndex !== undefined
       ? words.filter(
-          (w) => w.start >= currentCharIndex && w.end <= highlightEndIndex,
+          (w) => w.start >= (highlightStartIndex ?? currentCharIndex) && w.end <= highlightEndIndex,
         )
       : words.slice(startIndex, startIndex + wordCount),
   );
