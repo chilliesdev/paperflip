@@ -6,7 +6,7 @@
   import { isMuted } from "$lib/stores/audio";
 
   let {
-    segment,
+    segment = "",
     index,
     isActive,
     isPlaying = true,

@@ -278,3 +278,25 @@ describe("FeedSlide Component", () => {
     });
   });
 });
+
+
+  describe("Safety", () => {
+    it("handles undefined segment gracefully", () => {
+      const defaultProps = {
+        segment: "Hello world this is a test",
+        index: 0,
+        isActive: true,
+        isPlaying: true,
+        currentCharIndex: -1,
+        videoSource: "http://example.com/video.mp4",
+      };
+      // @ts-ignore
+      render(FeedSlide, { ...defaultProps, segment: undefined });
+      const video = document.querySelector("video");
+      expect(video).toBeInTheDocument();
+      // Should not throw and should render empty text container
+      const textContainer = document.querySelector(".backdrop-blur-xl");
+      expect(textContainer).toBeInTheDocument();
+      expect(textContainer?.textContent?.trim()).toBe("");
+    });
+  });

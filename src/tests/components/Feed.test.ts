@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Feed from "../../lib/components/Feed.svelte";
 import * as audio from "../../lib/audio";
 import * as database from "../../lib/database";
+import { isDictationMode } from "../../lib/stores/audio";
 
 // Mock the audio module
 vi.mock("../../lib/audio", () => {
@@ -700,5 +701,58 @@ describe("Feed Component", () => {
       const style = progressBar?.getAttribute("style");
       expect(style).toContain("width: 100%");
     });
+  });
+
+  it("TC-FEED-009: Clears highlightEndIndex on Dictation Completion", async () => {
+    // Enable Dictation Mode
+    isDictationMode.set(true);
+
+    const segments = ["Hello world"]; // Length 11
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Wait for speakText to be called
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get the onEnd callback
+    const mockCalls = (audio.speakText as any).mock.calls;
+    // In Dictation mode, playNextSentence calls speakText with 4 args: text, boundaryCallback (undefined), onEndCallback, offset
+    // Wait, the mock implementation might capture args differently.
+    // The implementation of speakText mock captures all args.
+
+    // playNextSentence calls: speakText(text, undefined, onEnd, offset)
+    // speakKaraoke calls: speakText(text, onBoundary, onEnd, startIndex)
+
+    // mock calls[0] is from playNextSentence
+    const args = mockCalls[0];
+    const onEndCallback = args[2];
+    expect(onEndCallback).toBeTypeOf("function");
+
+    // Trigger onEnd (sentence finishes)
+    onEndCallback();
+
+    // The recursion will see queue empty and finish.
+    // It should clear highlightEndIndex.
+    // If highlightEndIndex is cleared, FeedSlide should show all words.
+
+    await waitFor(() => {
+      // Check if text is visible.
+      // If highlightEndIndex was NOT cleared, FeedSlide would show NOTHING because currentCharIndex=length.
+      // If cleared, it shows the end state (full text).
+      const hello = screen.getByText("Hello");
+      expect(hello).toBeInTheDocument();
+      expect(hello).toHaveClass("text-white/80"); // Past style
+    });
+
+    // Reset mode
+    isDictationMode.set(false);
   });
 });

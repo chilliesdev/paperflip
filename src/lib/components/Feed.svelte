@@ -127,6 +127,7 @@
         // This ensures granular progress reflects completion
         currentCharIndex = text.length;
         currentSegmentProgress = text.length;
+      highlightEndIndex = undefined;
         saveProgress(true); // Immediate save on completion
       },
       startIndex,
@@ -150,6 +151,7 @@
       // We assume completion of the segment
       currentCharIndex = segments[swiperInstance.realIndex].length;
       currentSegmentProgress = segments[swiperInstance.realIndex].length;
+      highlightEndIndex = undefined;
       saveProgress(true); // Immediate save on completion
       return;
     }
