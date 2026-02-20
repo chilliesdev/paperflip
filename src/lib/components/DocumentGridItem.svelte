@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
 
-  let { document } = $props();
+  let { document, onShowOptions } = $props();
 
   const progress = $derived.by(() => {
     const totalSegments = document.segments?.length || 0;
@@ -70,6 +70,18 @@
       </div>
     </div>
   </div>
+
+  <button
+    class="absolute top-1 right-1 p-2 rounded-full text-white/50 hover:text-white hover:bg-black/20 z-20 transition-all"
+    onclick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onShowOptions?.(document);
+    }}
+    aria-label="More options"
+  >
+    <span class="material-symbols-outlined text-lg">more_vert</span>
+  </button>
 
   <div class="p-2 flex-grow flex flex-col justify-between">
     <div>
