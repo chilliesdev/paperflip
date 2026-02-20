@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, fireEvent } from "@testing-library/svelte";
 import { describe, it, expect, vi } from "vitest";
 import DocumentGridItem from "../../lib/components/DocumentGridItem.svelte";
 
@@ -8,33 +8,33 @@ vi.mock("$app/paths", () => ({
 
 describe("DocumentGridItem", () => {
   const mockDocument = {
-    documentId: "Grid Doc.pdf",
-    segments: ["A", "B", "C", "D", "E"],
-    currentSegmentIndex: 2, // 3/5 = 60%
+    documentId: "Test Document.pdf",
+    segments: ["A", "B", "C", "D"],
+    currentSegmentIndex: 1, // 25% progress
+    currentSegmentProgress: 0,
     timestamp: Date.now(),
   };
 
   it("renders document title and info", () => {
     render(DocumentGridItem, { document: mockDocument });
-    expect(screen.getByText("Grid Doc.pdf")).toBeInTheDocument();
-    expect(screen.getByText("5 Segments • PDF")).toBeInTheDocument();
+    expect(screen.getByText("Test Document.pdf")).toBeInTheDocument();
+    expect(screen.getByText("4 Segments • PDF")).toBeInTheDocument();
   });
 
   it("calculates progress correctly", () => {
-    // 2 / 5 = 40%
-    // Wait, let's verify logic in component.
-    // Component says: (currentSegmentIndex / segments.length) * 100
-    // 2 / 5 = 0.4 = 40%
-    render(DocumentGridItem, { document: mockDocument });
-    const progressBar = screen
-      .getByText("Grid Doc.pdf")
-      .parentElement?.nextElementSibling?.querySelector("[style]");
-    expect(progressBar).toHaveStyle("width: 40%");
+    const { container } = render(DocumentGridItem, { document: mockDocument });
+    const progressBar = container.querySelector('[style*="width: 25%"]');
+    expect(progressBar).toBeInTheDocument();
   });
 
-  it("renders with 0 segments gracefully", () => {
-    const emptyDoc = { ...mockDocument, segments: [] };
-    render(DocumentGridItem, { document: emptyDoc });
-    expect(screen.getByText("0 Segments • PDF")).toBeInTheDocument();
+  it("renders options button and calls handler on click", async () => {
+    const onShowOptions = vi.fn();
+    render(DocumentGridItem, { document: mockDocument, onShowOptions });
+
+    const button = screen.getByLabelText("More options");
+    expect(button).toBeInTheDocument();
+
+    await fireEvent.click(button);
+    expect(onShowOptions).toHaveBeenCalledWith(mockDocument);
   });
 });

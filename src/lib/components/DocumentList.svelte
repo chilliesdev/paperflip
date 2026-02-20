@@ -2,7 +2,7 @@
   import DocumentListItem from "./DocumentListItem.svelte";
   import DocumentGridItem from "./DocumentGridItem.svelte";
 
-  let { documents = [], viewMode = $bindable("list") } = $props();
+  let { documents = [], viewMode = $bindable("list"), onShowOptions } = $props();
 </script>
 
 <section class="px-6 flex-grow">
@@ -37,13 +37,13 @@
   {:else if viewMode === "list"}
     <div class="flex flex-col gap-4">
       {#each documents as doc (doc.documentId)}
-        <DocumentListItem document={doc} />
+        <DocumentListItem document={doc} {onShowOptions} />
       {/each}
     </div>
   {:else}
     <div class="grid grid-cols-3 gap-3">
       {#each documents as doc (doc.documentId)}
-        <DocumentGridItem document={doc} />
+        <DocumentGridItem document={doc} {onShowOptions} />
       {/each}
     </div>
   {/if}

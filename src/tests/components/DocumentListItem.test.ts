@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, fireEvent } from "@testing-library/svelte";
 import { describe, it, expect, vi } from "vitest";
 import DocumentListItem from "../../lib/components/DocumentListItem.svelte";
 
@@ -11,6 +11,7 @@ describe("DocumentListItem", () => {
     documentId: "Test Document.pdf",
     segments: ["A", "B", "C", "D"],
     currentSegmentIndex: 1, // 25% progress
+    currentSegmentProgress: 0,
     timestamp: Date.now(),
   };
 
@@ -21,20 +22,25 @@ describe("DocumentListItem", () => {
   });
 
   it("calculates progress correctly", () => {
-    // 1 / 4 = 25%
-    render(DocumentListItem, { document: mockDocument });
-    // Since progress is visual (width %), we can check the style or ensure no errors
-    const progressBar = screen
-      .getByText("Test Document.pdf")
-      .parentElement?.parentElement?.nextElementSibling?.querySelector(
-        "[style]"
-      );
-    expect(progressBar).toHaveStyle("width: 25%");
+    const { container } = render(DocumentListItem, { document: mockDocument });
+    const progressBar = container.querySelector('[style*="width: 25%"]');
+    expect(progressBar).toBeInTheDocument();
   });
 
   it("renders with 0 segments gracefully", () => {
     const emptyDoc = { ...mockDocument, segments: [] };
     render(DocumentListItem, { document: emptyDoc });
     expect(screen.getByText("0 segments • PDF")).toBeInTheDocument();
+  });
+
+  it("renders options button and calls handler on click", async () => {
+    const onShowOptions = vi.fn();
+    render(DocumentListItem, { document: mockDocument, onShowOptions });
+
+    const button = screen.getByLabelText("More options");
+    expect(button).toBeInTheDocument();
+
+    await fireEvent.click(button);
+    expect(onShowOptions).toHaveBeenCalledWith(mockDocument);
   });
 });

@@ -1,16 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAllDocuments } from "$lib/database";
+  import { getAllDocuments, deleteDocument, toggleFavourite } from "$lib/database";
   import LibraryHeader from "$lib/components/LibraryHeader.svelte";
   import RecentlyViewedCard from "$lib/components/RecentlyViewedCard.svelte";
   import DocumentList from "$lib/components/DocumentList.svelte";
   import BottomNavigation from "$lib/components/BottomNavigation.svelte";
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
+  import OptionsSheet from "$lib/components/OptionsSheet.svelte";
 
   let documents: any[] = $state([]);
   let isLoading = $state(true);
   let searchQuery = $state("");
   let viewMode: "list" | "grid" = $state("list");
+  let selectedDocument: any = $state(null);
 
   const recentDocs = $derived(documents.slice(0, 5));
   const filteredDocs = $derived(
@@ -68,11 +70,32 @@
       {/if}
 
       <div id="all-documents">
-        <DocumentList documents={filteredDocs} bind:viewMode />
+        <DocumentList
+          documents={filteredDocs}
+          bind:viewMode
+          onShowOptions={(doc) => (selectedDocument = doc)}
+        />
       </div>
     </main>
 
     <BottomNavigation activeTab="library" />
+
+    {#if selectedDocument}
+      <OptionsSheet
+        document={selectedDocument}
+        onClose={() => (selectedDocument = null)}
+        onDelete={async (id) => {
+          await deleteDocument(id);
+          documents = documents.filter((d) => d.documentId !== id);
+        }}
+        onToggleFavourite={async (id) => {
+          const newStatus = await toggleFavourite(id);
+          documents = documents.map((d) =>
+            d.documentId === id ? { ...d, isFavourite: newStatus } : d
+          );
+        }}
+      />
+    {/if}
 
     <!-- Ambient Background Gradients -->
     <div

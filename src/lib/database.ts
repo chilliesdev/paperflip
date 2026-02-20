@@ -25,7 +25,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 2,
+  version: 3,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -56,6 +56,9 @@ const documentSchema = {
       multipleOf: 1,
       minimum: 0,
       maximum: 10000000000000,
+    },
+    isFavourite: {
+      type: "boolean",
     },
   },
   required: ["documentId", "segments", "currentSegmentIndex", "createdAt"],
@@ -130,6 +133,13 @@ async function _createDb() {
               currentSegmentProgress: 0,
             };
           },
+          // Migration from 2 to 3
+          3: function (oldDoc) {
+            return {
+              ...oldDoc,
+              isFavourite: false,
+            };
+          },
         },
       },
     });
@@ -167,6 +177,7 @@ export async function addDocument(
       currentSegmentIndex,
       currentSegmentProgress: 0,
       createdAt: Date.now(),
+      isFavourite: false,
     });
     return doc.toJSON();
   } catch (error) {
@@ -188,6 +199,7 @@ export async function upsertDocument(
       currentSegmentIndex,
       currentSegmentProgress: 0,
       createdAt: Date.now(),
+      isFavourite: false, // Default to false if new
     });
     return doc.toJSON();
   } catch (error) {
@@ -230,6 +242,37 @@ export async function updateDocumentProgress(
   } catch (error) {
     console.error(`Failed to update progress for ${documentId}:`, error);
   }
+}
+
+export async function toggleFavourite(documentId: string) {
+  try {
+    const db = await getDb();
+    const doc = await db.documents.findOne(documentId).exec();
+    if (doc) {
+      const newStatus = !doc.isFavourite;
+      await doc.patch({
+        isFavourite: newStatus,
+      });
+      return newStatus;
+    }
+  } catch (error) {
+    console.error(`Failed to toggle favourite for ${documentId}:`, error);
+  }
+  return false;
+}
+
+export async function deleteDocument(documentId: string) {
+  try {
+    const db = await getDb();
+    const doc = await db.documents.findOne(documentId).exec();
+    if (doc) {
+      await doc.remove();
+      return true;
+    }
+  } catch (error) {
+    console.error(`Failed to delete document ${documentId}:`, error);
+  }
+  return false;
 }
 
 // For testing purposes only - resets the database singleton
