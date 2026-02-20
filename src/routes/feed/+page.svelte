@@ -45,27 +45,6 @@
   class="h-screen w-full bg-brand-bg flex justify-center items-center overflow-hidden"
 >
   <div class="h-full aspect-[9/16] max-w-full bg-black shadow-2xl relative">
-    <a
-      href={resolve("/")}
-      class="absolute top-8 left-8 z-50 backdrop-blur-xl bg-black/40 text-white px-4 py-2 rounded-full border border-white/20 hover:bg-black/60 transition-all flex items-center"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5 mr-2"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 19l-7-7m0 0l7-7m-7 7h18"
-        />
-      </svg>
-      <span class="text-sm font-medium">Back</span>
-    </a>
-
     {#if isLoading}
       <div class="flex items-center justify-center h-full">
         <p class="text-white text-xl animate-pulse">Loading feed...</p>

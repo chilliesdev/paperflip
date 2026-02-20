@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Feed from "../../lib/components/Feed.svelte";
 import * as audio from "../../lib/audio";
 import * as database from "../../lib/database";
-import { isDictationMode } from "../../lib/stores/audio";
+import { isDictationMode, autoScroll } from "../../lib/stores/audio";
 
 // Mock the audio module
 vi.mock("../../lib/audio", () => {
@@ -80,6 +80,9 @@ vi.mock("swiper", () => ({
 }));
 
 describe("Feed Component", () => {
+  // Use a getter for isEnd to allow dynamic updates even if proxied
+  let mockIsEnd = false;
+
   const mockSwiperInstance = {
     realIndex: 0,
     activeIndex: 0,
@@ -90,12 +93,14 @@ describe("Feed Component", () => {
     slidePrev: vi.fn(),
     on: vi.fn(),
     off: vi.fn(),
+    get isEnd() { return mockIsEnd; }
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockSwiperInstance.realIndex = 0;
     mockSwiperInstance.activeIndex = 0;
+    mockIsEnd = false;
 
     // Reset video element mocks if necessary
     HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
@@ -796,5 +801,85 @@ describe("Feed Component", () => {
 
     // Reset mode
     isDictationMode.set(false);
+  });
+
+  it("TC-FEED-011: Auto-Scroll Logic", async () => {
+    const segments = ["Segment 1", "Segment 2"];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    mockSwiperInstance.activeIndex = 0;
+    mockIsEnd = false; // Important for auto-scroll check
+
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Wait for initial speech
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Get onEnd callback
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const onEndCallback = mockCalls[mockCalls.length - 1][2];
+
+    // Case 1: Auto-Scroll OFF (Default)
+    autoScroll.set(false);
+    onEndCallback();
+    expect(mockSwiperInstance.slideNext).not.toHaveBeenCalled();
+
+    // Case 2: Auto-Scroll ON
+    autoScroll.set(true);
+    // Reset mock calls
+    (mockSwiperInstance.slideNext as any).mockClear();
+
+    // Trigger onEnd again (simulating re-speak or next segment finish)
+    onEndCallback();
+    expect(mockSwiperInstance.slideNext).toHaveBeenCalled();
+
+    // Case 3: Auto-Scroll ON but at END
+    mockIsEnd = true;
+    (mockSwiperInstance.slideNext as any).mockClear();
+    onEndCallback();
+    expect(mockSwiperInstance.slideNext).not.toHaveBeenCalled();
+
+    // Reset store
+    autoScroll.set(false);
+  });
+
+  it("renders the swipe up hint only on the first slide", async () => {
+    const segments = ["Segment 1", "Segment 2"];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    mockSwiperInstance.activeIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Initial state (slide 0): Hint should be present
+    expect(screen.getByText(/Swipe up to continue/i)).toBeInTheDocument();
+
+    // Slide to next (slide 1)
+    mockSwiperInstance.realIndex = 1;
+    mockSwiperInstance.activeIndex = 1;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Wait for Svelte reactivity
+    await waitFor(() => {
+        expect(screen.queryByText(/Swipe up to continue/i)).not.toBeInTheDocument();
+    });
   });
 });

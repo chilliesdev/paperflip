@@ -1,5 +1,5 @@
 // paperflip/src/lib/audio.ts
-import { isMuted } from "$lib/stores/audio";
+import { isMuted, playbackRate } from "$lib/stores/audio";
 import { get } from "svelte/store";
 
 let synth: SpeechSynthesis;
@@ -36,6 +36,24 @@ if (typeof window !== "undefined") {
         );
       } else {
         utterance.volume = muted ? 0 : 1;
+      }
+    }
+  });
+
+  playbackRate.subscribe((rate) => {
+    if (utterance && synth) {
+      // Changing rate also usually requires restart
+      if (manualSpeaking && !manualPaused) {
+        const resumeIndex = currentStartIndex + lastCharIndex;
+        speakText(
+          currentText,
+          currentOnBoundary,
+          currentOnEnd,
+          resumeIndex,
+          true, // internal restart flag
+        );
+      } else {
+        utterance.rate = rate;
       }
     }
   });
@@ -81,11 +99,11 @@ export function speakText(
   const textToSpeak = startIndex > 0 ? text.substring(startIndex) : text;
   utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.volume = get(isMuted) ? 0 : 1;
+  utterance.rate = get(playbackRate);
   utterance.lang = "en-US";
   // You can set voice, pitch, rate here
   // utterance.voice = ...;
   // utterance.pitch = 1;
-  // utterance.rate = 1;
 
   if (onBoundary) {
     currentBoundaryCallback = onBoundary;

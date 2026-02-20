@@ -75,29 +75,6 @@ describe("FeedSlide Component", () => {
       expect(screen.getByText("ten")).toBeInTheDocument();
     });
 
-    it("shows swipe hint only on first slide when active", () => {
-      // Case 1: First slide, active -> Should show
-      const { unmount } = render(FeedSlide, {
-        ...defaultProps,
-        index: 0,
-        isActive: true,
-      });
-      expect(screen.getByText("Swipe up to continue")).toBeInTheDocument();
-      unmount();
-
-      // Case 2: First slide, inactive -> Should NOT show
-      render(FeedSlide, { ...defaultProps, index: 0, isActive: false });
-      expect(
-        screen.queryByText("Swipe up to continue"),
-      ).not.toBeInTheDocument();
-      cleanup();
-
-      // Case 3: Second slide, active -> Should NOT show
-      render(FeedSlide, { ...defaultProps, index: 1, isActive: true });
-      expect(
-        screen.queryByText("Swipe up to continue"),
-      ).not.toBeInTheDocument();
-    });
   });
 
   describe("Logic & Interactions", () => {
