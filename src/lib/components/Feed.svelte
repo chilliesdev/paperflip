@@ -32,8 +32,9 @@
     documentId = "",
   } = $props();
 
+  // Optimization: Swiper instance is large and complex. We avoid deep reactivity by not using $state, as we only need imperative access.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let swiperInstance: any = $state();
+  let swiperInstance: any;
   let currentCharIndex: number = $state(-1);
   let highlightEndIndex: number | undefined = $state(undefined);
   let highlightStartIndex: number | undefined = $state(undefined);
