@@ -21,7 +21,7 @@ vi.mock("../../lib/audio", () => {
     initializeTTS: vi.fn(() => {
       initialized = true;
     }),
-    speakText: vi.fn((text, onBoundary, onEnd) => {
+    speakText: vi.fn((_text, _onBoundary, _onEnd) => {
       if (!initialized) {
         console.warn("SpeechSynthesis not initialized.");
         return;
@@ -93,7 +93,9 @@ describe("Feed Component", () => {
     slidePrev: vi.fn(),
     on: vi.fn(),
     off: vi.fn(),
-    get isEnd() { return mockIsEnd; }
+    get isEnd() {
+      return mockIsEnd;
+    },
   };
 
   beforeEach(() => {
@@ -879,7 +881,9 @@ describe("Feed Component", () => {
 
     // Wait for Svelte reactivity
     await waitFor(() => {
-        expect(screen.queryByText(/Swipe up to continue/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Swipe up to continue/i),
+      ).not.toBeInTheDocument();
     });
   });
 });

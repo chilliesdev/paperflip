@@ -502,72 +502,74 @@ describe("audio.ts", () => {
 
       speakText("Test");
 
-      const utterance = speakSpy.mock.calls[0][0] as unknown as MockSpeechSynthesisUtterance;
+      const utterance = speakSpy.mock
+        .calls[0][0] as unknown as MockSpeechSynthesisUtterance;
       expect(utterance.rate).toBe(1.5);
     });
 
     it("updates rate and restarts speech when playbackRate changes while speaking", async () => {
-        // Start speaking
-        const speakSpy = vi.spyOn(mockSynth, "speak");
-        const cancelSpy = vi.spyOn(mockSynth, "cancel");
+      // Start speaking
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+      const cancelSpy = vi.spyOn(mockSynth, "cancel");
 
-        speakText("Original Text");
-        expect(isSpeaking()).toBe(true);
-        expect(get(playbackRate)).toBe(1.0);
+      speakText("Original Text");
+      expect(isSpeaking()).toBe(true);
+      expect(get(playbackRate)).toBe(1.0);
 
-        // Change rate
-        playbackRate.set(2.0);
+      // Change rate
+      playbackRate.set(2.0);
 
-        // Wait for potential async effects (though store subscription is usually sync in Svelte)
-        // In our implementation, the subscription calls speakText again immediately.
+      // Wait for potential async effects (though store subscription is usually sync in Svelte)
+      // In our implementation, the subscription calls speakText again immediately.
 
-        // Expect cancel to be called (to stop current speech)
-        expect(cancelSpy).toHaveBeenCalled();
+      // Expect cancel to be called (to stop current speech)
+      expect(cancelSpy).toHaveBeenCalled();
 
-        // Expect speak to be called again with new rate
-        // First call was initial, Second call should be the restart
-        expect(speakSpy).toHaveBeenCalledTimes(2);
+      // Expect speak to be called again with new rate
+      // First call was initial, Second call should be the restart
+      expect(speakSpy).toHaveBeenCalledTimes(2);
 
-        const secondUtterance = speakSpy.mock.calls[1][0] as unknown as MockSpeechSynthesisUtterance;
-        expect(secondUtterance.rate).toBe(2.0);
-        expect(secondUtterance.text).toBe("Original Text");
+      const secondUtterance = speakSpy.mock
+        .calls[1][0] as unknown as MockSpeechSynthesisUtterance;
+      expect(secondUtterance.rate).toBe(2.0);
+      expect(secondUtterance.text).toBe("Original Text");
     });
 
     it("does not restart speech if playbackRate changes while not speaking", () => {
-        const speakSpy = vi.spyOn(mockSynth, "speak");
+      const speakSpy = vi.spyOn(mockSynth, "speak");
 
-        // Not speaking
-        expect(isSpeaking()).toBe(false);
+      // Not speaking
+      expect(isSpeaking()).toBe(false);
 
-        // Change rate
-        playbackRate.set(1.5);
+      // Change rate
+      playbackRate.set(1.5);
 
-        // Should not trigger speak
-        expect(speakSpy).not.toHaveBeenCalled();
+      // Should not trigger speak
+      expect(speakSpy).not.toHaveBeenCalled();
     });
 
     it("updates utterance rate but does not restart if playbackRate changes while paused", () => {
-        const speakSpy = vi.spyOn(mockSynth, "speak");
-        const cancelSpy = vi.spyOn(mockSynth, "cancel");
+      const speakSpy = vi.spyOn(mockSynth, "speak");
+      const cancelSpy = vi.spyOn(mockSynth, "cancel");
 
-        speakText("Test text");
-        pauseTTS();
-        expect(isPaused()).toBe(true);
+      speakText("Test text");
+      pauseTTS();
+      expect(isPaused()).toBe(true);
 
-        // Reset mocks to track subsequent calls
-        speakSpy.mockClear();
-        cancelSpy.mockClear();
+      // Reset mocks to track subsequent calls
+      speakSpy.mockClear();
+      cancelSpy.mockClear();
 
-        // Change rate while paused
-        playbackRate.set(1.5);
+      // Change rate while paused
+      playbackRate.set(1.5);
 
-        // Should NOT cancel or restart (speak)
-        expect(cancelSpy).not.toHaveBeenCalled();
-        expect(speakSpy).not.toHaveBeenCalled();
+      // Should NOT cancel or restart (speak)
+      expect(cancelSpy).not.toHaveBeenCalled();
+      expect(speakSpy).not.toHaveBeenCalled();
 
-        // However, we can't easily check the internal utterance property in this mock setup
-        // without exposing it or spying on the property setter if possible.
-        // But checking side effects (no restart) is the critical part here.
+      // However, we can't easily check the internal utterance property in this mock setup
+      // without exposing it or spying on the property setter if possible.
+      // But checking side effects (no restart) is the critical part here.
     });
   });
 

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { SwiperContainer, SwiperSlide } from "swiper/element";
 
 declare global {
   namespace svelteHTML {

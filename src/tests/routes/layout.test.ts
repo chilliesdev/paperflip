@@ -1,7 +1,7 @@
 import { render, screen, waitFor, cleanup } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import LayoutTestWrapper from "../mocks/LayoutTestWrapper.svelte";
-import { isLoading, loadingStatus } from "../../lib/stores/loading";
+import { isLoading } from "../../lib/stores/loading";
 import { videoAssetUrls } from "../../lib/stores/assets";
 import * as audio from "../../lib/audio";
 
@@ -59,7 +59,7 @@ describe("Layout Component", () => {
     });
 
     // Mock URL.createObjectURL
-    global.URL.createObjectURL = vi.fn((blob) => "blob:video");
+    global.URL.createObjectURL = vi.fn((_blob) => "blob:video");
   });
 
   afterEach(() => {
@@ -78,17 +78,6 @@ describe("Layout Component", () => {
       expect(global.fetch).toHaveBeenCalledWith(
         "http://example.com/video1.mp4",
       );
-    });
-
-    // Should update store
-    await waitFor(() => {
-      const urls = (import("svelte/store") as any).get
-        ? (import("svelte/store") as any).get(videoAssetUrls)
-        : null;
-      // easier: access the store directly from the mock if possible, but we imported the mock instance?
-      // Actually we imported the module members which are the mocked stores because we used factory.
-      // But we need 'get' from svelte/store to read it in test.
-      // Let's use subscription or just assume if content renders, loading is done.
     });
 
     // Eventually loading finishes and content appears

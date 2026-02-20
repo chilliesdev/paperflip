@@ -2,7 +2,6 @@ import {
   render,
   screen,
   fireEvent,
-  waitFor,
   cleanup,
   act,
 } from "@testing-library/svelte";

@@ -6,7 +6,7 @@
     toggleFavourite,
   } from "$lib/database";
   import LibraryHeader from "$lib/components/LibraryHeader.svelte";
-  import RecentlyViewedCard from "$lib/components/RecentlyViewedCard.svelte";
+  import FavouriteCard from "$lib/components/FavouriteCard.svelte";
   import DocumentList from "$lib/components/DocumentList.svelte";
   import BottomNavigation from "$lib/components/BottomNavigation.svelte";
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
@@ -24,7 +24,7 @@
   let viewMode: "list" | "grid" = $state("list");
   let selectedDocument: PaperFlipDocument | null = $state(null);
 
-  const recentDocs = $derived(documents.slice(0, 5));
+  const favouriteDocs = $derived(documents.filter((doc) => doc.isFavourite));
   const filteredDocs = $derived(
     documents.filter((doc) =>
       doc.documentId.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -55,10 +55,10 @@
     <LibraryHeader bind:searchQuery />
 
     <main class="flex-grow flex flex-col space-y-8 pb-24">
-      {#if recentDocs.length > 0 && !searchQuery}
+      {#if favouriteDocs.length > 0 && !searchQuery}
         <section>
           <div class="flex items-center justify-between px-6 mb-3">
-            <h3 class="text-lg font-bold text-white">Recently Viewed</h3>
+            <h3 class="text-lg font-bold text-white">Favourites</h3>
             <button
               class="text-xs font-semibold text-brand-primary uppercase tracking-wider hover:text-brand-secondary transition-colors"
               onclick={() =>
@@ -72,8 +72,8 @@
           <div
             class="flex space-x-4 overflow-x-auto px-6 pb-2 no-scrollbar snap-x scroll-smooth"
           >
-            {#each recentDocs as doc (doc.documentId)}
-              <RecentlyViewedCard document={doc} />
+            {#each favouriteDocs as doc (doc.documentId)}
+              <FavouriteCard document={doc} />
             {/each}
           </div>
         </section>

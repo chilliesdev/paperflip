@@ -17,7 +17,7 @@
     // Calculate total percentage
     return Math.min(
       100,
-      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100)
+      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100),
     );
   });
 
@@ -41,18 +41,17 @@
   const hash = $derived(
     document.documentId
       .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
+      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
   );
   const icon = $derived(icons[hash % icons.length]);
   const colorClass = $derived(colors[hash % colors.length]);
-  const shadowColor = $derived(colorClass.replace("text-", "rgba(0,255,136,0.6)")); // Simplified shadow mapping
 </script>
 
 <div
   class="bg-brand-surface border border-white/5 rounded-xl overflow-hidden flex flex-row h-24 relative hover:border-white/10 transition-colors group"
 >
   <a
-    href={`${resolve("/feed")}?id=${encodeURIComponent(document.documentId)}`}
+    href="{resolve('/feed')}?id={encodeURIComponent(document.documentId)}"
     class="flex flex-row flex-grow min-w-0"
   >
     <div class="w-24 bg-brand-surface-dark relative flex-shrink-0">
@@ -110,7 +109,7 @@
       <div
         class="{colorClass.replace(
           'text-',
-          'bg-'
+          'bg-',
         )} h-full shadow-[0_0_8px_rgba(0,255,136,0.6)]"
         style="width: {progress}%"
       ></div>

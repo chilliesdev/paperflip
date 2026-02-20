@@ -6,7 +6,6 @@
 
   let {
     segment = "",
-    index,
     isActive,
     isPlaying = true,
     currentCharIndex,
@@ -73,10 +72,7 @@
   // Progress based on character index for smoother animation
   let progress = $derived(
     segment.length > 0
-      ? Math.min(
-          100,
-          (Math.max(0, currentCharIndex) / segment.length) * 100,
-        )
+      ? Math.min(100, (Math.max(0, currentCharIndex) / segment.length) * 100)
       : 0,
   );
 
@@ -92,11 +88,12 @@
   let visibleWords = $derived(
     highlightEndIndex !== undefined
       ? words.filter(
-          (w) => w.start >= (highlightStartIndex ?? currentCharIndex) && w.end <= highlightEndIndex,
+          (w) =>
+            w.start >= (highlightStartIndex ?? currentCharIndex) &&
+            w.end <= highlightEndIndex,
         )
       : words.slice(startIndex, startIndex + wordCount),
   );
-
 </script>
 
 <div class="w-full h-full relative overflow-hidden bg-black">
@@ -145,7 +142,6 @@
         {/each}
       </div>
     </div>
-
   </div>
 
   <!-- Progress Bar -->

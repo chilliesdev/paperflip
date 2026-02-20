@@ -1,12 +1,12 @@
 import { render, screen } from "@testing-library/svelte";
 import { describe, it, expect, vi } from "vitest";
-import RecentlyViewedCard from "../../lib/components/RecentlyViewedCard.svelte";
+import FavouriteCard from "../../lib/components/FavouriteCard.svelte";
 
 vi.mock("$app/paths", () => ({
   resolve: (path: string) => path,
 }));
 
-describe("RecentlyViewedCard", () => {
+describe("FavouriteCard", () => {
   const mockDocument = {
     documentId: "Recent Doc.pdf",
     segments: ["A", "B", "C", "D"],
@@ -20,14 +20,14 @@ describe("RecentlyViewedCard", () => {
   };
 
   it("renders document title and progress info", () => {
-    render(RecentlyViewedCard, { document: mockDocument });
+    render(FavouriteCard, { document: mockDocument });
     expect(screen.getByText("Recent Doc.pdf")).toBeInTheDocument();
     expect(screen.getByText("Part 2/4")).toBeInTheDocument();
     expect(screen.getByText("25%")).toBeInTheDocument();
   });
 
   it("renders progress bar", () => {
-    render(RecentlyViewedCard, { document: mockDocument });
+    render(FavouriteCard, { document: mockDocument });
     const progressBar = screen
       .getByText("Recent Doc.pdf")
       .parentElement?.querySelector("[style]");
@@ -36,7 +36,7 @@ describe("RecentlyViewedCard", () => {
 
   it("renders with 0 segments gracefully", () => {
     const emptyDoc = { ...mockDocument, segments: [], currentSegmentIndex: 0 };
-    render(RecentlyViewedCard, { document: emptyDoc });
+    render(FavouriteCard, { document: emptyDoc });
     expect(screen.getByText("Part 1/0")).toBeInTheDocument(); // Logic: (0)+1 / 0
     expect(screen.getByText("0%")).toBeInTheDocument();
   });

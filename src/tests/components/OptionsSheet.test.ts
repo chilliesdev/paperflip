@@ -45,7 +45,9 @@ describe("OptionsSheet", () => {
       onToggleFavourite,
     });
 
-    await fireEvent.click(screen.getByText("Set as Favourite").closest("button")!);
+    await fireEvent.click(
+      screen.getByText("Set as Favourite").closest("button")!,
+    );
     expect(onToggleFavourite).toHaveBeenCalledWith("doc-123");
     expect(onClose).toHaveBeenCalled();
   });
@@ -60,7 +62,9 @@ describe("OptionsSheet", () => {
       onToggleFavourite: vi.fn(),
     });
 
-    await fireEvent.click(screen.getByText("Delete Document").closest("button")!);
+    await fireEvent.click(
+      screen.getByText("Delete Document").closest("button")!,
+    );
     expect(onDelete).toHaveBeenCalledWith("doc-123");
     expect(onClose).toHaveBeenCalled();
   });
@@ -74,7 +78,9 @@ describe("OptionsSheet", () => {
       onToggleFavourite: vi.fn(),
     });
 
-    await fireEvent.click(screen.getByRole("button", { name: /close options/i }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: /close options/i }),
+    );
     expect(onClose).toHaveBeenCalled();
   });
 });

@@ -17,7 +17,7 @@
     // Calculate total percentage
     return Math.min(
       100,
-      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100)
+      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100),
     );
   });
 
@@ -40,7 +40,7 @@
   const hash = $derived(
     document.documentId
       .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
+      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
   );
   const icon = $derived(icons[hash % icons.length]);
   const colorObj = $derived(colors[hash % colors.length]);
@@ -50,7 +50,7 @@
   class="bg-brand-surface border border-white/5 rounded-xl overflow-hidden flex flex-col h-full hover:border-white/10 transition-colors group relative"
 >
   <a
-    href={`${resolve("/feed")}?id=${encodeURIComponent(document.documentId)}`}
+    href="{resolve('/feed')}?id={encodeURIComponent(document.documentId)}"
     class="flex flex-col h-full w-full"
   >
     <div class="h-24 bg-brand-surface-dark relative">

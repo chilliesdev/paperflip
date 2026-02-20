@@ -17,7 +17,7 @@
     // Calculate total percentage
     return Math.min(
       100,
-      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100)
+      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100),
     );
   });
 
@@ -49,21 +49,23 @@
   const hash = $derived(
     document.documentId
       .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
+      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
   );
   const icon = $derived(icons[hash % icons.length]);
   const colorObj = $derived(colors[hash % colors.length]);
 </script>
 
 <a
-  href={`${resolve("/feed")}?id=${encodeURIComponent(document.documentId)}`}
+  href="{resolve('/feed')}?id={encodeURIComponent(document.documentId)}"
   class="snap-start shrink-0 w-36 bg-brand-surface border border-white/5 rounded-xl overflow-hidden group relative hover:border-white/10 transition-colors"
 >
   <div class="h-40 bg-brand-surface-dark relative">
     <div
       class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-[#050510] flex items-center justify-center"
     >
-      <span class="material-symbols-outlined {colorObj.text} opacity-40 text-5xl">
+      <span
+        class="material-symbols-outlined {colorObj.text} opacity-40 text-5xl"
+      >
         {icon}
       </span>
     </div>

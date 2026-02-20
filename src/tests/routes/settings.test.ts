@@ -9,7 +9,9 @@ vi.mock("$app/paths", () => ({
 describe("Settings Page", () => {
   it("renders the settings title", () => {
     render(SettingsPage);
-    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Settings" }),
+    ).toBeInTheDocument();
   });
 
   it("renders the bottom navigation", () => {
@@ -18,8 +20,6 @@ describe("Settings Page", () => {
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Library")).toBeInTheDocument();
     // Verify Settings link specifically
-    expect(
-      screen.getByRole("link", { name: /Settings/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Settings/i })).toBeInTheDocument();
   });
 });

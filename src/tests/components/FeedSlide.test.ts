@@ -2,7 +2,6 @@ import { render, screen, cleanup } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import FeedSlide from "../../lib/components/FeedSlide.svelte";
 import { videoAssetUrls } from "../../lib/stores/assets";
-import { get } from "svelte/store";
 
 // Mock the assets store
 vi.mock("../../lib/stores/assets", async () => {
@@ -74,7 +73,6 @@ describe("FeedSlide Component", () => {
       expect(screen.getByText("nine")).toBeInTheDocument();
       expect(screen.getByText("ten")).toBeInTheDocument();
     });
-
   });
 
   describe("Logic & Interactions", () => {
@@ -132,8 +130,7 @@ describe("FeedSlide Component", () => {
         ...defaultProps,
         segment: "Hello world",
         currentCharIndex: 0,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+        // @ts-expect-error - highlightEndIndex is used in dictation mode but not in props
         highlightEndIndex: 11,
       });
 
@@ -154,8 +151,7 @@ describe("FeedSlide Component", () => {
         ...defaultProps,
         segment: longSentence,
         currentCharIndex: 0,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+        // @ts-expect-error - highlightEndIndex is used in dictation mode but not in props
         highlightEndIndex: longSentence.length,
       });
 
@@ -171,8 +167,7 @@ describe("FeedSlide Component", () => {
         ...defaultProps,
         segment: "Hello world",
         currentCharIndex: 0,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+        // @ts-expect-error - highlightEndIndex is used in dictation mode but not in props
         highlightEndIndex: 11,
       });
 
@@ -247,7 +242,6 @@ describe("FeedSlide Component", () => {
       // Extract the width percentage
       const match = style?.match(/width: ([\d.]+)%/);
       expect(match).not.toBeNull();
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const percentage = parseFloat(match![1]);
 
       // Expect approximately 45.45%
@@ -265,7 +259,7 @@ describe("FeedSlide Component", () => {
         currentCharIndex: -1,
         videoSource: "http://example.com/video.mp4",
       };
-      // @ts-ignore
+      // @ts-expect-error - testing invalid segment prop
       render(FeedSlide, { ...defaultProps, segment: undefined });
       const video = document.querySelector("video");
       expect(video).toBeInTheDocument();
@@ -295,7 +289,7 @@ describe("FeedSlide Component", () => {
         ...defaultProps,
         segment: "Hello world",
         currentCharIndex: 5,
-        // @ts-ignore
+        // @ts-expect-error - highlightEndIndex is used in dictation mode but not in props
         highlightEndIndex: 11,
         highlightStartIndex: 0,
       });
@@ -335,7 +329,7 @@ describe("FeedSlide Component", () => {
         ...defaultProps,
         segment: "Hello world",
         currentCharIndex: 6,
-        // @ts-ignore
+        // @ts-expect-error - highlightEndIndex is used in dictation mode but not in props
         highlightEndIndex: 11,
       });
 

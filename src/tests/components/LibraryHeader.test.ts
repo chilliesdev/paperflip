@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/svelte";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import LibraryHeader from "../../lib/components/LibraryHeader.svelte";
 
 describe("LibraryHeader", () => {
@@ -16,8 +16,10 @@ describe("LibraryHeader", () => {
   });
 
   it("updates search query on input", async () => {
-    const { component } = render(LibraryHeader);
-    const input = screen.getByPlaceholderText("Search your stories...") as HTMLInputElement;
+    render(LibraryHeader);
+    const input = screen.getByPlaceholderText(
+      "Search your stories...",
+    ) as HTMLInputElement;
 
     await fireEvent.input(input, { target: { value: "test query" } });
 

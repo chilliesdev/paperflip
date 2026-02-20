@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
   import { register } from "swiper/element/bundle";
+  import { resolve } from "$app/paths";
   import {
     initializeTTS,
     speakText,
@@ -15,7 +16,13 @@
   import { videoSources } from "$lib/constants";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
   import ReadingOptionsSheet from "$lib/components/ReadingOptionsSheet.svelte";
-  import { ChevronLeft, MoreHorizontal, Volume2, VolumeX, ChevronUp } from "lucide-svelte";
+  import {
+    ChevronLeft,
+    MoreHorizontal,
+    Volume2,
+    VolumeX,
+    ChevronUp,
+  } from "lucide-svelte";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
   let {
@@ -245,18 +252,30 @@
 <div class="w-full h-full relative bg-black">
   {#if segments.length > 0}
     <!-- Header -->
-    <div class="absolute top-0 left-0 w-full z-40 p-4 flex items-center justify-between pointer-events-none">
-        <a href="/" class="pointer-events-auto w-12 h-12 rounded-full flex items-center justify-center bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15 hover:bg-white/20 transition duration-200">
-            <ChevronLeft class="text-white" size={24} />
-        </a>
+    <div
+      class="absolute top-0 left-0 w-full z-40 p-4 flex items-center justify-between pointer-events-none"
+    >
+      <a
+        href={resolve("/")}
+        class="pointer-events-auto w-12 h-12 rounded-full flex items-center justify-center bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15 hover:bg-white/20 transition duration-200"
+      >
+        <ChevronLeft class="text-white" size={24} />
+      </a>
 
-        <div class="px-4 py-2 rounded-full bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15">
-            <span class="text-sm font-medium text-white/90">Short {activeIndex + 1} / {segments.length}</span>
-        </div>
+      <div
+        class="px-4 py-2 rounded-full bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15"
+      >
+        <span class="text-sm font-medium text-white/90"
+          >Short {activeIndex + 1} / {segments.length}</span
+        >
+      </div>
 
-        <button class="pointer-events-auto w-12 h-12 rounded-full flex items-center justify-center bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15 hover:bg-white/20 transition duration-200" onclick={() => showOptions = true}>
-            <MoreHorizontal class="text-white" size={24} />
-        </button>
+      <button
+        class="pointer-events-auto w-12 h-12 rounded-full flex items-center justify-center bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15 hover:bg-white/20 transition duration-200"
+        onclick={() => (showOptions = true)}
+      >
+        <MoreHorizontal class="text-white" size={24} />
+      </button>
     </div>
 
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -282,14 +301,15 @@
           {#if Math.abs(i - activeIndex) <= 2}
             <FeedSlide
               {segment}
-              index={i}
               isActive={i === activeIndex}
               {isPlaying}
               currentCharIndex={i === activeIndex ? currentCharIndex : -1}
               highlightEndIndex={i === activeIndex
                 ? highlightEndIndex
                 : undefined}
-              highlightStartIndex={i === activeIndex ? highlightStartIndex : undefined}
+              highlightStartIndex={i === activeIndex
+                ? highlightStartIndex
+                : undefined}
               videoSource={videoSources[i % videoSources.length]}
             />
           {:else}
@@ -306,7 +326,9 @@
   {/if}
 
   <!-- Footer -->
-  <div class="absolute bottom-0 left-0 w-full z-40 p-4 pointer-events-none flex flex-col items-center">
+  <div
+    class="absolute bottom-0 left-0 w-full z-40 p-4 pointer-events-none flex flex-col items-center"
+  >
     <!-- Mute Button (Left Aligned) -->
     <div class="w-full flex justify-start pb-4 pl-4">
       <button

@@ -10,9 +10,7 @@
   class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden pb-24 text-white font-display"
 >
   <header class="pt-12 pb-6 px-6">
-    <h1 class="text-3xl font-extrabold tracking-tight text-white">
-      Settings
-    </h1>
+    <h1 class="text-3xl font-extrabold tracking-tight text-white">Settings</h1>
   </header>
 
   <main class="flex-grow flex flex-col space-y-8 px-6">
