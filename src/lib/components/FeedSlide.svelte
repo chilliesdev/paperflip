@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { Volume2, VolumeX, ChevronUp } from "lucide-svelte";
   import { scale } from "svelte/transition";
   import { videoAssetUrls } from "$lib/stores/assets";
@@ -18,7 +19,15 @@
 
   let videoEl: HTMLVideoElement | undefined = $state();
 
-  let cachedSource = $derived($videoAssetUrls[videoSource] || videoSource);
+  // Use the source available at mount time (or when videoSource changes) to prevent
+  // reloading/glitches during playback if the background download finishes later.
+  // We untrack the store so updates to it don't trigger re-renders,
+  // but updates to videoSource DO trigger re-renders.
+  let cachedSource = $derived.by(() => {
+    const src = videoSource; // Track this dependency
+    const cached = untrack(() => $videoAssetUrls[src]); // Untrack this dependency
+    return cached || src;
+  });
 
   $effect(() => {
     if (videoEl) {
