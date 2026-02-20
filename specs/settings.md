@@ -20,21 +20,13 @@ This document tracks the current status and implementation requirements for all 
 
 ### 3. Text Scale
 
-- **Status**: UI only.
-- **Issue**: Slider updates `$textScale` (default 110), but nothing uses it in the viewer.
-- **Requirement**:
-  - Pass `$textScale` into `FeedSlide.svelte`.
-  - Use it to set `font-size` on the text container (e.g., `font-size: {$textScale / 100}rem`).
-  - Persistence required.
+- **Status**: Implemented.
+- **Resolution**: `$textScale` (default 110) is passed into `FeedSlide.svelte` and used to set `font-size: {$textScale / 100}rem` on the text container. Persistence via RxDB.
 
 ### 4. Background (backgroundUrl)
 
-- **Status**: UI only.
-- **Issue**: User can select backgrounds in `BackgroundSelector.svelte`, but `Feed.svelte` continues to use hardcoded `videoSources` from `constants.ts`.
-- **Requirement**:
-  - `Feed.svelte` should check `$backgroundUrl` and use it if it's set.
-  - Implement double-tap on `Feed.svelte` to cycle backgrounds (as mentioned in Architecture spec).
-  - Persistence required.
+- **Status**: Implemented.
+- **Resolution**: `Feed.svelte` checks `$backgroundUrl` and use it if it's set. Double-tap on `Feed.svelte` cycles backgrounds by updating `$backgroundUrl`. Video sources now include preview images for the settings UI.
 
 ### 5. Auto-Resume
 

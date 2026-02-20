@@ -11,6 +11,11 @@
     isPaused,
   } from "$lib/audio";
   import { isDictationMode, autoScroll, isMuted } from "$lib/stores/audio";
+  import {
+    backgroundUrl,
+    textScale,
+    settingsStores,
+  } from "$lib/stores/settings";
   import { splitSentences } from "$lib/segmenter";
   import { updateDocumentProgress } from "$lib/database";
   import { videoSources } from "$lib/constants";
@@ -44,6 +49,26 @@
   let showOptions = $state(false);
   let boundaryCheckTimeout: ReturnType<typeof setTimeout>;
   let saveTimeout: ReturnType<typeof setTimeout>;
+
+  let lastClickTime = 0;
+  const DOUBLE_CLICK_THRESHOLD = 300;
+
+  function handleFeedClick(e: MouseEvent) {
+    const currentTime = Date.now();
+    if (currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+      handleDoubleClick();
+    } else {
+      togglePlayback();
+    }
+    lastClickTime = currentTime;
+  }
+
+  function handleDoubleClick() {
+    // Cycle backgrounds
+    const currentIndex = videoSources.findIndex((v) => v.url === $backgroundUrl);
+    const nextIndex = (currentIndex + 1) % videoSources.length;
+    backgroundUrl.set(videoSources[nextIndex].url);
+  }
 
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
@@ -290,7 +315,7 @@
       data-testid="swiper-mock"
       onswiperinit={handleSwiperInit}
       onswiperslidechange={handleSlideChange}
-      onclick={togglePlayback}
+      onclick={handleFeedClick}
       role="region"
       aria-label="Video Feed"
       tabindex="0"
@@ -310,7 +335,9 @@
               highlightStartIndex={i === activeIndex
                 ? highlightStartIndex
                 : undefined}
-              videoSource={videoSources[i % videoSources.length]}
+              videoSource={$backgroundUrl ||
+                videoSources[i % videoSources.length].url}
+              textScale={$textScale}
             />
           {:else}
             <!-- Render placeholder for off-screen slides to save memory -->

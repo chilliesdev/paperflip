@@ -12,6 +12,7 @@
     highlightEndIndex = undefined,
     highlightStartIndex = undefined,
     videoSource,
+    textScale = 100,
   } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
@@ -120,7 +121,10 @@
     <div
       class="backdrop-blur-xl bg-black/60 rounded-2xl px-6 py-8 border border-white/10 shadow-xl max-w-[90%] mx-auto"
     >
-      <div class="text-base leading-relaxed text-center font-medium">
+      <div
+        class="leading-relaxed text-center font-medium"
+        style="font-size: {textScale / 100}rem"
+      >
         {#each visibleWords as w, i (startIndex + i)}
           {@const globalIdx = startIndex + i}
           {@const isDictation = highlightEndIndex !== undefined}

@@ -46,16 +46,16 @@
 
       const promises = videoSources.map(async (src) => {
         try {
-          const response = await fetch(src);
+          const response = await fetch(src.url);
           if (!response.ok)
             throw new Error(`HTTP error! status: ${response.status}`);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
-          urls[src] = url;
+          urls[src.url] = url;
         } catch (e) {
-          console.error(`Failed to fetch video: ${src}`, e);
+          console.error(`Failed to fetch video: ${src.url}`, e);
           // Fallback to original source if fetch fails
-          urls[src] = src;
+          urls[src.url] = src.url;
         }
       });
 

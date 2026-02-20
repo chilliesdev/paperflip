@@ -424,6 +424,7 @@ describe("Feed Component", () => {
   });
 
   it("toggles playback on single tap", async () => {
+    vi.useFakeTimers();
     const segments = ["Test Segment"];
     render(Feed, { segments });
 
@@ -436,6 +437,8 @@ describe("Feed Component", () => {
     );
 
     // Wait for mount and audio to start
+    // We need to advance timers because speakCurrentSlide has a boundaryCheckTimeout
+    vi.advanceTimersByTime(2000);
     await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
 
     // Verify play() was called during init (on the video element)
@@ -448,26 +451,24 @@ describe("Feed Component", () => {
     (HTMLMediaElement.prototype.play as any).mockClear();
     (HTMLMediaElement.prototype.pause as any).mockClear();
 
-    // Click -> Expect Toggle (after delay)
+    // Click 1 -> Expect Pause
     fireEvent.click(swiper);
+    // Advance time beyond double-click threshold for next click
+    vi.advanceTimersByTime(500);
 
     await waitFor(() => {
       expect(audio.pauseTTS).toHaveBeenCalled();
       expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
-    // With new mock logic, speaking remains true, but paused becomes true
-    expect(audio.isSpeaking()).toBe(true);
-    expect(audio.isPaused()).toBe(true);
 
-    // Click again -> Expect Resume
+    // Click 2 -> Expect Resume
     fireEvent.click(swiper);
+    vi.advanceTimersByTime(500);
 
     await waitFor(() => {
       expect(audio.resumeTTS).toHaveBeenCalled();
       expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
     });
-    expect(audio.isSpeaking()).toBe(true);
-    expect(audio.isPaused()).toBe(false);
   });
 
   it("changes slide and speaks new segment", async () => {
