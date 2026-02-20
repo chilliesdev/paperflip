@@ -322,13 +322,15 @@
     </div>
 
     <!-- Swipe Indicator -->
-    <div class="flex flex-col items-center animate-bounce space-y-1 mb-8">
-      <ChevronUp class="text-[#00FF66]" size={32} strokeWidth={3} />
-      <span
-        class="text-xs font-medium text-white/90 tracking-wide uppercase shadow-black drop-shadow-sm"
-        >Swipe up to continue</span
-      >
-    </div>
+    {#if activeIndex === 0}
+      <div class="flex flex-col items-center animate-bounce space-y-1 mb-8">
+        <ChevronUp class="text-[#00FF66]" size={32} strokeWidth={3} />
+        <span
+          class="text-xs font-medium text-white/90 tracking-wide uppercase shadow-black drop-shadow-sm"
+          >Swipe up to continue</span
+        >
+      </div>
+    {/if}
   </div>
 
   <!-- Options Sheet -->

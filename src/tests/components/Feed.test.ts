@@ -850,11 +850,36 @@ describe("Feed Component", () => {
     autoScroll.set(false);
   });
 
-  it("renders the swipe up hint", () => {
-    const segments = ["Segment 1"];
+  it("renders the swipe up hint only on the first slide", async () => {
+    const segments = ["Segment 1", "Segment 2"];
     render(Feed, { segments, documentId: "doc-1" });
 
-    // The text should be present in the document
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    mockSwiperInstance.activeIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Initial state (slide 0): Hint should be present
     expect(screen.getByText(/Swipe up to continue/i)).toBeInTheDocument();
+
+    // Slide to next (slide 1)
+    mockSwiperInstance.realIndex = 1;
+    mockSwiperInstance.activeIndex = 1;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperslidechange", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Wait for Svelte reactivity
+    await waitFor(() => {
+        expect(screen.queryByText(/Swipe up to continue/i)).not.toBeInTheDocument();
+    });
   });
 });
