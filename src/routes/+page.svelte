@@ -4,6 +4,7 @@
   import { segmentText } from "$lib/segmenter";
   import PdfUploader from "$lib/components/PdfUploader.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
+  import BottomNavigation from "$lib/components/BottomNavigation.svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
@@ -72,7 +73,7 @@
 </svelte:head>
 
 <div
-  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden text-white font-display"
+  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden pb-24 text-white font-display"
 >
   {#if errorMessage}
     <ErrorMessage
@@ -95,4 +96,6 @@
       onLoadDocument={handleLoadDocument}
     />
   {/if}
+
+  <BottomNavigation activeTab="home" />
 </div>
