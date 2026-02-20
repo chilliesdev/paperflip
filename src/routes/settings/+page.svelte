@@ -12,23 +12,6 @@
     darkMode,
     textScale,
   } from "$lib/stores/settings";
-
-  // Using $effect for side-effects in Svelte 5
-  // Note: We need to be careful with SSR. document is not available.
-  // But +page.svelte runs on client too.
-  // We should guard against SSR or just use an action.
-  // However, SvelteKit usually handles this fine if we check browser.
-  import { browser } from "$app/environment";
-
-  $effect(() => {
-    if (browser) {
-      if ($darkMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    }
-  });
 </script>
 
 <svelte:head>

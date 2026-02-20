@@ -21,6 +21,11 @@ vi.mock("../../lib/stores/assets", async () => {
   };
 });
 
+// Mock sync utility
+vi.mock("../../lib/stores/sync", () => ({
+  syncStoresWithDb: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock audio
 vi.mock("../../lib/audio", () => ({
   waitForVoices: vi.fn().mockResolvedValue(undefined),
@@ -71,7 +76,9 @@ describe("Layout Component", () => {
     render(LayoutTestWrapper);
 
     // Should start loading
-    expect(audio.waitForVoices).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(audio.waitForVoices).toHaveBeenCalled();
+    });
 
     // Should fetch videos
     await waitFor(() => {
@@ -81,9 +88,12 @@ describe("Layout Component", () => {
     });
 
     // Eventually loading finishes and content appears
-    await waitFor(() => {
-      expect(screen.getByTestId("layout-content")).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("layout-content")).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
   });
 
   it("skips initialization if assets already cached", async () => {
@@ -91,11 +101,14 @@ describe("Layout Component", () => {
 
     render(LayoutTestWrapper);
 
-    // Should NOT fetch or wait for voices (based on current logic in +layout.svelte which checks store keys length > 0)
+    // Should NOT fetch or wait for voices
+    // We need to wait for the syncStoresWithDb to finish before it decides to skip
+    await waitFor(() => {
+      expect(screen.getByTestId("layout-content")).toBeInTheDocument();
+    });
+
     expect(audio.waitForVoices).not.toHaveBeenCalled();
     expect(global.fetch).not.toHaveBeenCalled();
-
-    expect(screen.getByTestId("layout-content")).toBeInTheDocument();
   });
 
   it("handles fetch failure gracefully", async () => {

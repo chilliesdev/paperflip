@@ -71,6 +71,10 @@ vi.mock("rxdb/plugins/query-builder", () => ({
   RxDBQueryBuilderPlugin: { name: "query-builder-plugin" },
 }));
 
+vi.mock("rxdb/plugins/update", () => ({
+  RxDBUpdatePlugin: { name: "update-plugin" },
+}));
+
 // Mock $app/environment with hoisted value
 vi.mock("$app/environment", () => mockBrowser);
 
@@ -101,6 +105,13 @@ type MockDatabase = {
     upsert: typeof mockUpsert;
     find: ReturnType<typeof vi.fn>;
     findOne: ReturnType<typeof vi.fn>;
+    incrementalPatch: ReturnType<typeof vi.fn>;
+  };
+  settings: {
+    findOne: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    upsert: ReturnType<typeof vi.fn>;
+    incrementalPatch: ReturnType<typeof vi.fn>;
   };
   addCollections: typeof mockAddCollections;
 };
@@ -143,6 +154,15 @@ describe("database.ts", () => {
         findOne: vi.fn(() => ({
           exec: vi.fn().mockResolvedValue(null),
         })),
+        incrementalPatch: vi.fn(),
+      },
+      settings: {
+        findOne: vi.fn(() => ({
+          exec: vi.fn().mockResolvedValue(null),
+        })),
+        insert: vi.fn().mockResolvedValue({}),
+        upsert: vi.fn().mockResolvedValue({}),
+        incrementalPatch: vi.fn(),
       },
       addCollections: mockAddCollections,
     };
@@ -187,27 +207,31 @@ describe("database.ts", () => {
       await getDb();
 
       expect(mockAddCollections).toHaveBeenCalledTimes(1);
-      expect(mockAddCollections).toHaveBeenCalledWith({
-        documents: {
-          schema: expect.objectContaining({
-            title: "paperflip_document",
-            primaryKey: "documentId",
-            version: 3,
-            properties: expect.objectContaining({
-              currentSegmentIndex: expect.objectContaining({ type: "number" }),
-              currentSegmentProgress: expect.objectContaining({
-                type: "number",
+      expect(mockAddCollections).toHaveBeenCalledWith(
+        expect.objectContaining({
+          documents: {
+            schema: expect.objectContaining({
+              title: "paperflip_document",
+              primaryKey: "documentId",
+              version: 3,
+              properties: expect.objectContaining({
+                currentSegmentIndex: expect.objectContaining({
+                  type: "number",
+                }),
+                currentSegmentProgress: expect.objectContaining({
+                  type: "number",
+                }),
+                isFavourite: expect.objectContaining({ type: "boolean" }),
               }),
-              isFavourite: expect.objectContaining({ type: "boolean" }),
             }),
-          }),
-          migrationStrategies: {
-            1: expect.any(Function),
-            2: expect.any(Function),
-            3: expect.any(Function),
+            migrationStrategies: {
+              1: expect.any(Function),
+              2: expect.any(Function),
+              3: expect.any(Function),
+            },
           },
-        },
-      });
+        }),
+      );
     });
 
     it("rejects when called on the server (browser = false)", async () => {
@@ -317,10 +341,10 @@ describe("database.ts", () => {
 
   describe("toggleFavourite", () => {
     it("toggles favourite status", async () => {
-      const mockPatch = vi.fn();
+      const mockIncrementalPatch = vi.fn();
       const mockExec = vi.fn().mockResolvedValue({
         isFavourite: false,
-        patch: mockPatch,
+        incrementalPatch: mockIncrementalPatch,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
       mockDb.documents.findOne = mockFindOne as any;
@@ -328,7 +352,7 @@ describe("database.ts", () => {
       const result = await toggleFavourite("doc-1");
 
       expect(mockFindOne).toHaveBeenCalledWith("doc-1");
-      expect(mockPatch).toHaveBeenCalledWith({ isFavourite: true });
+      expect(mockIncrementalPatch).toHaveBeenCalledWith({ isFavourite: true });
       expect(result).toBe(true);
     });
   });

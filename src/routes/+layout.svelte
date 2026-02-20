@@ -6,11 +6,33 @@
   import { waitForVoices } from "$lib/audio";
   import { videoSources } from "$lib/constants";
   import { videoAssetUrls } from "$lib/stores/assets";
+  import { darkMode, settingsStores } from "$lib/stores/settings";
+  import { audioStores } from "$lib/stores/audio";
+  import { syncStoresWithDb } from "$lib/stores/sync";
+  import { browser } from "$app/environment";
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
 
   let { children } = $props();
 
+  // Global Dark Mode side-effect
+  $effect(() => {
+    if (browser) {
+      if ($darkMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  });
+
   onMount(async () => {
+    try {
+      loadingStatus.set("Initializing database...");
+      await syncStoresWithDb({ ...settingsStores, ...audioStores });
+    } catch (e) {
+      console.error("Failed to initialize settings from database", e);
+    }
+
     if (Object.keys($videoAssetUrls).length > 0) {
       isLoading.set(false);
       return;

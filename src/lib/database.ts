@@ -1,5 +1,6 @@
 import { createRxDatabase, addRxPlugin, type RxStorage } from "rxdb";
 import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
+import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { browser } from "$app/environment";
@@ -17,6 +18,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
   try {
     addRxPlugin(RxDBMigrationSchemaPlugin);
     addRxPlugin(RxDBQueryBuilderPlugin);
+    addRxPlugin(RxDBUpdatePlugin);
     window.__rxdb_plugins_added = true;
   } catch {
     // Silently ignore DEV1 errors during HMR
@@ -64,6 +66,45 @@ const documentSchema = {
   required: ["documentId", "segments", "currentSegmentIndex", "createdAt"],
   indexes: ["createdAt"],
 };
+
+const settingsSchema = {
+  title: "paperflip_settings",
+  version: 0,
+  primaryKey: "id",
+  type: "object",
+  properties: {
+    id: {
+      type: "string",
+      maxLength: 20,
+    },
+    videoLength: { type: "number" },
+    backgroundUrl: { type: "string" },
+    autoResume: { type: "boolean" },
+    darkMode: { type: "boolean" },
+    textScale: { type: "number" },
+    isMuted: { type: "boolean" },
+    isDictationMode: { type: "boolean" },
+    playbackRate: { type: "number" },
+    autoScroll: { type: "boolean" },
+  },
+  required: ["id"],
+};
+
+export const DEFAULT_SETTINGS = {
+  id: "global",
+  videoLength: 15,
+  backgroundUrl:
+    "https://lh3.googleusercontent.com/aida-public/AB6AXuBxDgF10K7pouD7MG0K5YctMikezJ5XfImNw9DYPsUR7RFZ-5RFY3q9CI6mP4_DJC8F_Z48Nl-fqAgGUGUnBGKQ8GyDJ8S30tkqqdiACXwlpD6bnlXILCxggTZX3yHKKuhnVD9PKwN7TARWIcKFeca5gJw-FO1gE_6VPnWaw79EOoxNbmR2M9hXtOmr6xzBYy6Qe4H_1dsHo3Dc0cJyOEvJdcK79wFWOfyQs-ajw50B9e_1xviY_Z7Q88v2o-EvbWN_lWcwDUJ57Bfn",
+  autoResume: true,
+  darkMode: true,
+  textScale: 110,
+  isMuted: false,
+  isDictationMode: false,
+  playbackRate: 1.0,
+  autoScroll: false,
+};
+
+export type Settings = typeof DEFAULT_SETTINGS;
 
 async function _createDb() {
   if (!browser) {
@@ -142,7 +183,16 @@ async function _createDb() {
           },
         },
       },
+      settings: {
+        schema: settingsSchema,
+      },
     });
+
+    // Ensure default settings exist
+    const settingsDoc = await db.settings.findOne("global").exec();
+    if (!settingsDoc) {
+      await db.settings.insert(DEFAULT_SETTINGS);
+    }
 
     return db;
   } catch (error) {
@@ -234,7 +284,7 @@ export async function updateDocumentProgress(
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
-      await doc.patch({
+      await doc.incrementalPatch({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
       });
@@ -250,7 +300,7 @@ export async function toggleFavourite(documentId: string) {
     const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
       const newStatus = !doc.isFavourite;
-      await doc.patch({
+      await doc.incrementalPatch({
         isFavourite: newStatus,
       });
       return newStatus;
@@ -285,4 +335,29 @@ export async function getAllDocuments() {
   const docs = await db.documents.find().sort({ createdAt: "desc" }).exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return docs.map((doc: any) => doc.toJSON());
+}
+
+export async function getSettings() {
+  const db = await getDb();
+  const doc = await db.settings.findOne("global").exec();
+  return doc ? doc.toJSON() : DEFAULT_SETTINGS;
+}
+
+export async function updateSettings(patch: Partial<typeof DEFAULT_SETTINGS>) {
+  try {
+    const db = await getDb();
+    const doc = await db.settings.findOne("global").exec();
+    if (doc) {
+      await doc.incrementalPatch(patch);
+    } else {
+      await db.settings.insert({ ...DEFAULT_SETTINGS, ...patch });
+    }
+  } catch (error) {
+    console.error("Failed to update settings:", error);
+  }
+}
+
+export async function getSettingsObservable() {
+  const db = await getDb();
+  return db.settings.findOne("global").$;
 }
