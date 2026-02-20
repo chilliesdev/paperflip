@@ -27,6 +27,7 @@
   let swiperInstance: any = $state();
   let currentCharIndex: number = $state(-1);
   let highlightEndIndex: number | undefined = $state(undefined);
+  let highlightStartIndex: number | undefined = $state(undefined);
   let activeIndex = $state(untrack(() => initialIndex));
   let currentSegmentProgress = 0;
   let isPlaying = $state(false);
@@ -78,6 +79,7 @@
     if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
     currentCharIndex = -1;
     highlightEndIndex = undefined;
+    highlightStartIndex = undefined;
 
     // Determine start index:
     // If it's the very first play and we are on the initial index, use initialProgress.
@@ -125,7 +127,10 @@
         isPlaying = false;
         // When finished, set progress to the end of segment
         // This ensures granular progress reflects completion
+        currentCharIndex = text.length;
         currentSegmentProgress = text.length;
+        highlightEndIndex = undefined;
+        highlightStartIndex = undefined;
         saveProgress(true); // Immediate save on completion
       },
       startIndex,
@@ -147,7 +152,10 @@
     if (queue.length === 0) {
       isPlaying = false;
       // We assume completion of the segment
+      currentCharIndex = segments[swiperInstance.realIndex].length;
       currentSegmentProgress = segments[swiperInstance.realIndex].length;
+      highlightEndIndex = undefined;
+      highlightStartIndex = undefined;
       saveProgress(true); // Immediate save on completion
       return;
     }
@@ -158,6 +166,7 @@
     // Update Highlight: highlight the whole sentence
     currentCharIndex = currentSentence.start;
     highlightEndIndex = currentSentence.end;
+    highlightStartIndex = currentSentence.start;
     currentSegmentProgress = currentSentence.start;
 
     // Calculate offset if we are resuming mid-sentence
@@ -169,7 +178,13 @@
 
     speakText(
       currentSentence.text,
-      undefined, // No boundary needed
+      (_word, charIndex) => {
+        // In dictation, charIndex is relative to the sentence.
+        // We need absolute index in the segment.
+        const absoluteIndex = currentSentence.start + charIndex;
+        currentCharIndex = absoluteIndex;
+        currentSegmentProgress = absoluteIndex;
+      },
       () => {
         // On end of this sentence
         if (!isPlaying) return; // If stopped externally
@@ -257,6 +272,7 @@
               highlightEndIndex={i === activeIndex
                 ? highlightEndIndex
                 : undefined}
+              highlightStartIndex={i === activeIndex ? highlightStartIndex : undefined}
               videoSource={videoSources[i % videoSources.length]}
             />
           {:else}

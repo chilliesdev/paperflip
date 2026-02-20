@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { Volume2, VolumeX, ChevronUp } from "lucide-svelte";
   import { scale } from "svelte/transition";
   import { videoAssetUrls } from "$lib/stores/assets";
@@ -6,18 +7,27 @@
   import { isMuted } from "$lib/stores/audio";
 
   let {
-    segment,
+    segment = "",
     index,
     isActive,
     isPlaying = true,
     currentCharIndex,
     highlightEndIndex = undefined,
+    highlightStartIndex = undefined,
     videoSource,
   } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
 
-  let cachedSource = $derived($videoAssetUrls[videoSource] || videoSource);
+  // Use the source available at mount time (or when videoSource changes) to prevent
+  // reloading/glitches during playback if the background download finishes later.
+  // We untrack the store so updates to it don't trigger re-renders,
+  // but updates to videoSource DO trigger re-renders.
+  let cachedSource = $derived.by(() => {
+    const src = videoSource; // Track this dependency
+    const cached = untrack(() => $videoAssetUrls[src]); // Untrack this dependency
+    return cached || src;
+  });
 
   $effect(() => {
     if (videoEl) {
@@ -62,9 +72,14 @@
     return idx;
   });
 
-  // Progress based on word index
+  // Progress based on character index for smoother animation
   let progress = $derived(
-    words.length > 0 ? ((currentWordIdx + 1) / words.length) * 100 : 0,
+    segment.length > 0
+      ? Math.min(
+          100,
+          (Math.max(0, currentCharIndex) / segment.length) * 100,
+        )
+      : 0,
   );
 
   let startIndex = $derived(
@@ -74,11 +89,12 @@
   );
 
   // In dictation mode, we want to show all words in the current sentence (range).
-  // If highlightEndIndex is set, find all words within [currentCharIndex, highlightEndIndex].
+  // If highlightEndIndex is set, find all words within [start, highlightEndIndex].
+  // Uses highlightStartIndex if provided, else falls back to currentCharIndex.
   let visibleWords = $derived(
     highlightEndIndex !== undefined
       ? words.filter(
-          (w) => w.start >= currentCharIndex && w.end <= highlightEndIndex,
+          (w) => w.start >= (highlightStartIndex ?? currentCharIndex) && w.end <= highlightEndIndex,
         )
       : words.slice(startIndex, startIndex + wordCount),
   );

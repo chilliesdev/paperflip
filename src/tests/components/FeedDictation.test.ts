@@ -178,7 +178,7 @@ describe("Feed Dictation Mode", () => {
     // 1. Should call speakText for first sentence
     expect(audio.speakText).toHaveBeenCalledWith(
       "Sentence 1.",
-      undefined, // No boundary callback in dictation
+      expect.any(Function), // Boundary callback added
       expect.any(Function), // OnEnd
       0, // Offset
     );
@@ -195,7 +195,7 @@ describe("Feed Dictation Mode", () => {
     expect(audio.speakText).toHaveBeenCalledTimes(2);
     expect(audio.speakText).toHaveBeenLastCalledWith(
       "Sentence 2.",
-      undefined,
+      expect.any(Function),
       expect.any(Function),
       0,
     );
