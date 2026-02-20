@@ -14,7 +14,6 @@
   import {
     backgroundUrl,
     textScale,
-    settingsStores,
   } from "$lib/stores/settings";
   import { splitSentences } from "$lib/segmenter";
   import { updateDocumentProgress } from "$lib/database";
@@ -53,7 +52,7 @@
   let lastClickTime = 0;
   const DOUBLE_CLICK_THRESHOLD = 300;
 
-  function handleFeedClick(e: MouseEvent) {
+  function handleFeedClick() {
     const currentTime = Date.now();
     if (currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
       handleDoubleClick();
@@ -65,7 +64,9 @@
 
   function handleDoubleClick() {
     // Cycle backgrounds
-    const currentIndex = videoSources.findIndex((v) => v.url === $backgroundUrl);
+    const currentIndex = videoSources.findIndex(
+      (v) => v.url === $backgroundUrl,
+    );
     const nextIndex = (currentIndex + 1) % videoSources.length;
     backgroundUrl.set(videoSources[nextIndex].url);
   }
