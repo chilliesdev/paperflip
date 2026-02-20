@@ -6,9 +6,8 @@ This document tracks the current status and implementation requirements for all 
 
 ### 1. Persistence (CRITICAL)
 
-- **Status**: Not implemented.
-- **Issue**: All settings in `src/lib/stores/settings.ts` and `src/lib/stores/audio.ts` reset on page refresh.
-- **Requirement**: Use `localStorage` or `IndexedDB` (RxDB) to persist store values. Update stores in `onMount` or use a synchronized store wrapper.
+- **Status**: Implemented.
+- **Resolution**: Fixed race condition in `src/lib/stores/sync.ts` using `hasHydrated` flag. Stores are now correctly synchronized with RxDB and persist across page refreshes.
 
 ---
 
@@ -16,12 +15,8 @@ This document tracks the current status and implementation requirements for all 
 
 ### 2. Dark Mode
 
-- **Status**: Partially implemented (Settings page only).
-- **Issue**: Side-effect in `src/routes/settings/+page.svelte` only applies the `dark` class while on that page. It does not persist or apply globally.
-- **Requirement**:
-  - Move application logic to `src/routes/+layout.svelte`.
-  - Add `darkMode` store listener in the layout to toggle `.dark` class on `document.documentElement`.
-  - Persistence required.
+- **Status**: Implemented.
+- **Resolution**: Logic moved to `src/routes/+layout.svelte` with global persistence via RxDB.
 
 ### 3. Text Scale
 

@@ -16,6 +16,7 @@ export async function syncStoresWithDb(
 ) {
   const observable = await getSettingsObservable();
   let isUpdatingFromDb = false;
+  let hasHydrated = false;
 
   // 1. DB -> Stores (Initial load and multi-tab sync)
   observable.subscribe((doc: Settings | null) => {
@@ -30,12 +31,13 @@ export async function syncStoresWithDb(
       }
     }
     isUpdatingFromDb = false;
+    hasHydrated = true;
   });
 
   // 2. Stores -> DB (Persistence)
   for (const [fieldName, store] of Object.entries(storesMap)) {
     store.subscribe((value) => {
-      if (!isUpdatingFromDb) {
+      if (!isUpdatingFromDb && hasHydrated) {
         // We use a small delay or ensure we don't spam updates if needed,
         // but RxDB patch is generally efficient.
         updateSettings({ [fieldName]: value });
