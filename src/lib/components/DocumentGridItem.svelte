@@ -17,7 +17,7 @@
     // Calculate total percentage
     return Math.min(
       100,
-      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100)
+      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100),
     );
   });
 
@@ -40,7 +40,7 @@
   const hash = $derived(
     document.documentId
       .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
+      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
   );
   const icon = $derived(icons[hash % icons.length]);
   const colorObj = $derived(colors[hash % colors.length]);

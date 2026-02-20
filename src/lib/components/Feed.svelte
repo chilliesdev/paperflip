@@ -272,7 +272,9 @@
               highlightEndIndex={i === activeIndex
                 ? highlightEndIndex
                 : undefined}
-              highlightStartIndex={i === activeIndex ? highlightStartIndex : undefined}
+              highlightStartIndex={i === activeIndex
+                ? highlightStartIndex
+                : undefined}
               videoSource={videoSources[i % videoSources.length]}
             />
           {:else}

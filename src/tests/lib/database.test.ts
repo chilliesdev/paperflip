@@ -257,25 +257,25 @@ describe("database.ts", () => {
     });
 
     it("TC-DB-004: Migration from Version 2 to 3", async () => {
-        await getDb();
-        const call = mockAddCollections.mock.calls[0][0];
-        const migrationStrategy3 = call.documents.migrationStrategies[3];
+      await getDb();
+      const call = mockAddCollections.mock.calls[0][0];
+      const migrationStrategy3 = call.documents.migrationStrategies[3];
 
-        const oldDoc = {
-          documentId: "doc-1",
-          segments: ["text"],
-          currentSegmentIndex: 5,
-          currentSegmentProgress: 10,
-          createdAt: 1000,
-        };
+      const oldDoc = {
+        documentId: "doc-1",
+        segments: ["text"],
+        currentSegmentIndex: 5,
+        currentSegmentProgress: 10,
+        createdAt: 1000,
+      };
 
-        const migratedDoc = migrationStrategy3(oldDoc);
+      const migratedDoc = migrationStrategy3(oldDoc);
 
-        expect(migratedDoc).toEqual({
-          ...oldDoc,
-          isFavourite: false,
-        });
+      expect(migratedDoc).toEqual({
+        ...oldDoc,
+        isFavourite: false,
       });
+    });
   });
 
   describe("addDocument", () => {
@@ -328,36 +328,36 @@ describe("database.ts", () => {
 
   describe("toggleFavourite", () => {
     it("toggles favourite status", async () => {
-        const mockPatch = vi.fn();
-        const mockExec = vi.fn().mockResolvedValue({
-            isFavourite: false,
-            patch: mockPatch,
-        });
-        const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-        mockDb.documents.findOne = mockFindOne as any;
+      const mockPatch = vi.fn();
+      const mockExec = vi.fn().mockResolvedValue({
+        isFavourite: false,
+        patch: mockPatch,
+      });
+      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+      mockDb.documents.findOne = mockFindOne as any;
 
-        const result = await toggleFavourite("doc-1");
+      const result = await toggleFavourite("doc-1");
 
-        expect(mockFindOne).toHaveBeenCalledWith("doc-1");
-        expect(mockPatch).toHaveBeenCalledWith({ isFavourite: true });
-        expect(result).toBe(true);
+      expect(mockFindOne).toHaveBeenCalledWith("doc-1");
+      expect(mockPatch).toHaveBeenCalledWith({ isFavourite: true });
+      expect(result).toBe(true);
     });
   });
 
   describe("deleteDocument", () => {
     it("deletes a document", async () => {
-        const mockRemove = vi.fn();
-        const mockExec = vi.fn().mockResolvedValue({
-            remove: mockRemove,
-        });
-        const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-        mockDb.documents.findOne = mockFindOne as any;
+      const mockRemove = vi.fn();
+      const mockExec = vi.fn().mockResolvedValue({
+        remove: mockRemove,
+      });
+      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+      mockDb.documents.findOne = mockFindOne as any;
 
-        const result = await deleteDocument("doc-1");
+      const result = await deleteDocument("doc-1");
 
-        expect(mockFindOne).toHaveBeenCalledWith("doc-1");
-        expect(mockRemove).toHaveBeenCalled();
-        expect(result).toBe(true);
+      expect(mockFindOne).toHaveBeenCalledWith("doc-1");
+      expect(mockRemove).toHaveBeenCalled();
+      expect(result).toBe(true);
     });
   });
 });

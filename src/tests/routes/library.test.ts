@@ -40,7 +40,7 @@ describe("Library Page", () => {
   it("renders the library page title", async () => {
     render(LibraryPage);
     expect(
-      await screen.findByRole("heading", { name: /My Library/i })
+      await screen.findByRole("heading", { name: /My Library/i }),
     ).toBeInTheDocument();
   });
 

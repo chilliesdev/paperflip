@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAllDocuments, deleteDocument, toggleFavourite } from "$lib/database";
+  import {
+    getAllDocuments,
+    deleteDocument,
+    toggleFavourite,
+  } from "$lib/database";
   import LibraryHeader from "$lib/components/LibraryHeader.svelte";
   import RecentlyViewedCard from "$lib/components/RecentlyViewedCard.svelte";
   import DocumentList from "$lib/components/DocumentList.svelte";
@@ -17,8 +21,8 @@
   const recentDocs = $derived(documents.slice(0, 5));
   const filteredDocs = $derived(
     documents.filter((doc) =>
-      doc.documentId.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+      doc.documentId.toLowerCase().includes(searchQuery.toLowerCase()),
+    ),
   );
 
   onMount(async () => {
@@ -91,7 +95,7 @@
         onToggleFavourite={async (id) => {
           const newStatus = await toggleFavourite(id);
           documents = documents.map((d) =>
-            d.documentId === id ? { ...d, isFavourite: newStatus } : d
+            d.documentId === id ? { ...d, isFavourite: newStatus } : d,
           );
         }}
       />

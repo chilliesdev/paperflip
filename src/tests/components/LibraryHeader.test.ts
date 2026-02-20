@@ -17,7 +17,9 @@ describe("LibraryHeader", () => {
 
   it("updates search query on input", async () => {
     const { component } = render(LibraryHeader);
-    const input = screen.getByPlaceholderText("Search your stories...") as HTMLInputElement;
+    const input = screen.getByPlaceholderText(
+      "Search your stories...",
+    ) as HTMLInputElement;
 
     await fireEvent.input(input, { target: { value: "test query" } });
 

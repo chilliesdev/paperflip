@@ -62,7 +62,11 @@ describe("DocumentList", () => {
 
   it("passes onShowOptions to grid items", async () => {
     const onShowOptions = vi.fn();
-    render(DocumentList, { documents: mockDocuments, viewMode: "grid", onShowOptions });
+    render(DocumentList, {
+      documents: mockDocuments,
+      viewMode: "grid",
+      onShowOptions,
+    });
 
     // In grid view
     const optionButtons = screen.getAllByLabelText("More options");

@@ -2,7 +2,11 @@
   import DocumentListItem from "./DocumentListItem.svelte";
   import DocumentGridItem from "./DocumentGridItem.svelte";
 
-  let { documents = [], viewMode = $bindable("list"), onShowOptions } = $props();
+  let {
+    documents = [],
+    viewMode = $bindable("list"),
+    onShowOptions,
+  } = $props();
 </script>
 
 <section class="px-6 flex-grow">

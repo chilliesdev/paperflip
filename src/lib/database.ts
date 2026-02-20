@@ -282,10 +282,7 @@ export function resetDb() {
 
 export async function getAllDocuments() {
   const db = await getDb();
-  const docs = await db.documents
-    .find()
-    .sort({ createdAt: "desc" })
-    .exec();
+  const docs = await db.documents.find().sort({ createdAt: "desc" }).exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return docs.map((doc: any) => doc.toJSON());
 }

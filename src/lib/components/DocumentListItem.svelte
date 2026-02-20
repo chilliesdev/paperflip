@@ -17,7 +17,7 @@
     // Calculate total percentage
     return Math.min(
       100,
-      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100)
+      Math.round(((currentIdx + segmentPercentage) / totalSegments) * 100),
     );
   });
 
@@ -41,11 +41,13 @@
   const hash = $derived(
     document.documentId
       .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
+      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
   );
   const icon = $derived(icons[hash % icons.length]);
   const colorClass = $derived(colors[hash % colors.length]);
-  const shadowColor = $derived(colorClass.replace("text-", "rgba(0,255,136,0.6)")); // Simplified shadow mapping
+  const shadowColor = $derived(
+    colorClass.replace("text-", "rgba(0,255,136,0.6)"),
+  ); // Simplified shadow mapping
 </script>
 
 <div
@@ -110,7 +112,7 @@
       <div
         class="{colorClass.replace(
           'text-',
-          'bg-'
+          'bg-',
         )} h-full shadow-[0_0_8px_rgba(0,255,136,0.6)]"
         style="width: {progress}%"
       ></div>

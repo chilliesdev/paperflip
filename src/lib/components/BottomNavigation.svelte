@@ -1,7 +1,8 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
 
-  let { activeTab = "home" }: { activeTab?: "home" | "library" | "settings" } = $props();
+  let { activeTab = "home" }: { activeTab?: "home" | "library" | "settings" } =
+    $props();
 </script>
 
 <nav
