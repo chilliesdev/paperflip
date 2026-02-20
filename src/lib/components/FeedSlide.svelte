@@ -1,7 +1,5 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { Volume2, VolumeX, ChevronUp } from "lucide-svelte";
-  import { scale } from "svelte/transition";
   import { videoAssetUrls } from "$lib/stores/assets";
   import { wordCount } from "$lib/constants";
   import { isMuted } from "$lib/stores/audio";
@@ -99,10 +97,6 @@
       : words.slice(startIndex, startIndex + wordCount),
   );
 
-  function toggleMute(e: MouseEvent) {
-    e.stopPropagation();
-    isMuted.update((v) => !v);
-  }
 </script>
 
 <div class="w-full h-full relative overflow-hidden bg-black">
@@ -121,22 +115,6 @@
       class="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-teal-900/40 mix-blend-overlay"
     ></div>
   </div>
-
-  <!-- Floating TTS Indicator (Top Right) -->
-  {#if isActive && currentWordIdx > -1}
-    <button
-      transition:scale
-      class="absolute top-8 right-8 z-20 w-14 h-14 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center shadow-lg shadow-brand-primary/30 animate-pulse hover:scale-110 transition-transform active:scale-95"
-      onclick={toggleMute}
-      aria-label={$isMuted ? "Unmute" : "Mute"}
-    >
-      {#if $isMuted}
-        <VolumeX class="w-6 h-6 text-black" />
-      {:else}
-        <Volume2 class="w-6 h-6 text-black" />
-      {/if}
-    </button>
-  {/if}
 
   <!-- Glassmorphism Text Container -->
   <div
@@ -168,17 +146,6 @@
       </div>
     </div>
 
-    <!-- Swipe Up Hint (only on first slide when active) -->
-    {#if index === 0 && isActive}
-      <div
-        class="absolute bottom-40 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-80 animate-bounce z-30"
-      >
-        <ChevronUp class="w-10 h-10 text-brand-primary" />
-        <p class="text-white text-sm font-bold drop-shadow-lg">
-          Swipe up to continue
-        </p>
-      </div>
-    {/if}
   </div>
 
   <!-- Progress Bar -->

@@ -9,11 +9,13 @@
     resumeTTS,
     isPaused,
   } from "$lib/audio";
-  import { isDictationMode } from "$lib/stores/audio";
+  import { isDictationMode, autoScroll, isMuted } from "$lib/stores/audio";
   import { splitSentences } from "$lib/segmenter";
   import { updateDocumentProgress } from "$lib/database";
   import { videoSources } from "$lib/constants";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
+  import ReadingOptionsSheet from "$lib/components/ReadingOptionsSheet.svelte";
+  import { ChevronLeft, MoreHorizontal, Volume2, VolumeX, ChevronUp } from "lucide-svelte";
   // import Hammer from 'hammerjs'; // Removed static import to fix SSR error
 
   let {
@@ -32,6 +34,7 @@
   let currentSegmentProgress = 0;
   let isPlaying = $state(false);
   let isFirstPlay = true;
+  let showOptions = $state(false);
   let boundaryCheckTimeout: ReturnType<typeof setTimeout>;
   let saveTimeout: ReturnType<typeof setTimeout>;
 
@@ -132,6 +135,10 @@
         highlightEndIndex = undefined;
         highlightStartIndex = undefined;
         saveProgress(true); // Immediate save on completion
+
+        if ($autoScroll && swiperInstance && !swiperInstance.isEnd) {
+          swiperInstance.slideNext();
+        }
       },
       startIndex,
     );
@@ -157,6 +164,10 @@
       highlightEndIndex = undefined;
       highlightStartIndex = undefined;
       saveProgress(true); // Immediate save on completion
+
+      if ($autoScroll && swiperInstance && !swiperInstance.isEnd) {
+        swiperInstance.slideNext();
+      }
       return;
     }
 
@@ -233,13 +244,19 @@
 
 <div class="w-full h-full relative bg-black">
   {#if segments.length > 0}
-    <!-- Page Indicator -->
-    <div
-      class="absolute top-20 left-1/2 -translate-x-1/2 z-40 backdrop-blur-xl bg-black/40 px-4 py-2 rounded-full border border-white/20 pointer-events-none"
-    >
-      <p class="text-white text-sm font-medium">
-        Short {activeIndex + 1} / {segments.length}
-      </p>
+    <!-- Header -->
+    <div class="absolute top-0 left-0 w-full z-40 p-4 flex items-center justify-between pointer-events-none">
+        <a href="/" class="pointer-events-auto w-12 h-12 rounded-full flex items-center justify-center bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15 hover:bg-white/20 transition duration-200">
+            <ChevronLeft class="text-white" size={24} />
+        </a>
+
+        <div class="px-4 py-2 rounded-full bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15">
+            <span class="text-sm font-medium text-white/90">Short {activeIndex + 1} / {segments.length}</span>
+        </div>
+
+        <button class="pointer-events-auto w-12 h-12 rounded-full flex items-center justify-center bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-white/15 hover:bg-white/20 transition duration-200" onclick={() => showOptions = true}>
+            <MoreHorizontal class="text-white" size={24} />
+        </button>
     </div>
 
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -286,5 +303,36 @@
     <div class="flex flex-col items-center justify-center h-full text-white">
       <p class="text-xl">Upload a PDF to see the feed!</p>
     </div>
+  {/if}
+
+  <!-- Footer -->
+  <div class="absolute bottom-0 left-0 w-full z-40 p-4 pointer-events-none flex flex-col items-center">
+    <!-- Mute Button (Left Aligned) -->
+    <div class="w-full flex justify-start pb-4 pl-4">
+      <button
+        class="pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:brightness-110 transition duration-200 text-black bg-[#00ff88]"
+        onclick={() => isMuted.update((v) => !v)}
+      >
+        {#if $isMuted}
+          <VolumeX size={20} />
+        {:else}
+          <Volume2 size={20} />
+        {/if}
+      </button>
+    </div>
+
+    <!-- Swipe Indicator -->
+    <div class="flex flex-col items-center animate-bounce space-y-1 mb-8">
+      <ChevronUp class="text-[#00FF66]" size={32} strokeWidth={3} />
+      <span
+        class="text-xs font-medium text-white/90 tracking-wide uppercase shadow-black drop-shadow-sm"
+        >Swipe up to continue</span
+      >
+    </div>
+  </div>
+
+  <!-- Options Sheet -->
+  {#if showOptions}
+    <ReadingOptionsSheet onClose={() => (showOptions = false)} />
   {/if}
 </div>
