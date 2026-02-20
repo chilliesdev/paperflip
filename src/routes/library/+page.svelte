@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAllDocuments, deleteDocument, toggleFavourite } from "$lib/database";
+  import {
+    getAllDocuments,
+    deleteDocument,
+    toggleFavourite,
+  } from "$lib/database";
   import LibraryHeader from "$lib/components/LibraryHeader.svelte";
   import RecentlyViewedCard from "$lib/components/RecentlyViewedCard.svelte";
   import DocumentList from "$lib/components/DocumentList.svelte";
@@ -8,17 +12,23 @@
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
   import OptionsSheet from "$lib/components/OptionsSheet.svelte";
 
-  let documents: any[] = $state([]);
+  type PaperFlipDocument = {
+    documentId: string;
+    isFavourite?: boolean;
+    [key: string]: unknown;
+  };
+
+  let documents: PaperFlipDocument[] = $state([]);
   let isLoading = $state(true);
   let searchQuery = $state("");
   let viewMode: "list" | "grid" = $state("list");
-  let selectedDocument: any = $state(null);
+  let selectedDocument: PaperFlipDocument | null = $state(null);
 
   const recentDocs = $derived(documents.slice(0, 5));
   const filteredDocs = $derived(
     documents.filter((doc) =>
-      doc.documentId.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+      doc.documentId.toLowerCase().includes(searchQuery.toLowerCase()),
+    ),
   );
 
   onMount(async () => {
@@ -73,7 +83,7 @@
         <DocumentList
           documents={filteredDocs}
           bind:viewMode
-          onShowOptions={(doc) => (selectedDocument = doc)}
+          onShowOptions={(doc: PaperFlipDocument) => (selectedDocument = doc)}
         />
       </div>
     </main>
@@ -84,14 +94,14 @@
       <OptionsSheet
         document={selectedDocument}
         onClose={() => (selectedDocument = null)}
-        onDelete={async (id) => {
+        onDelete={async (id: string) => {
           await deleteDocument(id);
           documents = documents.filter((d) => d.documentId !== id);
         }}
-        onToggleFavourite={async (id) => {
+        onToggleFavourite={async (id: string) => {
           const newStatus = await toggleFavourite(id);
           documents = documents.map((d) =>
-            d.documentId === id ? { ...d, isFavourite: newStatus } : d
+            d.documentId === id ? { ...d, isFavourite: newStatus } : d,
           );
         }}
       />

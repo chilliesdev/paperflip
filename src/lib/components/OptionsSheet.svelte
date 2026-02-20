@@ -1,10 +1,5 @@
 <script lang="ts">
-  let {
-    document,
-    onClose,
-    onDelete,
-    onToggleFavourite,
-  } = $props();
+  let { document, onClose, onDelete, onToggleFavourite } = $props();
 
   let isFavourite = $derived(document.isFavourite);
 
@@ -29,10 +24,10 @@
     class="absolute inset-0 bg-brand-bg/60 backdrop-blur-sm transition-opacity w-full h-full cursor-default border-none p-0 m-0"
     onclick={handleBackdropClick}
     aria-label="Close options"
-    onkeydown={(e) => e.key === 'Escape' && onClose()}
+    onkeydown={(e) => e.key === "Escape" && onClose()}
   ></button>
   <div
-    class="relative w-full bg-black/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl pb-10 pt-4 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pointer-events-auto"
+    class="relative w-full max-w-md mx-auto bg-black/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl pb-10 pt-4 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pointer-events-auto"
   >
     <div class="w-full flex justify-center mb-6">
       <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
@@ -45,7 +40,11 @@
         <div
           class="w-10 h-10 rounded-full bg-brand-surface-dark border border-white/10 flex items-center justify-center shrink-0"
         >
-          <span class="material-symbols-outlined {isFavourite ? 'text-brand-primary' : 'text-brand-gradient'} fill-1">
+          <span
+            class="material-symbols-outlined {isFavourite
+              ? 'text-brand-primary'
+              : 'text-brand-gradient'} fill-1"
+          >
             star
           </span>
         </div>
@@ -62,7 +61,8 @@
         >
           <span class="material-symbols-outlined text-red-500">delete</span>
         </div>
-        <span class="text-red-500 font-semibold text-base">Delete Document</span>
+        <span class="text-red-500 font-semibold text-base">Delete Document</span
+        >
       </button>
     </div>
   </div>
