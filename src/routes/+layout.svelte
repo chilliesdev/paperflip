@@ -37,14 +37,8 @@
         }
       });
 
-      // Load videos in background without blocking UI
-      Promise.all(promises)
-        .then(() => {
-          videoAssetUrls.set(urls);
-        })
-        .catch((err) => {
-          console.error("Video loading error", err);
-        });
+      await Promise.all(promises);
+      videoAssetUrls.set(urls);
     } catch (e) {
       console.error("Loading error", e);
     } finally {
