@@ -41,8 +41,6 @@ describe("DocumentListItem", () => {
     expect(button).toBeInTheDocument();
 
     await fireEvent.click(button);
-    // The component might pass the document object directly or wrapped.
-    // Based on implementation: onShowOptions?.(document);
     expect(onShowOptions).toHaveBeenCalledWith(mockDocument);
   });
 });

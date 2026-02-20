@@ -24,16 +24,15 @@
 </script>
 
 <div class="fixed inset-0 z-50 flex flex-col justify-end">
-  <div
-    class="absolute inset-0 bg-brand-bg/60 backdrop-blur-sm transition-opacity"
+  <button
+    type="button"
+    class="absolute inset-0 bg-brand-bg/60 backdrop-blur-sm transition-opacity w-full h-full cursor-default border-none p-0 m-0"
     onclick={handleBackdropClick}
-    role="button"
-    tabindex="0"
-    onkeydown={(e) => e.key === 'Escape' && onClose()}
     aria-label="Close options"
-  ></div>
+    onkeydown={(e) => e.key === 'Escape' && onClose()}
+  ></button>
   <div
-    class="relative w-full bg-black/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl pb-10 pt-4 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300"
+    class="relative w-full bg-black/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl pb-10 pt-4 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pointer-events-auto"
   >
     <div class="w-full flex justify-center mb-6">
       <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>

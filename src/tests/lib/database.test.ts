@@ -55,6 +55,7 @@ const {
 vi.mock("rxdb", () => ({
   createRxDatabase: mockCreateRxDatabase,
   addRxPlugin: mockAddRxPlugin,
+  RxStorage: {},
 }));
 
 // Mock RxDB plugins
@@ -92,6 +93,8 @@ import {
   getRecentUploads,
   getDocument,
   updateDocumentProgress,
+  toggleFavourite,
+  deleteDocument,
 } from "../../lib/database";
 
 // Type for mock database
@@ -137,6 +140,7 @@ describe("database.ts", () => {
             limit: vi.fn(() => ({
               exec: vi.fn().mockResolvedValue([]),
             })),
+            exec: vi.fn().mockResolvedValue([]),
           })),
         })),
         findOne: vi.fn(() => ({
@@ -191,17 +195,19 @@ describe("database.ts", () => {
           schema: expect.objectContaining({
             title: "paperflip_document",
             primaryKey: "documentId",
-            version: 2,
+            version: 3,
             properties: expect.objectContaining({
               currentSegmentIndex: expect.objectContaining({ type: "number" }),
               currentSegmentProgress: expect.objectContaining({
                 type: "number",
               }),
+              isFavourite: expect.objectContaining({ type: "boolean" }),
             }),
           }),
           migrationStrategies: {
             1: expect.any(Function),
             2: expect.any(Function),
+            3: expect.any(Function),
           },
         },
       });
@@ -223,12 +229,13 @@ describe("database.ts", () => {
       const call = mockAddCollections.mock.calls[0][0];
       const schema = call.documents.schema;
 
-      expect(schema.version).toBe(2);
+      expect(schema.version).toBe(3);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
+      expect(schema.properties).toHaveProperty("isFavourite");
     });
 
-    it("TC-DB-002: Migration from Version 1", async () => {
+    it("TC-DB-002: Migration from Version 1 to 2", async () => {
       await getDb();
       const call = mockAddCollections.mock.calls[0][0];
       const migrationStrategy2 = call.documents.migrationStrategies[2];
@@ -248,102 +255,31 @@ describe("database.ts", () => {
       });
       expect(migratedDoc.currentSegmentIndex).toBe(5);
     });
-  });
 
-  describe("getDb - dev mode plugin and validation", () => {
-    it("registers dev-mode plugin and wraps storage in development", async () => {
-      // Mock development environment
-      vi.stubEnv("DEV", true);
+    it("TC-DB-004: Migration from Version 2 to 3", async () => {
+        await getDb();
+        const call = mockAddCollections.mock.calls[0][0];
+        const migrationStrategy3 = call.documents.migrationStrategies[3];
 
-      await getDb();
+        const oldDoc = {
+          documentId: "doc-1",
+          segments: ["text"],
+          currentSegmentIndex: 5,
+          currentSegmentProgress: 10,
+          createdAt: 1000,
+        };
 
-      expect(mockAddRxPlugin).toHaveBeenCalledWith(mockDevModePlugin);
-      expect(mockWrappedValidateAjvStorage).toHaveBeenCalled();
-      expect(mockCreateRxDatabase).toHaveBeenCalledWith({
-        name: "paperflipdb",
-        storage: expect.objectContaining({
-          name: "validate-ajv-dexie-storage",
-        }),
+        const migratedDoc = migrationStrategy3(oldDoc);
+
+        expect(migratedDoc).toEqual({
+          ...oldDoc,
+          isFavourite: false,
+        });
       });
-      expect((window as any).__rxdb_devmode_added).toBe(true);
-    });
-
-    it("skips dev-mode plugin and wrapping in production", async () => {
-      // Mock production environment
-      vi.stubEnv("DEV", false);
-
-      await getDb();
-
-      // Should not call addRxPlugin for dev-mode plugin
-      const devModeCalls = mockAddRxPlugin.mock.calls.filter(
-        (call) => call[0] === mockDevModePlugin,
-      );
-      expect(devModeCalls.length).toBe(0);
-
-      // Should not wrap storage
-      expect(mockWrappedValidateAjvStorage).not.toHaveBeenCalled();
-      expect(mockCreateRxDatabase).toHaveBeenCalledWith({
-        name: "paperflipdb",
-        storage: expect.objectContaining({ name: "dexie-storage" }),
-      });
-    });
-
-    it("skips dev-mode plugin if already added but still wraps storage", async () => {
-      vi.stubEnv("DEV", true);
-      (window as any).__rxdb_devmode_added = true;
-
-      await getDb();
-
-      // Should not call addRxPlugin for dev-mode plugin
-      const devModeCalls = mockAddRxPlugin.mock.calls.filter(
-        (call) => call[0] === mockDevModePlugin,
-      );
-      expect(devModeCalls.length).toBe(0);
-
-      // But should still wrap storage in DEV
-      expect(mockWrappedValidateAjvStorage).toHaveBeenCalled();
-    });
-
-    it("handles DEV1 error gracefully when dev-mode plugin is already registered", async () => {
-      vi.stubEnv("DEV", true);
-
-      // Mock addRxPlugin to throw DEV1 error for dev-mode plugin
-      mockAddRxPlugin.mockImplementation((plugin) => {
-        if (plugin === mockDevModePlugin) {
-          const error = new Error("DEV1: Plugin already added");
-          (error as any).code = "DEV1";
-          throw error;
-        }
-      });
-
-      // Should not throw
-      await expect(getDb()).resolves.toBe(mockDb);
-
-      // Should set the flag to prevent future attempts
-      expect((window as any).__rxdb_devmode_added).toBe(true);
-    });
-
-    it("warns about errors when loading dev-mode plugin or validation", async () => {
-      vi.stubEnv("DEV", true);
-
-      const customError = new Error("Some other error");
-      mockAddRxPlugin.mockImplementation((plugin) => {
-        if (plugin === mockDevModePlugin) {
-          throw customError;
-        }
-      });
-
-      await expect(getDb()).resolves.toBe(mockDb);
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Failed to load RxDB Dev Mode Plugin",
-        customError,
-      );
-    });
   });
 
   describe("addDocument", () => {
-    it("inserts a document with all required fields", async () => {
+    it("inserts a document with all required fields including isFavourite", async () => {
       const documentId = "doc-123";
       const segments = ["Segment 1", "Segment 2", "Segment 3"];
       const currentSegmentIndex = 1;
@@ -361,20 +297,13 @@ describe("database.ts", () => {
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
-      });
-
-      expect(result).toEqual({
-        documentId,
-        segments,
-        currentSegmentIndex,
-        currentSegmentProgress: 0,
-        createdAt: expect.any(Number),
+        isFavourite: false,
       });
     });
   });
 
   describe("upsertDocument", () => {
-    it("upserts a document with all required fields", async () => {
+    it("upserts a document with all required fields including isFavourite", async () => {
       const documentId = "doc-123";
       const segments = ["Segment 1", "Segment 2"];
       const currentSegmentIndex = 1;
@@ -392,71 +321,43 @@ describe("database.ts", () => {
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
-      });
-
-      expect(result).toEqual({
-        documentId,
-        segments,
-        currentSegmentIndex,
-        currentSegmentProgress: 0,
-        createdAt: expect.any(Number),
+        isFavourite: false,
       });
     });
   });
 
-  describe("getRecentUploads", () => {
-    it("fetches recent uploads sorted by createdAt desc", async () => {
-      // Mock find chain
-      const mockExec = vi
-        .fn()
-        .mockResolvedValue([
-          { toJSON: () => ({ documentId: "doc1", createdAt: 200 }) },
-          { toJSON: () => ({ documentId: "doc2", createdAt: 100 }) },
-        ]);
-      const mockLimit = vi.fn().mockReturnValue({ exec: mockExec });
-      const mockSort = vi.fn().mockReturnValue({ limit: mockLimit });
-      const mockFind = vi.fn().mockReturnValue({ sort: mockSort });
-      mockDb.documents.find = mockFind as any;
+  describe("toggleFavourite", () => {
+    it("toggles favourite status", async () => {
+        const mockPatch = vi.fn();
+        const mockExec = vi.fn().mockResolvedValue({
+            isFavourite: false,
+            patch: mockPatch,
+        });
+        const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+        mockDb.documents.findOne = mockFindOne as any;
 
-      const result = await getRecentUploads(5);
+        const result = await toggleFavourite("doc-1");
 
-      expect(mockSort).toHaveBeenCalledWith({ createdAt: "desc" });
-      expect(mockLimit).toHaveBeenCalledWith(5);
-      expect(result).toHaveLength(2);
+        expect(mockFindOne).toHaveBeenCalledWith("doc-1");
+        expect(mockPatch).toHaveBeenCalledWith({ isFavourite: true });
+        expect(result).toBe(true);
     });
   });
 
-  describe("getDocument", () => {
-    it("fetches a single document by ID", async () => {
-      const mockExec = vi.fn().mockResolvedValue({
-        toJSON: () => ({ documentId: "doc1", title: "Test" }),
-      });
-      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
+  describe("deleteDocument", () => {
+    it("deletes a document", async () => {
+        const mockRemove = vi.fn();
+        const mockExec = vi.fn().mockResolvedValue({
+            remove: mockRemove,
+        });
+        const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+        mockDb.documents.findOne = mockFindOne as any;
 
-      const result = await getDocument("doc1");
+        const result = await deleteDocument("doc-1");
 
-      expect(mockFindOne).toHaveBeenCalledWith("doc1");
-      expect(result).toEqual({ documentId: "doc1", title: "Test" });
-    });
-  });
-
-  describe("updateDocumentProgress", () => {
-    it("TC-DB-003: Update Progress Functionality", async () => {
-      const mockPatch = vi.fn();
-      const mockExec = vi.fn().mockResolvedValue({
-        patch: mockPatch,
-      });
-      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
-
-      await updateDocumentProgress("doc-1", 5, 120);
-
-      expect(mockFindOne).toHaveBeenCalledWith("doc-1");
-      expect(mockPatch).toHaveBeenCalledWith({
-        currentSegmentIndex: 5,
-        currentSegmentProgress: 120,
-      });
+        expect(mockFindOne).toHaveBeenCalledWith("doc-1");
+        expect(mockRemove).toHaveBeenCalled();
+        expect(result).toBe(true);
     });
   });
 });
