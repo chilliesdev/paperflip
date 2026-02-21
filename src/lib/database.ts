@@ -27,7 +27,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 5,
+  version: 6,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -40,6 +40,12 @@ const documentSchema = {
       items: {
         type: "string",
       },
+    },
+    totalSegments: {
+      type: "number",
+    },
+    currentSegmentLength: {
+      type: "number",
     },
     currentSegmentIndex: {
       type: "number",
@@ -170,7 +176,7 @@ async function _createDb() {
       documents_v2: {
         schema: {
           ...documentSchema,
-          version: 5,
+          version: 6,
         },
         migrationStrategies: {
           // New collection, no migrations needed yet
@@ -179,6 +185,15 @@ async function _createDb() {
           3: (oldDoc) => oldDoc,
           4: (oldDoc) => oldDoc,
           5: (oldDoc) => oldDoc,
+          6: (oldDoc) => {
+            oldDoc.totalSegments = oldDoc.segments ? oldDoc.segments.length : 0;
+            const idx = oldDoc.currentSegmentIndex || 0;
+            oldDoc.currentSegmentLength =
+              oldDoc.segments && oldDoc.segments[idx]
+                ? oldDoc.segments[idx].length
+                : 0;
+            return oldDoc;
+          },
         },
       },
       settings: {
@@ -220,9 +235,14 @@ export async function addDocument(
   try {
     const db = await getDb();
     const now = Date.now();
+    const totalSegments = segments.length;
+    const currentSegmentLength = segments[currentSegmentIndex]?.length || 0;
+
     const doc = await db.documents_v2.insert({
       documentId,
       segments,
+      totalSegments,
+      currentSegmentLength,
       currentSegmentIndex,
       currentSegmentProgress: 0,
       createdAt: now,
@@ -244,9 +264,14 @@ export async function upsertDocument(
   try {
     const db = await getDb();
     const now = Date.now();
+    const totalSegments = segments.length;
+    const currentSegmentLength = segments[currentSegmentIndex]?.length || 0;
+
     const doc = await db.documents_v2.upsert({
       documentId,
       segments,
+      totalSegments,
+      currentSegmentLength,
       currentSegmentIndex,
       currentSegmentProgress: 0,
       createdAt: now,
@@ -268,7 +293,11 @@ export async function getRecentUploads(limit: number = 10) {
     .limit(limit)
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => {
+    const json = doc.toJSON();
+    delete json.segments;
+    return json;
+  });
 }
 
 export async function getDocument(documentId: string) {
@@ -290,9 +319,14 @@ export async function updateDocumentProgress(
     const db = await getDb();
     const doc = await db.documents_v2.findOne(documentId).exec();
     if (doc) {
+      const currentSegmentLength = doc.segments
+        ? doc.segments[index]?.length || 0
+        : 0;
+
       await doc.incrementalPatch({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
+        currentSegmentLength,
         lastViewedAt: Date.now(),
       });
     }
@@ -344,7 +378,11 @@ export async function getAllDocuments() {
     .sort({ lastViewedAt: "desc" })
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => {
+    const json = doc.toJSON();
+    delete json.segments;
+    return json;
+  });
 }
 
 export async function getSettings() {
