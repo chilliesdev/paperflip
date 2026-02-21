@@ -4,6 +4,9 @@ import LayoutTestWrapper from "../mocks/LayoutTestWrapper.svelte";
 import { isLoading } from "../../lib/stores/loading";
 import { videoAssetUrls } from "../../lib/stores/assets";
 import * as audio from "../../lib/audio";
+import * as navigation from "$app/navigation";
+import * as database from "../../lib/database";
+import { autoResume } from "../../lib/stores/settings";
 
 // Mock stores
 vi.mock("../../lib/stores/loading", async () => {
@@ -26,6 +29,37 @@ vi.mock("../../lib/stores/sync", () => ({
   syncStoresWithDb: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Mock navigation
+vi.mock("$app/navigation", () => ({
+  goto: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("$app/paths", () => ({
+  resolve: (path: string) => path,
+}));
+
+// Mock database
+vi.mock("../../lib/database", () => ({
+  getRecentUploads: vi.fn().mockResolvedValue([]),
+}));
+
+// Mock settings stores
+vi.mock("../../lib/stores/settings", async () => {
+  const { writable } = await import("svelte/store");
+  return {
+    autoResume: writable(true),
+    darkMode: writable(true),
+    settingsStores: {},
+  };
+});
+
+// Mock audio stores
+vi.mock("../../lib/stores/audio", async () => {
+  return {
+    audioStores: {},
+  };
+});
+
 // Mock audio
 vi.mock("../../lib/audio", () => ({
   waitForVoices: vi.fn().mockResolvedValue(undefined),
@@ -33,22 +67,13 @@ vi.mock("../../lib/audio", () => ({
 
 // Mock constants
 vi.mock("../../lib/constants", () => ({
-  videoSources: ["http://example.com/video1.mp4"],
+  videoSources: [{ url: "http://example.com/video1.mp4" }],
 }));
 
-// Mock LoadingScreen to easily check its presence
+// Mock LoadingScreen
 vi.mock("../../lib/components/LoadingScreen.svelte", () => {
-  // Return a simple component that renders a specific test id
-  // Since we can't easily inline a component here without setup,
-  // we rely on the fact that the real LoadingScreen is likely to contain text or we check for absence of content.
-  // However, for integration, using the real LoadingScreen is fine if it's simple.
-  // Let's NOT mock it for now and verify behavior by content.
-  // If we really need to, we can use a similar wrapper strategy or just rely on text.
-  return { default: null }; // Pass through to real component? No, vi.mock default is undefined unless factory returns.
-  // Actually, let's just let it use the real component if possible, or mock it if it has side effects.
-  // The real component is imported in +layout.svelte.
+  return { default: null };
 });
-// To unmock if I want real one:
 vi.unmock("../../lib/components/LoadingScreen.svelte");
 
 describe("Layout Component", () => {
@@ -56,6 +81,8 @@ describe("Layout Component", () => {
     vi.clearAllMocks();
     isLoading.set(true);
     videoAssetUrls.set({});
+    autoResume.set(true);
+    sessionStorage.clear();
 
     // Mock global fetch
     global.fetch = vi.fn().mockResolvedValue({
@@ -65,6 +92,9 @@ describe("Layout Component", () => {
 
     // Mock URL.createObjectURL
     global.URL.createObjectURL = vi.fn((_blob) => "blob:video");
+
+    // Mock window.location
+    vi.stubGlobal("location", { pathname: "/" });
   });
 
   afterEach(() => {
@@ -97,12 +127,11 @@ describe("Layout Component", () => {
   });
 
   it("skips initialization if assets already cached", async () => {
-    videoAssetUrls.set({ "some-key": "some-val" });
+    videoAssetUrls.set({ "http://example.com/video1.mp4": "blob:video" });
 
     render(LayoutTestWrapper);
 
     // Should NOT fetch or wait for voices
-    // We need to wait for the syncStoresWithDb to finish before it decides to skip
     await waitFor(() => {
       expect(screen.getByTestId("layout-content")).toBeInTheDocument();
     });
@@ -125,5 +154,31 @@ describe("Layout Component", () => {
     });
 
     expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it("auto-resumes to most recent document on startup", async () => {
+    const mockDoc = { documentId: "recent-doc.pdf" };
+    (database.getRecentUploads as any).mockResolvedValueOnce([mockDoc]);
+
+    render(LayoutTestWrapper);
+
+    await waitFor(() => {
+      expect(navigation.goto).toHaveBeenCalledWith("/feed?id=recent-doc.pdf");
+    });
+
+    expect(sessionStorage.getItem("hasAutoResumed")).toBe("true");
+  });
+
+  it("does NOT auto-resume if feature disabled", async () => {
+    autoResume.set(false);
+    const mockDoc = { documentId: "recent-doc.pdf" };
+    (database.getRecentUploads as any).mockResolvedValueOnce([mockDoc]);
+
+    render(LayoutTestWrapper);
+
+    // Redirection should not happen
+    await new Promise((r) => setTimeout(r, 100));
+    expect(navigation.goto).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("hasAutoResumed")).toBe("true");
   });
 });

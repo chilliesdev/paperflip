@@ -6,13 +6,27 @@
   import { waitForVoices } from "$lib/audio";
   import { videoSources } from "$lib/constants";
   import { videoAssetUrls } from "$lib/stores/assets";
-  import { darkMode, settingsStores } from "$lib/stores/settings";
+  import { darkMode, settingsStores, autoResume } from "$lib/stores/settings";
   import { audioStores } from "$lib/stores/audio";
   import { syncStoresWithDb } from "$lib/stores/sync";
+  import { getRecentUploads } from "$lib/database";
   import { browser } from "$app/environment";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { get } from "svelte/store";
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
 
   let { children } = $props();
+
+  async function performAutoResume() {
+    const recentDocs = await getRecentUploads(1);
+    if (recentDocs && recentDocs.length > 0) {
+      const lastDoc = recentDocs[0];
+      const feedUrl = `/feed?id=${encodeURIComponent(lastDoc.documentId)}`;
+      // @ts-expect-error - Dynamic URL
+      await goto(resolve(feedUrl));
+    }
+  }
 
   // Global Dark Mode side-effect
   $effect(() => {
@@ -31,6 +45,19 @@
       await syncStoresWithDb({ ...settingsStores, ...audioStores });
     } catch (e) {
       console.error("Failed to initialize settings from database", e);
+    }
+
+    // Auto-resume logic
+    if (browser && !sessionStorage.getItem("hasAutoResumed")) {
+      if (
+        window.location.pathname === "/" ||
+        window.location.pathname === resolve("/")
+      ) {
+        if (get(autoResume)) {
+          await performAutoResume();
+        }
+      }
+      sessionStorage.setItem("hasAutoResumed", "true");
     }
 
     if (Object.keys($videoAssetUrls).length > 0) {

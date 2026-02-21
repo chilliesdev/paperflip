@@ -27,7 +27,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 3,
+  version: 5,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -59,12 +59,24 @@ const documentSchema = {
       minimum: 0,
       maximum: 10000000000000,
     },
+    lastViewedAt: {
+      type: "number",
+      multipleOf: 1,
+      minimum: 0,
+      maximum: 10000000000000,
+    },
     isFavourite: {
       type: "boolean",
     },
   },
-  required: ["documentId", "segments", "currentSegmentIndex", "createdAt"],
-  indexes: ["createdAt"],
+  required: [
+    "documentId",
+    "segments",
+    "currentSegmentIndex",
+    "createdAt",
+    "lastViewedAt",
+  ],
+  indexes: ["createdAt", "lastViewedAt"],
 };
 
 const settingsSchema = {
@@ -155,32 +167,18 @@ async function _createDb() {
     });
 
     await db.addCollections({
-      documents: {
-        schema: documentSchema,
+      documents_v2: {
+        schema: {
+          ...documentSchema,
+          version: 5,
+        },
         migrationStrategies: {
-          // Migration from 0 to 1
-          1: function (oldDoc) {
-            return {
-              documentId: oldDoc.documentId,
-              segments: oldDoc.segments || [],
-              currentSegmentIndex: oldDoc.currentSegmentIndex || 0,
-              createdAt: oldDoc.createdAt || Date.now(),
-            };
-          },
-          // Migration from 1 to 2
-          2: function (oldDoc) {
-            return {
-              ...oldDoc,
-              currentSegmentProgress: 0,
-            };
-          },
-          // Migration from 2 to 3
-          3: function (oldDoc) {
-            return {
-              ...oldDoc,
-              isFavourite: false,
-            };
-          },
+          // New collection, no migrations needed yet
+          1: (oldDoc) => oldDoc,
+          2: (oldDoc) => oldDoc,
+          3: (oldDoc) => oldDoc,
+          4: (oldDoc) => oldDoc,
+          5: (oldDoc) => oldDoc,
         },
       },
       settings: {
@@ -221,12 +219,14 @@ export async function addDocument(
 ) {
   try {
     const db = await getDb();
-    const doc = await db.documents.insert({
+    const now = Date.now();
+    const doc = await db.documents_v2.insert({
       documentId,
       segments,
       currentSegmentIndex,
       currentSegmentProgress: 0,
-      createdAt: Date.now(),
+      createdAt: now,
+      lastViewedAt: now,
       isFavourite: false,
     });
     return doc.toJSON();
@@ -243,12 +243,14 @@ export async function upsertDocument(
 ) {
   try {
     const db = await getDb();
-    const doc = await db.documents.upsert({
+    const now = Date.now();
+    const doc = await db.documents_v2.upsert({
       documentId,
       segments,
       currentSegmentIndex,
       currentSegmentProgress: 0,
-      createdAt: Date.now(),
+      createdAt: now,
+      lastViewedAt: now,
       isFavourite: false, // Default to false if new
     });
     return doc.toJSON();
@@ -260,9 +262,9 @@ export async function upsertDocument(
 
 export async function getRecentUploads(limit: number = 10) {
   const db = await getDb();
-  const docs = await db.documents
+  const docs = await db.documents_v2
     .find()
-    .sort({ createdAt: "desc" })
+    .sort({ lastViewedAt: "desc" })
     .limit(limit)
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -271,8 +273,12 @@ export async function getRecentUploads(limit: number = 10) {
 
 export async function getDocument(documentId: string) {
   const db = await getDb();
-  const doc = await db.documents.findOne(documentId).exec();
-  return doc ? doc.toJSON() : null;
+  const doc = await db.documents_v2.findOne(documentId).exec();
+  if (doc) {
+    await doc.incrementalPatch({ lastViewedAt: Date.now() });
+    return doc.toJSON();
+  }
+  return null;
 }
 
 export async function updateDocumentProgress(
@@ -282,11 +288,12 @@ export async function updateDocumentProgress(
 ) {
   try {
     const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
+    const doc = await db.documents_v2.findOne(documentId).exec();
     if (doc) {
       await doc.incrementalPatch({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
+        lastViewedAt: Date.now(),
       });
     }
   } catch (error) {
@@ -297,7 +304,7 @@ export async function updateDocumentProgress(
 export async function toggleFavourite(documentId: string) {
   try {
     const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
+    const doc = await db.documents_v2.findOne(documentId).exec();
     if (doc) {
       const newStatus = !doc.isFavourite;
       await doc.incrementalPatch({
@@ -314,7 +321,7 @@ export async function toggleFavourite(documentId: string) {
 export async function deleteDocument(documentId: string) {
   try {
     const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
+    const doc = await db.documents_v2.findOne(documentId).exec();
     if (doc) {
       await doc.remove();
       return true;
@@ -332,7 +339,10 @@ export function resetDb() {
 
 export async function getAllDocuments() {
   const db = await getDb();
-  const docs = await db.documents.find().sort({ createdAt: "desc" }).exec();
+  const docs = await db.documents_v2
+    .find()
+    .sort({ lastViewedAt: "desc" })
+    .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return docs.map((doc: any) => doc.toJSON());
 }

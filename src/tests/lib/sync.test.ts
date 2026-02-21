@@ -35,21 +35,23 @@ describe("syncStoresWithDb", () => {
     // Simulate DB having different values
     const dbValue = { videoLength: 30, darkMode: false };
 
-    // Start sync
+    // Start sync - do NOT await yet because it waits for first DB pulse
     const syncPromise = syncStoresWithDb({
       videoLength: videoLengthStore,
       darkMode: darkModeStore,
     });
 
-    // Wait for the observable to be fetched and Part 2 (persistence) to be set up
-    await syncPromise;
-
-    // Verify persistence didn't overwrite DB with defaults during setup
-    // because hasHydrated is still false.
-    expect(db.updateSettings).not.toHaveBeenCalled();
+    // Wait a tick for the observable to be subscribed
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     // Now trigger the DB hydration (Part 1 callback fires)
     subscribers[0](dbValue);
+
+    // Now we can await the syncPromise
+    await syncPromise;
+
+    // Verify persistence didn't overwrite DB with defaults during setup
+    expect(db.updateSettings).not.toHaveBeenCalled();
 
     // Stores should be updated to DB values
     expect(get(videoLengthStore)).toBe(30);
@@ -68,10 +70,14 @@ describe("syncStoresWithDb", () => {
   it("should handle multi-tab sync (subsequent DB updates)", async () => {
     const videoLengthStore = writable(15);
     const syncPromise = syncStoresWithDb({ videoLength: videoLengthStore });
+
+    // Wait a tick for subscription
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Initial hydration to resolve the promise
+    subscribers[0]({ videoLength: 30 });
     await syncPromise;
 
-    // 1. Initial hydration
-    subscribers[0]({ videoLength: 30 });
     expect(get(videoLengthStore)).toBe(30);
     expect(db.updateSettings).not.toHaveBeenCalled();
 

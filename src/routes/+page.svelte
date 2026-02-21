@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { getDb, upsertDocument } from "$lib/database";
   import { segmentText } from "$lib/segmenter";
   import PdfUploader from "$lib/components/PdfUploader.svelte";
@@ -62,10 +61,6 @@
     // eslint-disable-next-line svelte/no-navigation-without-resolve
     goto(`${resolve("/feed")}?id=${encodeURIComponent(documentId)}`);
   }
-
-  onMount(async () => {
-    await getDb();
-  });
 </script>
 
 <svelte:head>

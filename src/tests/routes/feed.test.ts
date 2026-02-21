@@ -23,6 +23,16 @@ vi.mock("../../lib/database", () => ({
   getDb: vi.fn().mockResolvedValue({}),
 }));
 
+// Mock $lib/stores/sync
+vi.mock("../../lib/stores/sync", () => ({
+  isHydrated: {
+    subscribe: (fn: any) => {
+      fn(true);
+      return () => {};
+    },
+  },
+}));
+
 // Mock Feed component
 vi.mock("../../lib/components/Feed.svelte", () => ({
   // Simple mock for Svelte 5

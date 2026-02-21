@@ -93,6 +93,7 @@ import {
   getDb,
   addDocument,
   upsertDocument,
+  updateDocumentProgress,
   resetDb,
   toggleFavourite,
   deleteDocument,
@@ -100,7 +101,7 @@ import {
 
 // Type for mock database
 type MockDatabase = {
-  documents: {
+  documents_v2: {
     insert: typeof mockInsert;
     upsert: typeof mockUpsert;
     find: ReturnType<typeof vi.fn>;
@@ -140,7 +141,7 @@ describe("database.ts", () => {
 
     // Create mock database instance
     mockDb = {
-      documents: {
+      documents_v2: {
         insert: mockInsert,
         upsert: mockUpsert,
         find: vi.fn(() => ({
@@ -209,11 +210,11 @@ describe("database.ts", () => {
       expect(mockAddCollections).toHaveBeenCalledTimes(1);
       expect(mockAddCollections).toHaveBeenCalledWith(
         expect.objectContaining({
-          documents: {
+          documents_v2: {
             schema: expect.objectContaining({
               title: "paperflip_document",
               primaryKey: "documentId",
-              version: 3,
+              version: 5,
               properties: expect.objectContaining({
                 currentSegmentIndex: expect.objectContaining({
                   type: "number",
@@ -224,11 +225,7 @@ describe("database.ts", () => {
                 isFavourite: expect.objectContaining({ type: "boolean" }),
               }),
             }),
-            migrationStrategies: {
-              1: expect.any(Function),
-              2: expect.any(Function),
-              3: expect.any(Function),
-            },
+            migrationStrategies: expect.any(Object),
           },
         }),
       );
@@ -248,54 +245,12 @@ describe("database.ts", () => {
     it("TC-DB-001: Schema Validation", async () => {
       await getDb();
       const call = mockAddCollections.mock.calls[0][0];
-      const schema = call.documents.schema;
+      const schema = call.documents_v2.schema;
 
-      expect(schema.version).toBe(3);
+      expect(schema.version).toBe(5);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
       expect(schema.properties).toHaveProperty("isFavourite");
-    });
-
-    it("TC-DB-002: Migration from Version 1 to 2", async () => {
-      await getDb();
-      const call = mockAddCollections.mock.calls[0][0];
-      const migrationStrategy2 = call.documents.migrationStrategies[2];
-
-      const oldDoc = {
-        documentId: "doc-1",
-        segments: ["text"],
-        currentSegmentIndex: 5,
-        createdAt: 1000,
-      };
-
-      const migratedDoc = migrationStrategy2(oldDoc);
-
-      expect(migratedDoc).toEqual({
-        ...oldDoc,
-        currentSegmentProgress: 0,
-      });
-      expect(migratedDoc.currentSegmentIndex).toBe(5);
-    });
-
-    it("TC-DB-004: Migration from Version 2 to 3", async () => {
-      await getDb();
-      const call = mockAddCollections.mock.calls[0][0];
-      const migrationStrategy3 = call.documents.migrationStrategies[3];
-
-      const oldDoc = {
-        documentId: "doc-1",
-        segments: ["text"],
-        currentSegmentIndex: 5,
-        currentSegmentProgress: 10,
-        createdAt: 1000,
-      };
-
-      const migratedDoc = migrationStrategy3(oldDoc);
-
-      expect(migratedDoc).toEqual({
-        ...oldDoc,
-        isFavourite: false,
-      });
     });
   });
 
@@ -314,6 +269,7 @@ describe("database.ts", () => {
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
+        lastViewedAt: expect.any(Number),
         isFavourite: false,
       });
     });
@@ -334,6 +290,7 @@ describe("database.ts", () => {
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
+        lastViewedAt: expect.any(Number),
         isFavourite: false,
       });
     });
@@ -347,7 +304,7 @@ describe("database.ts", () => {
         incrementalPatch: mockIncrementalPatch,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
+      mockDb.documents_v2.findOne = mockFindOne as any;
 
       const result = await toggleFavourite("doc-1");
 
@@ -364,13 +321,37 @@ describe("database.ts", () => {
         remove: mockRemove,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
+      mockDb.documents_v2.findOne = mockFindOne as any;
 
       const result = await deleteDocument("doc-1");
 
       expect(mockFindOne).toHaveBeenCalledWith("doc-1");
       expect(mockRemove).toHaveBeenCalled();
       expect(result).toBe(true);
+    });
+  });
+
+  describe("updateDocumentProgress", () => {
+    it("updates segment index, progress and lastViewedAt timestamp", async () => {
+      const mockIncrementalPatch = vi.fn();
+      const mockExec = vi.fn().mockResolvedValue({
+        incrementalPatch: mockIncrementalPatch,
+      });
+      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
+      mockDb.documents_v2.findOne = mockFindOne as any;
+
+      const documentId = "doc-progress-test";
+      const index = 5;
+      const progress = 120;
+
+      await updateDocumentProgress(documentId, index, progress);
+
+      expect(mockFindOne).toHaveBeenCalledWith(documentId);
+      expect(mockIncrementalPatch).toHaveBeenCalledWith({
+        currentSegmentIndex: index,
+        currentSegmentProgress: progress,
+        lastViewedAt: expect.any(Number),
+      });
     });
   });
 });

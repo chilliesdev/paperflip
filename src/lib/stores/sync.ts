@@ -1,9 +1,11 @@
-import { get, type Writable } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 import {
   updateSettings,
   getSettingsObservable,
   type Settings,
 } from "$lib/database";
+
+export const isHydrated = writable<boolean>(false);
 
 /**
  * Synchronizes multiple Svelte stores with fields in the RxDB settings document.
@@ -16,32 +18,48 @@ export async function syncStoresWithDb(
 ) {
   const observable = await getSettingsObservable();
   let isUpdatingFromDb = false;
-  let hasHydrated = false;
+  let hasHydratedFlag = false;
 
-  // 1. DB -> Stores (Initial load and multi-tab sync)
-  observable.subscribe((doc: Settings | null) => {
-    if (!doc) return;
-
-    isUpdatingFromDb = true;
-    for (const [fieldName, store] of Object.entries(storesMap)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dbValue = (doc as any)[fieldName];
-      if (dbValue !== undefined && get(store) !== dbValue) {
-        store.set(dbValue);
+  // Create a promise that resolves when hydration is complete
+  const hydrationPromise = new Promise<void>((resolve) => {
+    // 1. DB -> Stores (Initial load and multi-tab sync)
+    observable.subscribe((doc: Settings | null) => {
+      if (!doc) {
+        // If no document exists yet, we are "hydrated" with defaults
+        if (!hasHydratedFlag) {
+          hasHydratedFlag = true;
+          isHydrated.set(true);
+          resolve();
+        }
+        return;
       }
-    }
-    isUpdatingFromDb = false;
-    hasHydrated = true;
+
+      isUpdatingFromDb = true;
+      for (const [fieldName, store] of Object.entries(storesMap)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dbValue = (doc as any)[fieldName];
+        if (dbValue !== undefined && get(store) !== dbValue) {
+          store.set(dbValue);
+        }
+      }
+      isUpdatingFromDb = false;
+
+      if (!hasHydratedFlag) {
+        hasHydratedFlag = true;
+        isHydrated.set(true);
+        resolve();
+      }
+    });
   });
 
   // 2. Stores -> DB (Persistence)
   for (const [fieldName, store] of Object.entries(storesMap)) {
     store.subscribe((value) => {
-      if (!isUpdatingFromDb && hasHydrated) {
-        // We use a small delay or ensure we don't spam updates if needed,
-        // but RxDB patch is generally efficient.
+      if (!isUpdatingFromDb && hasHydratedFlag) {
         updateSettings({ [fieldName]: value });
       }
     });
   }
+
+  return hydrationPromise;
 }

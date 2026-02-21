@@ -10,6 +10,7 @@ import Feed from "../../lib/components/Feed.svelte";
 import * as audio from "../../lib/audio";
 import * as database from "../../lib/database";
 import { isDictationMode, autoScroll } from "../../lib/stores/audio";
+import { backgroundUrl } from "../../lib/stores/settings";
 
 // Mock the audio module
 vi.mock("../../lib/audio", () => {
@@ -103,6 +104,7 @@ describe("Feed Component", () => {
     mockSwiperInstance.realIndex = 0;
     mockSwiperInstance.activeIndex = 0;
     mockIsEnd = false;
+    backgroundUrl.set("");
 
     // Reset video element mocks if necessary
     HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());

@@ -11,10 +11,7 @@
     isPaused,
   } from "$lib/audio";
   import { isDictationMode, autoScroll, isMuted } from "$lib/stores/audio";
-  import {
-    backgroundUrl,
-    textScale,
-  } from "$lib/stores/settings";
+  import { backgroundUrl, textScale } from "$lib/stores/settings";
   import { splitSentences } from "$lib/segmenter";
   import { updateDocumentProgress } from "$lib/database";
   import { videoSources } from "$lib/constants";
@@ -74,6 +71,11 @@
   function handleSwiperInit(e: CustomEvent) {
     const [swiper] = e.detail;
     swiperInstance = swiper;
+    // Ensure we are actually at the initial slide before starting speech
+    // Swiper might report activeIndex 0 briefly before moving to initial-slide
+    if (swiper.activeIndex !== initialIndex) {
+      swiper.slideTo(initialIndex, 0);
+    }
     activeIndex = swiper.activeIndex;
     initializeTTS();
     if (segments.length > 0) {
@@ -126,6 +128,7 @@
       isFirstPlay = false;
     }
 
+    currentCharIndex = startIndex;
     currentSegmentProgress = startIndex;
     const currentSegment = segments[swiperInstance.realIndex];
     if (!currentSegment) return;

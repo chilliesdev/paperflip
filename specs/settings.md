@@ -30,21 +30,17 @@ This document tracks the current status and implementation requirements for all 
 
 ### 5. Auto-Resume
 
-- **Status**: UI only.
-- **Issue**: Feed always resumes from last progress if available, regardless of `$autoResume` value.
-- **Requirement**:
-  - In `src/routes/feed/+page.svelte`, check `$autoResume`.
-  - If `false`, start `initialIndex` and `initialProgress` at 0 regardless of database values.
-  - Persistence required.
+- **Status**: Implemented.
+- **Usage**: When `$autoResume` is true, the app automatically loads the user's last viewed document on app startup (handled in `src/routes/+page.svelte`). Additionally, in `src/routes/feed/+page.svelte`, the feed resumes from the last progress.
+- **Persistence**: Required.
 
 ### 6. Video Length
 
 - **Status**: UI only.
-- **Issue**: `VideoLengthDial.svelte` updates `$videoLength` (default 15), but it has no effect on logic. UI displays "m" (minutes) but architecture implies seconds ("s") for "Shorts".
+- **Issue**: `VideoLengthDial.svelte` updates `$videoLength` (default 15), but it has no effect on logic. It is intended to control the document segment size, but currently `src/lib/segmenter.ts` uses a hardcoded `MAX_SEGMENT_LENGTH = 1000`.
 - **Requirement**:
-  - Clarify units (seconds preferred for shorts). Update UI labels if necessary.
-  - If meant to limit slide duration: Use `$videoLength` in `Feed.svelte` to trigger `swiper.slideNext()` after X seconds if `autoScroll` is enabled.
-  - If meant to control segment size: Use during PDF segmentation in `src/lib/segmenter.ts`.
+  - Update `src/lib/segmenter.ts` to determine the maximum segment length dynamically based on the `$videoLength` setting. This involves mapping the user-selected time value (e.g., seconds/minutes) to an appropriate character limit based on average reading speed.
+  - Update UI labels in `VideoLengthDial.svelte` as necessary to clarify the units or expected segment duration.
   - Persistence required.
 
 ---

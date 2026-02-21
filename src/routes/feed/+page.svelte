@@ -4,6 +4,9 @@
   import { resolve } from "$app/paths";
   import { getDocument, getDb } from "$lib/database";
   import Feed from "$lib/components/Feed.svelte";
+  import { autoResume } from "$lib/stores/settings";
+  import { isHydrated } from "$lib/stores/sync";
+  import { get } from "svelte/store";
 
   let segmentedData: string[] = $state([]);
   let startSegmentIndex: number = $state(0);
@@ -23,12 +26,30 @@
 
     try {
       await getDb(); // Ensure DB is initialized
+
+      // Wait for hydration if not already hydrated
+      if (!get(isHydrated)) {
+        await new Promise<void>((resolve) => {
+          const unsubscribe = isHydrated.subscribe((hydrated) => {
+            if (hydrated) {
+              unsubscribe();
+              resolve();
+            }
+          });
+        });
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const doc: any = await getDocument(documentId);
       if (doc) {
         segmentedData = doc.segments;
-        startSegmentIndex = doc.currentSegmentIndex || 0;
-        startSegmentProgress = doc.currentSegmentProgress || 0;
+        if (get(autoResume)) {
+          startSegmentIndex = doc.currentSegmentIndex || 0;
+          startSegmentProgress = doc.currentSegmentProgress || 0;
+        } else {
+          startSegmentIndex = 0;
+          startSegmentProgress = 0;
+        }
       } else {
         error = "Document not found";
       }

@@ -15,6 +15,7 @@ import * as navigation from "$app/navigation";
 vi.mock("../../lib/database", () => ({
   getDb: vi.fn(),
   upsertDocument: vi.fn(),
+  getRecentUploads: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("../../lib/segmenter", () => ({
