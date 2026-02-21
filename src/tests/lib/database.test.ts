@@ -214,12 +214,16 @@ describe("database.ts", () => {
             schema: expect.objectContaining({
               title: "paperflip_document",
               primaryKey: "documentId",
-              version: 5,
+              version: 6,
               properties: expect.objectContaining({
                 currentSegmentIndex: expect.objectContaining({
                   type: "number",
                 }),
                 currentSegmentProgress: expect.objectContaining({
+                  type: "number",
+                }),
+                totalSegments: expect.objectContaining({ type: "number" }),
+                currentSegmentLength: expect.objectContaining({
                   type: "number",
                 }),
                 isFavourite: expect.objectContaining({ type: "boolean" }),
@@ -247,9 +251,11 @@ describe("database.ts", () => {
       const call = mockAddCollections.mock.calls[0][0];
       const schema = call.documents_v2.schema;
 
-      expect(schema.version).toBe(5);
+      expect(schema.version).toBe(6);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
+      expect(schema.properties).toHaveProperty("totalSegments");
+      expect(schema.properties).toHaveProperty("currentSegmentLength");
       expect(schema.properties).toHaveProperty("isFavourite");
     });
   });
@@ -266,6 +272,8 @@ describe("database.ts", () => {
       expect(mockInsert).toHaveBeenCalledWith({
         documentId,
         segments,
+        totalSegments: 3,
+        currentSegmentLength: 9, // "Segment 2".length
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
@@ -287,6 +295,8 @@ describe("database.ts", () => {
       expect(mockUpsert).toHaveBeenCalledWith({
         documentId,
         segments,
+        totalSegments: 2,
+        currentSegmentLength: 9, // "Segment 2".length
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
@@ -334,7 +344,16 @@ describe("database.ts", () => {
   describe("updateDocumentProgress", () => {
     it("updates segment index, progress and lastViewedAt timestamp", async () => {
       const mockIncrementalPatch = vi.fn();
+      const segments = [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "Segment 5", // index 5
+      ];
       const mockExec = vi.fn().mockResolvedValue({
+        segments,
         incrementalPatch: mockIncrementalPatch,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
@@ -350,8 +369,36 @@ describe("database.ts", () => {
       expect(mockIncrementalPatch).toHaveBeenCalledWith({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
+        currentSegmentLength: 9, // "Segment 5".length
         lastViewedAt: expect.any(Number),
       });
+    });
+  });
+
+  describe("getAllDocuments", () => {
+    it("returns documents without segments", async () => {
+      const mockDocs = [
+        {
+          documentId: "1",
+          segments: ["a", "b"],
+          toJSON: () => ({ documentId: "1", segments: ["a", "b"], other: 1 }),
+        },
+      ];
+
+      const mockExec = vi.fn().mockResolvedValue(mockDocs);
+      const mockSort = vi.fn().mockReturnValue({ exec: mockExec });
+      const mockFind = vi.fn().mockReturnValue({ sort: mockSort });
+      mockDb.documents_v2.find = mockFind as any;
+
+      // Import inside test scope to use mocked implementation if needed, but here we use the top-level import
+      const { getAllDocuments } = await import("../../lib/database");
+
+      const results = await getAllDocuments();
+
+      expect(mockFind).toHaveBeenCalled();
+      expect(results).toHaveLength(1);
+      expect(results[0]).not.toHaveProperty("segments");
+      expect(results[0]).toHaveProperty("other", 1);
     });
   });
 });

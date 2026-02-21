@@ -39,23 +39,25 @@
       // Transform uploads to match UI needs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recentUploads = uploads.map((doc: any) => {
-        const segments = doc.segments || [];
+        const segments = doc.segments;
+        const totalSegments = doc.totalSegments ?? (segments?.length || 0);
         const currentIndex = doc.currentSegmentIndex || 0;
         const currentProgress = doc.currentSegmentProgress || 0;
 
         let progress = 0;
-        if (segments.length > 0) {
-          const segmentLength = segments[currentIndex]?.length || 1;
+        if (totalSegments > 0) {
+          const segmentLength =
+            doc.currentSegmentLength || segments?.[currentIndex]?.length || 1;
           const granularProgress =
             currentIndex + currentProgress / segmentLength;
-          progress = Math.round((granularProgress / segments.length) * 100);
+          progress = Math.round((granularProgress / totalSegments) * 100);
         }
 
         return {
           id: doc.documentId,
           name: doc.documentId,
           progress: Math.min(progress, 100),
-          totalPages: segments.length,
+          totalPages: totalSegments,
           currentPage: currentIndex + 1,
           timestamp: doc.timestamp || Date.now(),
         };
