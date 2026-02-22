@@ -101,7 +101,7 @@ import {
 
 // Type for mock database
 type MockDatabase = {
-  documents_v2: {
+  documents: {
     insert: typeof mockInsert;
     upsert: typeof mockUpsert;
     find: ReturnType<typeof vi.fn>;
@@ -141,7 +141,7 @@ describe("database.ts", () => {
 
     // Create mock database instance
     mockDb = {
-      documents_v2: {
+      documents: {
         insert: mockInsert,
         upsert: mockUpsert,
         find: vi.fn(() => ({
@@ -210,11 +210,11 @@ describe("database.ts", () => {
       expect(mockAddCollections).toHaveBeenCalledTimes(1);
       expect(mockAddCollections).toHaveBeenCalledWith(
         expect.objectContaining({
-          documents_v2: {
+          documents: {
             schema: expect.objectContaining({
               title: "paperflip_document",
               primaryKey: "documentId",
-              version: 5,
+              version: 6,
               properties: expect.objectContaining({
                 currentSegmentIndex: expect.objectContaining({
                   type: "number",
@@ -245,9 +245,9 @@ describe("database.ts", () => {
     it("TC-DB-001: Schema Validation", async () => {
       await getDb();
       const call = mockAddCollections.mock.calls[0][0];
-      const schema = call.documents_v2.schema;
+      const schema = call.documents.schema;
 
-      expect(schema.version).toBe(5);
+      expect(schema.version).toBe(6);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
       expect(schema.properties).toHaveProperty("isFavourite");
@@ -304,7 +304,7 @@ describe("database.ts", () => {
         incrementalPatch: mockIncrementalPatch,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents_v2.findOne = mockFindOne as any;
+      mockDb.documents.findOne = mockFindOne as any;
 
       const result = await toggleFavourite("doc-1");
 
@@ -321,7 +321,7 @@ describe("database.ts", () => {
         remove: mockRemove,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents_v2.findOne = mockFindOne as any;
+      mockDb.documents.findOne = mockFindOne as any;
 
       const result = await deleteDocument("doc-1");
 
@@ -338,7 +338,7 @@ describe("database.ts", () => {
         incrementalPatch: mockIncrementalPatch,
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents_v2.findOne = mockFindOne as any;
+      mockDb.documents.findOne = mockFindOne as any;
 
       const documentId = "doc-progress-test";
       const index = 5;

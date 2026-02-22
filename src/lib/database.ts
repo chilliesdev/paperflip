@@ -27,7 +27,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 5,
+  version: 6,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -164,21 +164,47 @@ async function _createDb() {
     const db = await createRxDatabase({
       name: "paperflipdb",
       storage,
+      ignoreDuplicate: import.meta.env.DEV,
     });
 
     await db.addCollections({
-      documents_v2: {
+      documents: {
         schema: {
           ...documentSchema,
-          version: 5,
+          version: 6,
         },
         migrationStrategies: {
-          // New collection, no migrations needed yet
-          1: (oldDoc) => oldDoc,
-          2: (oldDoc) => oldDoc,
-          3: (oldDoc) => oldDoc,
-          4: (oldDoc) => oldDoc,
-          5: (oldDoc) => oldDoc,
+          // Ensure all indexed fields are present in old documents
+          1: (oldDoc) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          2: (oldDoc) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          3: (oldDoc) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          4: (oldDoc) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          5: (oldDoc) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          6: (oldDoc) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
         },
       },
       settings: {
@@ -220,7 +246,7 @@ export async function addDocument(
   try {
     const db = await getDb();
     const now = Date.now();
-    const doc = await db.documents_v2.insert({
+    const doc = await db.documents.insert({
       documentId,
       segments,
       currentSegmentIndex,
@@ -244,7 +270,7 @@ export async function upsertDocument(
   try {
     const db = await getDb();
     const now = Date.now();
-    const doc = await db.documents_v2.upsert({
+    const doc = await db.documents.upsert({
       documentId,
       segments,
       currentSegmentIndex,
@@ -262,7 +288,7 @@ export async function upsertDocument(
 
 export async function getRecentUploads(limit: number = 10) {
   const db = await getDb();
-  const docs = await db.documents_v2
+  const docs = await db.documents
     .find()
     .sort({ lastViewedAt: "desc" })
     .limit(limit)
@@ -273,7 +299,7 @@ export async function getRecentUploads(limit: number = 10) {
 
 export async function getDocument(documentId: string) {
   const db = await getDb();
-  const doc = await db.documents_v2.findOne(documentId).exec();
+  const doc = await db.documents.findOne(documentId).exec();
   if (doc) {
     await doc.incrementalPatch({ lastViewedAt: Date.now() });
     return doc.toJSON();
@@ -288,7 +314,7 @@ export async function updateDocumentProgress(
 ) {
   try {
     const db = await getDb();
-    const doc = await db.documents_v2.findOne(documentId).exec();
+    const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
       await doc.incrementalPatch({
         currentSegmentIndex: index,
@@ -304,7 +330,7 @@ export async function updateDocumentProgress(
 export async function toggleFavourite(documentId: string) {
   try {
     const db = await getDb();
-    const doc = await db.documents_v2.findOne(documentId).exec();
+    const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
       const newStatus = !doc.isFavourite;
       await doc.incrementalPatch({
@@ -321,7 +347,7 @@ export async function toggleFavourite(documentId: string) {
 export async function deleteDocument(documentId: string) {
   try {
     const db = await getDb();
-    const doc = await db.documents_v2.findOne(documentId).exec();
+    const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
       await doc.remove();
       return true;
@@ -339,7 +365,7 @@ export function resetDb() {
 
 export async function getAllDocuments() {
   const db = await getDb();
-  const docs = await db.documents_v2
+  const docs = await db.documents
     .find()
     .sort({ lastViewedAt: "desc" })
     .exec();
