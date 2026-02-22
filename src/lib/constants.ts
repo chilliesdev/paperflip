@@ -1,5 +1,8 @@
 export const wordCount = 8;
 
+// Average reading speed approx 16.6 chars/sec (1000 chars / 60 sec)
+export const CHARS_PER_SECOND = 16.6;
+
 export const videoSources = [
   {
     url: "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",

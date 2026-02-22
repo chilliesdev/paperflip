@@ -1,6 +1,9 @@
 <script lang="ts">
   import { getDb, upsertDocument } from "$lib/database";
   import { segmentText } from "$lib/segmenter";
+  import { videoLength } from "$lib/stores/settings";
+  import { CHARS_PER_SECOND } from "$lib/constants";
+  import { get } from "svelte/store";
   import PdfUploader from "$lib/components/PdfUploader.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import BottomNavigation from "$lib/components/BottomNavigation.svelte";
@@ -21,7 +24,14 @@
     errorMessage = null; // Clear any previous errors
     try {
       console.log("Segmenting text...");
-      const newSegmentedData = segmentText(text);
+      // Calculate max chars based on video length setting (in seconds)
+      const currentVideoLength = get(videoLength);
+      const maxChars = Math.round(currentVideoLength * CHARS_PER_SECOND);
+      console.log(
+        `Using max segment length: ${maxChars} chars based on ${currentVideoLength}s video length`,
+      );
+
+      const newSegmentedData = segmentText(text, maxChars);
       console.log(`Text segmented into ${newSegmentedData.length} segments`);
 
       if (newSegmentedData.length === 0) {

@@ -2,28 +2,32 @@
 
 let cachedSentenceSegmenter: Intl.Segmenter | null = null;
 
-const MAX_SEGMENT_LENGTH = 1000;
+const DEFAULT_MAX_SEGMENT_LENGTH = 1000;
 
 /**
  * Splits raw text into manageable segments for processing.
  *
  * The segmentation process follows these rules:
  * 1. Initially splits text into paragraphs using double newlines.
- * 2. Paragraphs shorter than MAX_SEGMENT_LENGTH (1000 chars) are kept as-is.
+ * 2. Paragraphs shorter than maxChars are kept as-is.
  * 3. Longer paragraphs are split into sentences using Intl.Segmenter.
- * 4. Sentences are recombined into chunks that stay within the 1000 character limit.
- * 5. If a single sentence exceeds 1000 characters, it is force-split at the nearest
+ * 4. Sentences are recombined into chunks that stay within the limit.
+ * 5. If a single sentence exceeds limit, it is force-split at the nearest
  *    word boundary (space).
  *
  * @param text - The raw input text to be segmented.
+ * @param maxChars - The maximum number of characters per segment. Defaults to 1000.
  * @returns An array of trimmed text segments, each within the length limit.
  */
-export function segmentText(text: string): string[] {
+export function segmentText(
+  text: string,
+  maxChars: number = DEFAULT_MAX_SEGMENT_LENGTH,
+): string[] {
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
   const segments: string[] = [];
 
   for (const paragraph of paragraphs) {
-    if (paragraph.length <= MAX_SEGMENT_LENGTH) {
+    if (paragraph.length <= maxChars) {
       segments.push(paragraph.trim());
       continue;
     }
@@ -34,14 +38,14 @@ export function segmentText(text: string): string[] {
     let currentChunkLength = 0;
 
     for (const { text: sentence } of sentences) {
-      if (sentence.length > MAX_SEGMENT_LENGTH) {
+      if (sentence.length > maxChars) {
         if (currentChunkParts.length > 0) {
           segments.push(currentChunkParts.join("").trim());
           currentChunkParts = [];
           currentChunkLength = 0;
         }
-        segments.push(...chunkText(sentence, MAX_SEGMENT_LENGTH));
-      } else if (currentChunkLength + sentence.length > MAX_SEGMENT_LENGTH) {
+        segments.push(...chunkText(sentence, maxChars));
+      } else if (currentChunkLength + sentence.length > maxChars) {
         if (currentChunkParts.length > 0) {
           segments.push(currentChunkParts.join("").trim());
         }

@@ -1,17 +1,17 @@
 <script lang="ts">
   let { value = $bindable(15) } = $props();
 
-  const options = [5, 15, 30, 60];
+  const options = [15, 30, 60, 90];
 
   function getRotation(val: number) {
     switch (val) {
-      case 5:
-        return -135;
       case 15:
-        return -45;
+        return -135;
       case 30:
-        return 45;
+        return -45;
       case 60:
+        return 45;
+      case 90:
         return 135;
       default:
         return -135;
@@ -55,7 +55,7 @@
         <span class="text-4xl font-black text-brand-secondary tracking-tighter">
           {value}<span
             class="text-lg align-top text-brand-text-muted font-normal ml-1"
-            >m</span
+            >s</span
           >
         </span>
         <span
@@ -93,7 +93,7 @@
             : 'hover:text-white'}"
           onclick={() => selectValue(opt)}
         >
-          {opt}m
+          {opt}s
         </button>
       {/each}
     </div>

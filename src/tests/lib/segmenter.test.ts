@@ -100,6 +100,17 @@ describe("segmentText", () => {
     expect(segments[2].length).toBe(500);
     expect(segments.join("")).toBe(longWord);
   });
+
+  it("respects a custom maxChars limit", () => {
+    const text = "a".repeat(500);
+    // Split into chunks of 200
+    const segments = segmentText(text, 200);
+    // Should result in 3 segments: 200, 200, 100
+    expect(segments.length).toBe(3);
+    expect(segments[0].length).toBe(200);
+    expect(segments[1].length).toBe(200);
+    expect(segments[2].length).toBe(100);
+  });
 });
 
 describe("splitSentences", () => {

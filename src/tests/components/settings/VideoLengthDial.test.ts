@@ -6,13 +6,13 @@ describe("VideoLengthDial", () => {
   it("renders with default value", () => {
     const { getByText } = render(VideoLengthDial, { value: 15 });
     expect(getByText("15")).toBeInTheDocument();
-    expect(getByText("m")).toBeInTheDocument();
+    expect(getByText("s")).toBeInTheDocument();
   });
 
   it("changes value when an option is clicked", async () => {
     const { getByText } = render(VideoLengthDial, { value: 15 });
 
-    const option30 = getByText("30m");
+    const option30 = getByText("30s");
     await fireEvent.click(option30);
 
     expect(getByText("30")).toBeInTheDocument();
