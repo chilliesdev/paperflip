@@ -27,7 +27,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 5,
+  version: 6,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -53,6 +53,14 @@ const documentSchema = {
       minimum: 0,
       maximum: 10000000, // Large enough for char index
     },
+    totalSegments: {
+      type: "number",
+      minimum: 0,
+    },
+    currentSegmentLength: {
+      type: "number",
+      minimum: 0,
+    },
     createdAt: {
       type: "number",
       multipleOf: 1,
@@ -75,6 +83,8 @@ const documentSchema = {
     "currentSegmentIndex",
     "createdAt",
     "lastViewedAt",
+    "totalSegments",
+    "currentSegmentLength",
   ],
   indexes: ["createdAt", "lastViewedAt"],
 };
@@ -170,7 +180,7 @@ async function _createDb() {
       documents_v2: {
         schema: {
           ...documentSchema,
-          version: 5,
+          version: 6,
         },
         migrationStrategies: {
           // New collection, no migrations needed yet
@@ -178,7 +188,13 @@ async function _createDb() {
           2: (oldDoc) => oldDoc,
           3: (oldDoc) => oldDoc,
           4: (oldDoc) => oldDoc,
-          5: (oldDoc) => oldDoc,
+          5: (oldDoc) => {
+            const segments = oldDoc.segments || [];
+            oldDoc.totalSegments = segments.length;
+            const idx = oldDoc.currentSegmentIndex || 0;
+            oldDoc.currentSegmentLength = segments[idx]?.length || 0;
+            return oldDoc;
+          },
         },
       },
       settings: {
@@ -225,6 +241,8 @@ export async function addDocument(
       segments,
       currentSegmentIndex,
       currentSegmentProgress: 0,
+      totalSegments: segments.length,
+      currentSegmentLength: segments[currentSegmentIndex]?.length || 0,
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false,
@@ -249,6 +267,8 @@ export async function upsertDocument(
       segments,
       currentSegmentIndex,
       currentSegmentProgress: 0,
+      totalSegments: segments.length,
+      currentSegmentLength: segments[currentSegmentIndex]?.length || 0,
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false, // Default to false if new
@@ -268,7 +288,16 @@ export async function getRecentUploads(limit: number = 10) {
     .limit(limit)
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => ({
+    documentId: doc.documentId,
+    currentSegmentIndex: doc.currentSegmentIndex,
+    currentSegmentProgress: doc.currentSegmentProgress,
+    totalSegments: doc.totalSegments,
+    currentSegmentLength: doc.currentSegmentLength,
+    createdAt: doc.createdAt,
+    lastViewedAt: doc.lastViewedAt,
+    isFavourite: doc.isFavourite,
+  }));
 }
 
 export async function getDocument(documentId: string) {
@@ -290,9 +319,11 @@ export async function updateDocumentProgress(
     const db = await getDb();
     const doc = await db.documents_v2.findOne(documentId).exec();
     if (doc) {
+      const currentSegmentLength = doc.segments[index]?.length || 0;
       await doc.incrementalPatch({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
+        currentSegmentLength,
         lastViewedAt: Date.now(),
       });
     }
@@ -344,7 +375,16 @@ export async function getAllDocuments() {
     .sort({ lastViewedAt: "desc" })
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => ({
+    documentId: doc.documentId,
+    currentSegmentIndex: doc.currentSegmentIndex,
+    currentSegmentProgress: doc.currentSegmentProgress,
+    totalSegments: doc.totalSegments,
+    currentSegmentLength: doc.currentSegmentLength,
+    createdAt: doc.createdAt,
+    lastViewedAt: doc.lastViewedAt,
+    isFavourite: doc.isFavourite,
+  }));
 }
 
 export async function getSettings() {

@@ -97,6 +97,7 @@ import {
   resetDb,
   toggleFavourite,
   deleteDocument,
+  getAllDocuments,
 } from "../../lib/database";
 
 // Type for mock database
@@ -214,12 +215,18 @@ describe("database.ts", () => {
             schema: expect.objectContaining({
               title: "paperflip_document",
               primaryKey: "documentId",
-              version: 5,
+              version: 6,
               properties: expect.objectContaining({
                 currentSegmentIndex: expect.objectContaining({
                   type: "number",
                 }),
                 currentSegmentProgress: expect.objectContaining({
+                  type: "number",
+                }),
+                totalSegments: expect.objectContaining({
+                  type: "number",
+                }),
+                currentSegmentLength: expect.objectContaining({
                   type: "number",
                 }),
                 isFavourite: expect.objectContaining({ type: "boolean" }),
@@ -247,9 +254,11 @@ describe("database.ts", () => {
       const call = mockAddCollections.mock.calls[0][0];
       const schema = call.documents_v2.schema;
 
-      expect(schema.version).toBe(5);
+      expect(schema.version).toBe(6);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
+      expect(schema.properties).toHaveProperty("totalSegments");
+      expect(schema.properties).toHaveProperty("currentSegmentLength");
       expect(schema.properties).toHaveProperty("isFavourite");
     });
   });
@@ -268,6 +277,8 @@ describe("database.ts", () => {
         segments,
         currentSegmentIndex,
         currentSegmentProgress: 0,
+        totalSegments: 3,
+        currentSegmentLength: 9, // "Segment 2".length
         createdAt: expect.any(Number),
         lastViewedAt: expect.any(Number),
         isFavourite: false,
@@ -289,6 +300,8 @@ describe("database.ts", () => {
         segments,
         currentSegmentIndex,
         currentSegmentProgress: 0,
+        totalSegments: 2,
+        currentSegmentLength: 9, // "Segment 2".length
         createdAt: expect.any(Number),
         lastViewedAt: expect.any(Number),
         isFavourite: false,
@@ -336,6 +349,7 @@ describe("database.ts", () => {
       const mockIncrementalPatch = vi.fn();
       const mockExec = vi.fn().mockResolvedValue({
         incrementalPatch: mockIncrementalPatch,
+        segments: ["A", "B", "C", "D", "E", "F"],
       });
       const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
       mockDb.documents_v2.findOne = mockFindOne as any;
@@ -350,8 +364,42 @@ describe("database.ts", () => {
       expect(mockIncrementalPatch).toHaveBeenCalledWith({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
+        currentSegmentLength: 1, // "F".length
         lastViewedAt: expect.any(Number),
       });
+    });
+  });
+
+  describe("getAllDocuments", () => {
+    it("returns documents without segments", async () => {
+      const mockDocs = [
+        {
+          documentId: "doc-1",
+          segments: ["Big content"],
+          currentSegmentIndex: 0,
+          currentSegmentProgress: 0,
+          totalSegments: 1,
+          currentSegmentLength: 11,
+          createdAt: 100,
+          lastViewedAt: 200,
+          isFavourite: true,
+          toJSON: () => ({}), // Not used by getAllDocuments implementation
+        },
+      ];
+
+      const mockExec = vi.fn().mockResolvedValue(mockDocs);
+      mockDb.documents_v2.find = vi.fn(() => ({
+        sort: vi.fn(() => ({
+          exec: mockExec,
+        })),
+      })) as any;
+
+      const results = await getAllDocuments();
+
+      expect(results).toHaveLength(1);
+      expect(results[0]).not.toHaveProperty("segments");
+      expect(results[0]).toHaveProperty("totalSegments", 1);
+      expect(results[0]).toHaveProperty("documentId", "doc-1");
     });
   });
 });
