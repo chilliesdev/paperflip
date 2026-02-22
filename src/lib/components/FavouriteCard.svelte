@@ -4,12 +4,17 @@
   let { document } = $props();
 
   const progress = $derived.by(() => {
-    const totalSegments = document.segments?.length || 0;
+    const totalSegments =
+      document.totalSegments ?? document.segments?.length ?? 0;
     if (totalSegments === 0) return 0;
 
     const currentIdx = document.currentSegmentIndex || 0;
     const currentProgress = document.currentSegmentProgress || 0;
-    const currentSegmentLength = document.segments[currentIdx]?.length || 1;
+    const rawLength =
+      document.currentSegmentLength ??
+      document.segments?.[currentIdx]?.length ??
+      0;
+    const currentSegmentLength = rawLength || 1;
 
     // Calculate percentage within current segment
     const segmentPercentage = currentProgress / currentSegmentLength;
@@ -26,7 +31,7 @@
   });
 
   const totalParts = $derived.by(() => {
-    return document.segments?.length || 0;
+    return document.totalSegments ?? document.segments?.length ?? 0;
   });
 
   // Icon/Color logic similar to DocumentListItem
