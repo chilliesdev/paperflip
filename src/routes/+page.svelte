@@ -41,7 +41,12 @@
       console.log("Getting database...");
       await getDb();
       console.log("Upserting document...");
-      await upsertDocument(filename, newSegmentedData);
+      await upsertDocument(
+        filename,
+        newSegmentedData,
+        text,
+        currentVideoLength,
+      );
       console.log(
         "Document and segments stored/updated in RxDB with ID:",
         filename,

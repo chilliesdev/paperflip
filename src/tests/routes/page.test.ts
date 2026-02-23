@@ -68,10 +68,12 @@ describe("Root Page (+page.svelte)", () => {
     await waitFor(() => {
       // Verify database calls
       expect(database.getDb).toHaveBeenCalled();
-      expect(database.upsertDocument).toHaveBeenCalledWith("test.pdf", [
-        "Segment 1",
-        "Segment 2",
-      ]);
+      expect(database.upsertDocument).toHaveBeenCalledWith(
+        "test.pdf",
+        ["Segment 1", "Segment 2"],
+        "Mock PDF Text",
+        15,
+      );
 
       // Verify navigation
       expect(navigation.goto).toHaveBeenCalledWith("/feed?id=test.pdf");

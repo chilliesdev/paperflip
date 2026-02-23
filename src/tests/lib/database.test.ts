@@ -214,7 +214,7 @@ describe("database.ts", () => {
             schema: expect.objectContaining({
               title: "paperflip_document",
               primaryKey: "documentId",
-              version: 6,
+              version: 7,
               properties: expect.objectContaining({
                 currentSegmentIndex: expect.objectContaining({
                   type: "number",
@@ -247,7 +247,7 @@ describe("database.ts", () => {
       const call = mockAddCollections.mock.calls[0][0];
       const schema = call.documents.schema;
 
-      expect(schema.version).toBe(6);
+      expect(schema.version).toBe(7);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
       expect(schema.properties).toHaveProperty("isFavourite");
@@ -260,12 +260,14 @@ describe("database.ts", () => {
       const segments = ["Segment 1", "Segment 2", "Segment 3"];
       const currentSegmentIndex = 1;
 
-      await addDocument(documentId, segments, currentSegmentIndex);
+      await addDocument(documentId, segments, "", 15, currentSegmentIndex);
 
       expect(mockInsert).toHaveBeenCalledTimes(1);
       expect(mockInsert).toHaveBeenCalledWith({
         documentId,
         segments,
+        fullText: "",
+        videoLengthAtSegmentation: 15,
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
@@ -281,12 +283,14 @@ describe("database.ts", () => {
       const segments = ["Segment 1", "Segment 2"];
       const currentSegmentIndex = 1;
 
-      await upsertDocument(documentId, segments, currentSegmentIndex);
+      await upsertDocument(documentId, segments, "", 15, currentSegmentIndex);
 
       expect(mockUpsert).toHaveBeenCalledTimes(1);
       expect(mockUpsert).toHaveBeenCalledWith({
         documentId,
         segments,
+        fullText: "",
+        videoLengthAtSegmentation: 15,
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),

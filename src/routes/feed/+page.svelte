@@ -2,17 +2,19 @@
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import { resolve } from "$app/paths";
-  import { getDocument, getDb } from "$lib/database";
+  import { getDocument, getDb, resegmentDocument } from "$lib/database";
   import Feed from "$lib/components/Feed.svelte";
-  import { autoResume } from "$lib/stores/settings";
+  import { autoResume, videoLength } from "$lib/stores/settings";
   import { isHydrated } from "$lib/stores/sync";
   import { get } from "svelte/store";
 
-  let segmentedData: string[] = $state([]);
+  let doc: any = $state(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  let segmentedData = $derived(doc ? doc.segments : []);
   let startSegmentIndex: number = $state(0);
   let startSegmentProgress: number = $state(0);
   let currentDocumentId: string = $state("");
   let isLoading: boolean = $state(true);
+  let isResegmenting: boolean = $state(false);
   let error: string | null = $state(null);
 
   onMount(async () => {
@@ -39,10 +41,8 @@
         });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const doc: any = await getDocument(documentId);
+      doc = await getDocument(documentId);
       if (doc) {
-        segmentedData = doc.segments;
         if (get(autoResume)) {
           startSegmentIndex = doc.currentSegmentIndex || 0;
           startSegmentProgress = doc.currentSegmentProgress || 0;
@@ -58,6 +58,37 @@
       error = "Failed to load document";
     } finally {
       isLoading = false;
+    }
+  });
+
+  // Reactive re-segmentation effect
+  $effect(() => {
+    const currentVideoLength = $videoLength;
+    if (
+      doc &&
+      doc.fullText &&
+      doc.videoLengthAtSegmentation !== currentVideoLength &&
+      !isResegmenting
+    ) {
+      console.log(
+        `Re-segmenting document from ${doc.videoLengthAtSegmentation}s to ${currentVideoLength}s`,
+      );
+      isResegmenting = true;
+      resegmentDocument(currentDocumentId, currentVideoLength)
+        .then((newDoc) => {
+          if (newDoc) {
+            doc = newDoc;
+            if (get(autoResume)) {
+              startSegmentIndex = newDoc.currentSegmentIndex || 0;
+              startSegmentProgress = newDoc.currentSegmentProgress || 0;
+            }
+          }
+          isResegmenting = false;
+        })
+        .catch((e) => {
+          console.error("Resegmentation failed:", e);
+          isResegmenting = false;
+        });
     }
   });
 </script>
@@ -78,12 +109,29 @@
         <a href={resolve("/")} class="text-brand-primary underline">Go back</a>
       </div>
     {:else if segmentedData.length > 0}
-      <Feed
-        segments={segmentedData}
-        initialIndex={startSegmentIndex}
-        initialProgress={startSegmentProgress}
-        documentId={currentDocumentId}
-      />
+      {#key doc.videoLengthAtSegmentation}
+        <Feed
+          segments={segmentedData}
+          initialIndex={startSegmentIndex}
+          initialProgress={startSegmentProgress}
+          documentId={currentDocumentId}
+        />
+      {/key}
+      {#if isResegmenting}
+        <div
+          class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-300"
+        >
+          <div
+            class="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4"
+          ></div>
+          <p class="text-white font-bold text-lg tracking-wide uppercase">
+            Resegmenting...
+          </p>
+          <p class="text-brand-text-muted text-sm mt-2">
+            Adjusting for {get(videoLength)}s video length
+          </p>
+        </div>
+      {/if}
     {:else}
       <div
         class="flex flex-col items-center justify-center h-full text-center p-6"

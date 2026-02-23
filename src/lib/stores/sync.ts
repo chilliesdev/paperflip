@@ -20,6 +20,10 @@ export async function syncStoresWithDb(
   let isUpdatingFromDb = false;
   let hasHydratedFlag = false;
 
+  // Track the last value sent to the DB for each field to avoid reverts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lastSentValues: Record<string, any> = {};
+
   // Create a promise that resolves when hydration is complete
   const hydrationPromise = new Promise<void>((resolve) => {
     // 1. DB -> Stores (Initial load and multi-tab sync)
@@ -38,8 +42,19 @@ export async function syncStoresWithDb(
       for (const [fieldName, store] of Object.entries(storesMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dbValue = (doc as any)[fieldName];
-        if (dbValue !== undefined && get(store) !== dbValue) {
-          store.set(dbValue);
+
+        if (dbValue !== undefined) {
+          if (lastSentValues[fieldName] === dbValue) {
+            // DB has caught up to our last sent value, clear the tracker
+            delete lastSentValues[fieldName];
+          } else if (lastSentValues[fieldName] === undefined) {
+            // No pending local change, update store if it differs
+            if (get(store) !== dbValue) {
+              store.set(dbValue);
+            }
+          }
+          // else: there is a pending local change that doesn't match this DB value yet.
+          // We keep our local value (optimistic) and wait for the next emission.
         }
       }
       isUpdatingFromDb = false;
@@ -56,6 +71,7 @@ export async function syncStoresWithDb(
   for (const [fieldName, store] of Object.entries(storesMap)) {
     store.subscribe((value) => {
       if (!isUpdatingFromDb && hasHydratedFlag) {
+        lastSentValues[fieldName] = value;
         updateSettings({ [fieldName]: value });
       }
     });

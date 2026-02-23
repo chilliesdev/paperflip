@@ -23,6 +23,9 @@ export function segmentText(
   text: string,
   maxChars: number = DEFAULT_MAX_SEGMENT_LENGTH,
 ): string[] {
+  // Ensure maxChars is at least 1 to avoid infinite loops in chunking
+  maxChars = Math.max(1, maxChars);
+
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
   const segments: string[] = [];
 

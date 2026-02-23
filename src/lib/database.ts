@@ -4,6 +4,8 @@ import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { browser } from "$app/environment";
+import { segmentText } from "./segmenter";
+import { CHARS_PER_SECOND } from "./constants";
 
 // Use window globals to track plugin registration across Vite HMR reloads
 declare global {
@@ -27,7 +29,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 6,
+  version: 7,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -40,6 +42,12 @@ const documentSchema = {
       items: {
         type: "string",
       },
+    },
+    fullText: {
+      type: "string",
+    },
+    videoLengthAtSegmentation: {
+      type: "number",
     },
     currentSegmentIndex: {
       type: "number",
@@ -171,7 +179,7 @@ async function _createDb() {
       documents: {
         schema: {
           ...documentSchema,
-          version: 6,
+          version: 7,
         },
         migrationStrategies: {
           // Ensure all indexed fields are present in old documents
@@ -203,6 +211,13 @@ async function _createDb() {
           6: (oldDoc) => {
             oldDoc.createdAt = oldDoc.createdAt || Date.now();
             oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          7: (oldDoc) => {
+            // New version 7 migration
+            oldDoc.fullText = oldDoc.fullText || oldDoc.segments.join("\n\n");
+            oldDoc.videoLengthAtSegmentation =
+              oldDoc.videoLengthAtSegmentation || 15; // Default if unknown
             return oldDoc;
           },
         },
@@ -241,6 +256,8 @@ export function getDb() {
 export async function addDocument(
   documentId: string,
   segments: string[],
+  fullText: string = "",
+  videoLengthAtSegmentation: number = 15,
   currentSegmentIndex: number = 0,
 ) {
   try {
@@ -249,6 +266,8 @@ export async function addDocument(
     const doc = await db.documents.insert({
       documentId,
       segments,
+      fullText,
+      videoLengthAtSegmentation,
       currentSegmentIndex,
       currentSegmentProgress: 0,
       createdAt: now,
@@ -265,6 +284,8 @@ export async function addDocument(
 export async function upsertDocument(
   documentId: string,
   segments: string[],
+  fullText: string = "",
+  videoLengthAtSegmentation: number = 15,
   currentSegmentIndex: number = 0,
 ) {
   try {
@@ -273,6 +294,8 @@ export async function upsertDocument(
     const doc = await db.documents.upsert({
       documentId,
       segments,
+      fullText,
+      videoLengthAtSegmentation,
       currentSegmentIndex,
       currentSegmentProgress: 0,
       createdAt: now,
@@ -393,4 +416,64 @@ export async function updateSettings(patch: Partial<typeof DEFAULT_SETTINGS>) {
 export async function getSettingsObservable() {
   const db = await getDb();
   return db.settings.findOne("global").$;
+}
+
+export async function resegmentDocument(
+  documentId: string,
+  newVideoLength: number,
+) {
+  try {
+    const db = await getDb();
+    const doc = await db.documents.findOne(documentId).exec();
+    if (!doc || !doc.fullText) return null;
+
+    const oldSegments = doc.segments;
+    const oldIndex = doc.currentSegmentIndex;
+    const oldProgress = doc.currentSegmentProgress || 0;
+
+    // 1. Calculate Global Offset
+    // We use the length of previous segments to find the total character offset
+    const globalOffset =
+      oldSegments
+        .slice(0, oldIndex)
+        .reduce((acc: number, s: string) => acc + s.length, 0) + oldProgress;
+
+    // 2. Re-segment
+    const maxChars = Math.max(1, Math.round(newVideoLength * CHARS_PER_SECOND));
+    const newSegments = segmentText(doc.fullText, maxChars);
+
+    // 3. Find New Segment & Progress
+    let newIndex = 0;
+    let accumulatedLength = 0;
+    let newProgress = 0;
+
+    for (let i = 0; i < newSegments.length; i++) {
+      const segmentLength = newSegments[i].length;
+      if (accumulatedLength + segmentLength > globalOffset) {
+        newIndex = i;
+        newProgress = globalOffset - accumulatedLength;
+        break;
+      }
+      accumulatedLength += segmentLength;
+      // If we're at the last segment and haven't reached globalOffset yet,
+      // stay at the end of the last segment.
+      if (i === newSegments.length - 1) {
+        newIndex = i;
+        newProgress = segmentLength;
+      }
+    }
+
+    // 4. Update Document
+    await doc.incrementalPatch({
+      segments: newSegments,
+      videoLengthAtSegmentation: newVideoLength,
+      currentSegmentIndex: newIndex,
+      currentSegmentProgress: newProgress,
+    });
+
+    return doc.toJSON();
+  } catch (error) {
+    console.error(`Failed to resegment document ${documentId}:`, error);
+    throw error;
+  }
 }
