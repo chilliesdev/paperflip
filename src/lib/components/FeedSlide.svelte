@@ -13,9 +13,13 @@
     highlightStartIndex = undefined,
     videoSource,
     textScale = 100,
+    onScrubStart = () => {},
+    onScrub = (_index: number) => {},
+    onScrubEnd = (_index: number) => {},
   } = $props();
 
   let videoEl: HTMLVideoElement | undefined = $state();
+  let isDragging = $state(false);
 
   // Use the source available at mount time (or when videoSource changes) to prevent
   // reloading/glitches during playback if the background download finishes later.
@@ -76,6 +80,41 @@
       ? Math.min(100, (Math.max(0, currentCharIndex) / segment.length) * 100)
       : 0,
   );
+
+  function getScrubIndex(e: PointerEvent) {
+    const element = e.currentTarget as HTMLElement;
+    const rect = element.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    return Math.floor(percentage * segment.length);
+  }
+
+  function handlePointerDown(e: PointerEvent) {
+    e.stopPropagation();
+    const element = e.currentTarget as HTMLElement;
+    element.setPointerCapture(e.pointerId);
+    isDragging = true;
+    onScrubStart();
+    const index = getScrubIndex(e);
+    onScrub(index);
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    if (!isDragging) return;
+    e.stopPropagation();
+    const index = getScrubIndex(e);
+    onScrub(index);
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    if (!isDragging) return;
+    e.stopPropagation();
+    isDragging = false;
+    const element = e.currentTarget as HTMLElement;
+    element.releasePointerCapture(e.pointerId);
+    const index = getScrubIndex(e);
+    onScrubEnd(index);
+  }
 
   let startIndex = $derived(
     currentWordIdx === -1
@@ -149,8 +188,23 @@
   </div>
 
   <!-- Progress Bar -->
-  <div class="absolute bottom-0 left-0 right-0 z-20">
-    <div class="h-1 bg-white/10">
+  <div
+    class="absolute bottom-0 left-0 right-0 z-30 h-6 cursor-pointer flex items-end group touch-none select-none"
+    onpointerdown={handlePointerDown}
+    onpointermove={handlePointerMove}
+    onpointerup={handlePointerUp}
+    onpointercancel={handlePointerUp}
+    onpointerleave={handlePointerUp}
+    role="slider"
+    aria-label="Seek slider"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow={progress}
+    tabindex="0"
+  >
+    <div
+      class="w-full h-1 bg-white/10 mb-0 group-hover:h-2 transition-all duration-200"
+    >
       <div
         class="h-full bg-gradient-to-r from-brand-primary to-brand-secondary transition-all duration-300 ease-out"
         style="width: {progress}%"
