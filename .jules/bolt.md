@@ -12,3 +12,8 @@
 
 **Learning:** Blocking the application initialization (`await Promise.all(...)`) for large assets like video blobs degrades LCP and TTI significantly. However, switching to non-blocking loading introduces a race condition where components might mount before assets are ready. If components reactively update their source when the asset loads, it can cause playback interruptions (glitches/reloads).
 **Action:** Use non-blocking promises for asset loading in `+layout.svelte`. In consuming components (`FeedSlide.svelte`), use `$derived.by` with `untrack()` to read the asset store. This allows the component to use the asset if available at mount (or when other dependencies like `videoSource` change), but ignore subsequent store updates, effectively "locking" the resource for the component's lifecycle to ensure stable playback.
+
+## 2025-05-31 - Schema Migration and Denormalization
+
+**Learning:** Updating RxDB schema to include denormalized fields (like `totalSegments`) requires careful orchestration: updating schema version, adding migration strategy, updating write paths, AND updating read paths to exclude the heavy data. Crucially, existing tests mocking the database often rely on exact call arguments or specific schema versions, leading to cascading test failures that must be addressed alongside the code changes.
+**Action:** When denormalizing data for performance, immediately grep for all database usage (mocked and real) to identify test impact. Plan to update tests to reflect the new schema version and function signatures (e.g. `updateDocumentProgress` extra args) as part of the core task.

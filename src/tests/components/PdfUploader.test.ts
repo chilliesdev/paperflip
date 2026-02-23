@@ -138,7 +138,8 @@ describe("PdfUploader", () => {
       const mockUploads = [
         {
           documentId: "doc-granular.pdf",
-          segments: new Array(10).fill("1234567890"), // 10 chars each
+          totalSegments: 10,
+          currentSegmentLength: 10,
           currentSegmentIndex: 4,
           currentSegmentProgress: 5,
           createdAt: 1000,
@@ -165,7 +166,8 @@ describe("PdfUploader", () => {
       const mockUploads = [
         {
           documentId: "doc-zero.pdf",
-          segments: ["seg1", "seg2"],
+          totalSegments: 2,
+          currentSegmentLength: 4,
           currentSegmentIndex: 0,
           currentSegmentProgress: 0,
           createdAt: 1000,
@@ -186,9 +188,10 @@ describe("PdfUploader", () => {
       const mockUploads = [
         {
           documentId: "doc-complete.pdf",
-          segments: ["seg1"],
+          totalSegments: 1,
+          currentSegmentLength: 4,
           currentSegmentIndex: 0,
-          currentSegmentProgress: 4, // "seg1" is length 4
+          currentSegmentProgress: 4,
           createdAt: 1000,
         },
       ];
