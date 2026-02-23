@@ -181,6 +181,8 @@ describe("Feed Component", () => {
         "doc-1",
         0,
         100,
+        9,
+        1,
       );
     });
   });
@@ -231,6 +233,8 @@ describe("Feed Component", () => {
         "doc-1",
         1,
         0,
+        9,
+        2,
       );
 
       // 2. TTS stops for slide 1 and starts for slide 2 from beginning
@@ -278,6 +282,8 @@ describe("Feed Component", () => {
       "doc-1",
       2,
       25,
+      9,
+      3,
     );
   });
 
@@ -621,6 +627,8 @@ describe("Feed Component", () => {
         "doc-1",
         0,
         9,
+        9,
+        1,
       );
     });
   });
@@ -678,6 +686,8 @@ describe("Feed Component", () => {
       "doc-1",
       2, // Final index
       0,
+      9,
+      3,
     );
   });
 

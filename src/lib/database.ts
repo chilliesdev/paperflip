@@ -27,7 +27,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 6,
+  version: 7,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -52,6 +52,16 @@ const documentSchema = {
       multipleOf: 1,
       minimum: 0,
       maximum: 10000000, // Large enough for char index
+    },
+    totalSegments: {
+      type: "number",
+      multipleOf: 1,
+      minimum: 0,
+    },
+    currentSegmentLength: {
+      type: "number",
+      multipleOf: 1,
+      minimum: 0,
     },
     createdAt: {
       type: "number",
@@ -171,7 +181,7 @@ async function _createDb() {
       documents: {
         schema: {
           ...documentSchema,
-          version: 6,
+          version: 7,
         },
         migrationStrategies: {
           // Ensure all indexed fields are present in old documents
@@ -203,6 +213,17 @@ async function _createDb() {
           6: (oldDoc) => {
             oldDoc.createdAt = oldDoc.createdAt || Date.now();
             oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          7: (oldDoc) => {
+            oldDoc.totalSegments = oldDoc.segments ? oldDoc.segments.length : 0;
+            // Best effort for currentSegmentLength if segments exist
+            const idx = oldDoc.currentSegmentIndex || 0;
+            if (oldDoc.segments && oldDoc.segments[idx]) {
+              oldDoc.currentSegmentLength = oldDoc.segments[idx].length;
+            } else {
+              oldDoc.currentSegmentLength = 0;
+            }
             return oldDoc;
           },
         },
@@ -251,6 +272,8 @@ export async function addDocument(
       segments,
       currentSegmentIndex,
       currentSegmentProgress: 0,
+      totalSegments: segments.length,
+      currentSegmentLength: segments[currentSegmentIndex]?.length || 0,
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false,
@@ -275,6 +298,8 @@ export async function upsertDocument(
       segments,
       currentSegmentIndex,
       currentSegmentProgress: 0,
+      totalSegments: segments.length,
+      currentSegmentLength: segments[currentSegmentIndex]?.length || 0,
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false, // Default to false if new
@@ -294,7 +319,11 @@ export async function getRecentUploads(limit: number = 10) {
     .limit(limit)
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => {
+    const data = doc.toJSON();
+    delete data.segments;
+    return data;
+  });
 }
 
 export async function getDocument(documentId: string) {
@@ -311,16 +340,26 @@ export async function updateDocumentProgress(
   documentId: string,
   index: number,
   progress: number = 0,
+  currentSegmentLength?: number,
+  totalSegments?: number,
 ) {
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
-      await doc.incrementalPatch({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const patch: any = {
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
         lastViewedAt: Date.now(),
-      });
+      };
+      if (currentSegmentLength !== undefined) {
+        patch.currentSegmentLength = currentSegmentLength;
+      }
+      if (totalSegments !== undefined) {
+        patch.totalSegments = totalSegments;
+      }
+      await doc.incrementalPatch(patch);
     }
   } catch (error) {
     console.error(`Failed to update progress for ${documentId}:`, error);
@@ -367,7 +406,11 @@ export async function getAllDocuments() {
   const db = await getDb();
   const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => {
+    const data = doc.toJSON();
+    delete data.segments;
+    return data;
+  });
 }
 
 export async function getSettings() {

@@ -17,14 +17,16 @@ describe("Library Page", () => {
   const mockDocuments = [
     {
       documentId: "doc1.pdf",
-      segments: ["seg1", "seg2"],
+      totalSegments: 2,
+      currentSegmentLength: 4,
       currentSegmentIndex: 0,
       timestamp: Date.now(),
       isFavourite: true,
     },
     {
       documentId: "doc2.pdf",
-      segments: ["seg1", "seg2", "seg3"],
+      totalSegments: 3,
+      currentSegmentLength: 4,
       currentSegmentIndex: 1,
       timestamp: Date.now() - 1000,
     },

@@ -214,12 +214,18 @@ describe("database.ts", () => {
             schema: expect.objectContaining({
               title: "paperflip_document",
               primaryKey: "documentId",
-              version: 6,
+              version: 7,
               properties: expect.objectContaining({
                 currentSegmentIndex: expect.objectContaining({
                   type: "number",
                 }),
                 currentSegmentProgress: expect.objectContaining({
+                  type: "number",
+                }),
+                totalSegments: expect.objectContaining({
+                  type: "number",
+                }),
+                currentSegmentLength: expect.objectContaining({
                   type: "number",
                 }),
                 isFavourite: expect.objectContaining({ type: "boolean" }),
@@ -247,9 +253,11 @@ describe("database.ts", () => {
       const call = mockAddCollections.mock.calls[0][0];
       const schema = call.documents.schema;
 
-      expect(schema.version).toBe(6);
+      expect(schema.version).toBe(7);
       expect(schema.properties).toHaveProperty("currentSegmentIndex");
       expect(schema.properties).toHaveProperty("currentSegmentProgress");
+      expect(schema.properties).toHaveProperty("totalSegments");
+      expect(schema.properties).toHaveProperty("currentSegmentLength");
       expect(schema.properties).toHaveProperty("isFavourite");
     });
   });
@@ -268,6 +276,8 @@ describe("database.ts", () => {
         segments,
         currentSegmentIndex,
         currentSegmentProgress: 0,
+        totalSegments: 3,
+        currentSegmentLength: 9, // "Segment 2".length
         createdAt: expect.any(Number),
         lastViewedAt: expect.any(Number),
         isFavourite: false,
@@ -289,6 +299,8 @@ describe("database.ts", () => {
         segments,
         currentSegmentIndex,
         currentSegmentProgress: 0,
+        totalSegments: 2,
+        currentSegmentLength: 9, // "Segment 2".length
         createdAt: expect.any(Number),
         lastViewedAt: expect.any(Number),
         isFavourite: false,

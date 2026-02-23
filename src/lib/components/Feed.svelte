@@ -103,11 +103,26 @@
 
     if (saveTimeout) clearTimeout(saveTimeout);
 
+    const length = segments[activeIndex]?.length || 0;
+    const total = segments.length;
+
     if (immediate) {
-      updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
+      updateDocumentProgress(
+        documentId,
+        activeIndex,
+        currentSegmentProgress,
+        length,
+        total,
+      );
     } else {
       saveTimeout = setTimeout(() => {
-        updateDocumentProgress(documentId, activeIndex, currentSegmentProgress);
+        updateDocumentProgress(
+          documentId,
+          activeIndex,
+          currentSegmentProgress,
+          length,
+          total,
+        );
       }, 1000);
     }
   }
