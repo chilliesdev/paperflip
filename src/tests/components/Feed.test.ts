@@ -889,4 +889,83 @@ describe("Feed Component", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  it("TC-FEED-012: Integrates with FeedSlide scrubbing", async () => {
+    // Mock pointer capture methods
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    // @ts-ignore
+    HTMLElement.prototype.setPointerCapture = setPointerCapture;
+    // @ts-ignore
+    HTMLElement.prototype.releasePointerCapture = releasePointerCapture;
+
+    const segments = ["Hello world"]; // Length 11
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    mockSwiperInstance.realIndex = 0;
+    mockSwiperInstance.activeIndex = 0;
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+    (audio.stopTTS as any).mockClear();
+    (audio.speakText as any).mockClear();
+
+    const slider = screen.getByRole("slider");
+
+    // Mock getBoundingClientRect for the slider in Feed integration
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 10,
+      height: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // 1. Start scrubbing (Pointer Down)
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+
+    // Should stop TTS
+    expect(audio.stopTTS).toHaveBeenCalled();
+
+    // 2. Scrub to middle (Pointer Move)
+    // 50px = 50% = index 5 (floor(5.5))
+    fireEvent.pointerMove(slider, { clientX: 50, pointerId: 1 });
+
+    // Visual update verification is tricky without checking internal state,
+    // but we can check if the progress bar style updated?
+    // The progress bar width is reactive to currentCharIndex.
+    // If handleScrub updated currentCharIndex, the width should change.
+    await waitFor(() => {
+        const progressBar = slider.querySelector(".bg-gradient-to-r");
+        const style = progressBar?.getAttribute("style");
+        expect(style).toContain("width: 45.");
+    });
+
+    // 3. End scrubbing (Pointer Up)
+    // 80px = 80% = index 8
+    fireEvent.pointerUp(slider, { clientX: 80, pointerId: 1 });
+
+    // Should restart TTS from new index (8)
+    expect(audio.speakText).toHaveBeenCalled();
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const lastCall = mockCalls[mockCalls.length - 1];
+    // Signature: speakText(text, onBoundary, onEnd, startIndex)
+    // startIndex is the 4th argument (index 3)
+    expect(lastCall[3]).toBe(8);
+
+    // @ts-ignore
+    delete HTMLElement.prototype.setPointerCapture;
+    // @ts-ignore
+    delete HTMLElement.prototype.releasePointerCapture;
+  });
 });
