@@ -29,7 +29,7 @@ if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
 
 const documentSchema = {
   title: "paperflip_document",
-  version: 7,
+  version: 8,
   primaryKey: "documentId",
   type: "object",
   properties: {
@@ -48,6 +48,16 @@ const documentSchema = {
     },
     videoLengthAtSegmentation: {
       type: "number",
+    },
+    totalSegments: {
+      type: "number",
+      minimum: 0,
+      maximum: 1000000,
+    },
+    currentSegmentLength: {
+      type: "number",
+      minimum: 0,
+      maximum: 1000000,
     },
     currentSegmentIndex: {
       type: "number",
@@ -179,7 +189,7 @@ async function _createDb() {
       documents: {
         schema: {
           ...documentSchema,
-          version: 7,
+          version: 8,
         },
         migrationStrategies: {
           // Ensure all indexed fields are present in old documents
@@ -218,6 +228,12 @@ async function _createDb() {
             oldDoc.fullText = oldDoc.fullText || oldDoc.segments.join("\n\n");
             oldDoc.videoLengthAtSegmentation =
               oldDoc.videoLengthAtSegmentation || 15; // Default if unknown
+            return oldDoc;
+          },
+          8: (oldDoc) => {
+            oldDoc.totalSegments = oldDoc.segments.length;
+            oldDoc.currentSegmentLength =
+              oldDoc.segments[oldDoc.currentSegmentIndex]?.length || 0;
             return oldDoc;
           },
         },
@@ -270,6 +286,8 @@ export async function addDocument(
       videoLengthAtSegmentation,
       currentSegmentIndex,
       currentSegmentProgress: 0,
+      totalSegments: segments.length,
+      currentSegmentLength: segments[currentSegmentIndex]?.length || 0,
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false,
@@ -298,6 +316,8 @@ export async function upsertDocument(
       videoLengthAtSegmentation,
       currentSegmentIndex,
       currentSegmentProgress: 0,
+      totalSegments: segments.length,
+      currentSegmentLength: segments[currentSegmentIndex]?.length || 0,
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false, // Default to false if new
@@ -317,7 +337,20 @@ export async function getRecentUploads(limit: number = 10) {
     .limit(limit)
     .exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => {
+    const json = doc.toJSON();
+    // Optimization: Strip segments array to reduce memory usage in lists
+    const segments = json.segments;
+    return {
+      ...json,
+      segments: undefined, // Remove heavy segments
+      totalSegments: json.totalSegments ?? segments?.length ?? 0,
+      currentSegmentLength:
+        json.currentSegmentLength ??
+        segments?.[json.currentSegmentIndex]?.length ??
+        0,
+    };
+  });
 }
 
 export async function getDocument(documentId: string) {
@@ -342,6 +375,7 @@ export async function updateDocumentProgress(
       await doc.incrementalPatch({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
+        currentSegmentLength: doc.segments[index]?.length || 0,
         lastViewedAt: Date.now(),
       });
     }
@@ -390,7 +424,20 @@ export async function getAllDocuments() {
   const db = await getDb();
   const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).exec();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc: any) => {
+    const json = doc.toJSON();
+    // Optimization: Strip segments array to reduce memory usage in lists
+    const segments = json.segments;
+    return {
+      ...json,
+      segments: undefined, // Remove heavy segments
+      totalSegments: json.totalSegments ?? segments?.length ?? 0,
+      currentSegmentLength:
+        json.currentSegmentLength ??
+        segments?.[json.currentSegmentIndex]?.length ??
+        0,
+    };
+  });
 }
 
 export async function getSettings() {
@@ -469,6 +516,8 @@ export async function resegmentDocument(
       videoLengthAtSegmentation: newVideoLength,
       currentSegmentIndex: newIndex,
       currentSegmentProgress: newProgress,
+      totalSegments: newSegments.length,
+      currentSegmentLength: newSegments[newIndex]?.length || 0,
     });
 
     return doc.toJSON();
