@@ -968,4 +968,134 @@ describe("Feed Component", () => {
     // @ts-ignore
     delete HTMLElement.prototype.releasePointerCapture;
   });
+
+  it("TC-FEED-013: Resumes playback after scrubbing even if previously paused", async () => {
+    // Mock pointer capture methods
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    // @ts-ignore
+    HTMLElement.prototype.setPointerCapture = setPointerCapture;
+    // @ts-ignore
+    HTMLElement.prototype.releasePointerCapture = releasePointerCapture;
+
+    const segments = ["Hello world"]; // Length 11
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    // Initial play
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+
+    // Pause
+    const feed = screen.getByRole("region", { name: /video feed/i });
+    fireEvent.click(feed); // Single tap to toggle pause
+    expect(audio.pauseTTS).toHaveBeenCalled();
+    (audio.speakText as any).mockClear();
+
+    // Scrub
+    const slider = screen.getByRole("slider");
+    // Mock getBoundingClientRect
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 10,
+      height: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+    // Should call stopTTS
+    expect(audio.stopTTS).toHaveBeenCalled();
+    (audio.stopTTS as any).mockClear();
+
+    fireEvent.pointerUp(slider, { clientX: 50, pointerId: 1 }); // 50% = 5 (index)
+
+    // Should resume (speakText) from new position
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const lastCall = mockCalls[mockCalls.length - 1];
+    expect(lastCall[3]).toBe(5);
+
+    // @ts-ignore
+    delete HTMLElement.prototype.setPointerCapture;
+    // @ts-ignore
+    delete HTMLElement.prototype.releasePointerCapture;
+  });
+
+  it("TC-FEED-014: Scrubs correctly in Dictation Mode", async () => {
+    // Enable Dictation Mode
+    isDictationMode.set(true);
+
+    // Mock pointer capture methods
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    // @ts-ignore
+    HTMLElement.prototype.setPointerCapture = setPointerCapture;
+    // @ts-ignore
+    HTMLElement.prototype.releasePointerCapture = releasePointerCapture;
+
+    const segments = ["Hello world. This is test."];
+    render(Feed, { segments, documentId: "doc-1" });
+
+    const swiper = screen.getByTestId("swiper-mock");
+    fireEvent(
+      swiper,
+      new CustomEvent("swiperinit", {
+        detail: [mockSwiperInstance],
+      }),
+    );
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+    (audio.speakText as any).mockClear();
+
+    const slider = screen.getByRole("slider");
+    // Mock getBoundingClientRect
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 10,
+      height: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // Scrub to index 15 (inside second sentence "This is test.")
+    // Sentence 1: "Hello world." (0-11) + space? "Hello world. " (0-12)
+    // "This is test." starts at 13.
+    // 15 is index 2 of second sentence.
+    // 15 / 26 = ~57.6% -> 58px.
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+    fireEvent.pointerUp(slider, { clientX: 58, pointerId: 1 });
+
+    await waitFor(() => expect(audio.speakText).toHaveBeenCalled());
+    const mockCalls = (audio.speakText as any).mock.calls;
+    const lastCall = mockCalls[mockCalls.length - 1];
+
+    // Check arguments
+    // Arg 0: Text should contain second sentence
+    expect(lastCall[0]).toContain("This is test");
+    // Arg 3: Offset (15 - 13 = 2)
+    expect(lastCall[3]).toBe(2);
+
+    // Reset mode
+    isDictationMode.set(false);
+
+    // @ts-ignore
+    delete HTMLElement.prototype.setPointerCapture;
+    // @ts-ignore
+    delete HTMLElement.prototype.releasePointerCapture;
+  });
 });
