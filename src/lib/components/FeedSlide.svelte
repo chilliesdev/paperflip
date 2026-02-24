@@ -1,8 +1,8 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { videoAssetUrls } from "$lib/stores/assets";
-  import { wordCount } from "$lib/constants";
   import { isMuted } from "$lib/stores/audio";
+  import { splitSentences } from "$lib/segmenter";
 
   let {
     segment = "",
@@ -56,22 +56,35 @@
     return w;
   });
 
-  let currentWordIdx = $derived.by(() => {
+  let sentences = $derived.by(() => {
+    if (!segment) return [];
+    return splitSentences(segment);
+  });
+
+  let currentSentence = $derived.by(() => {
     if (currentCharIndex === -1 || !isActive) {
-      return -1;
+      // Return first sentence or null?
+      // If we haven't started, showing first sentence seems right.
+      return sentences.length > 0 ? sentences[0] : null;
     }
-    // Find current word index based on char index
-    let idx = words.findIndex(
-      (w) => currentCharIndex >= w.start && currentCharIndex < w.end,
+    const found = sentences.find(
+      (s) => currentCharIndex >= s.start && currentCharIndex < s.end
     );
-    if (idx === -1) {
-      // Fallback: find the closest word that started before charIndex
-      idx = words.findIndex((w) => currentCharIndex < w.start) - 1;
-      // If still -1 (before first word) or wasn't found (end of text?), handle edges
-      if (idx < -1) idx = words.length - 1;
-      if (idx === -2) idx = -1; // Before first word
-    }
-    return idx;
+    if (found) return found;
+
+    // If not found (e.g. gaps, or out of bounds)
+    if (sentences.length === 0) return null;
+    if (currentCharIndex < sentences[0].start) return sentences[0];
+    if (currentCharIndex >= sentences[sentences.length - 1].end) return sentences[sentences.length - 1];
+
+    // Fallback: find closest previous sentence
+    // This handles gaps between sentences (like spaces)
+    // We want to show the sentence that we just finished or are about to start?
+    // Usually spaces are attached to previous sentence by Intl.Segmenter.
+    // But if we are in a gap, showing previous sentence seems safer or next?
+    // Let's try to find the last sentence that started before currentCharIndex.
+    const prev = sentences.filter(s => s.start <= currentCharIndex).pop();
+    return prev || sentences[0];
   });
 
   // Progress based on character index for smoother animation
@@ -116,24 +129,24 @@
     onScrubEnd(index);
   }
 
-  let startIndex = $derived(
-    currentWordIdx === -1
-      ? 0
-      : Math.floor(currentWordIdx / wordCount) * wordCount,
-  );
-
   // In dictation mode, we want to show all words in the current sentence (range).
   // If highlightEndIndex is set, find all words within [start, highlightEndIndex].
   // Uses highlightStartIndex if provided, else falls back to currentCharIndex.
-  let visibleWords = $derived(
-    highlightEndIndex !== undefined
-      ? words.filter(
-          (w) =>
-            w.start >= (highlightStartIndex ?? currentCharIndex) &&
-            w.end <= highlightEndIndex,
-        )
-      : words.slice(startIndex, startIndex + wordCount),
-  );
+  let visibleWords = $derived.by(() => {
+    if (highlightEndIndex !== undefined) {
+      return words.filter(
+        (w) =>
+          w.start >= (highlightStartIndex ?? currentCharIndex) &&
+          w.end <= highlightEndIndex,
+      );
+    } else {
+      // Karaoke Mode: show current sentence
+      if (!currentSentence) return words; // Default to all if no sentence structure? Or empty?
+      return words.filter(
+        (w) => w.start >= currentSentence.start && w.end <= currentSentence.end
+      );
+    }
+  });
 </script>
 
 <div class="w-full h-full relative overflow-hidden bg-black">
@@ -164,12 +177,11 @@
         class="leading-relaxed text-center font-medium"
         style="font-size: {textScale / 100}rem"
       >
-        {#each visibleWords as w, i (startIndex + i)}
-          {@const globalIdx = startIndex + i}
+        {#each visibleWords as w (w.start)}
           {@const isDictation = highlightEndIndex !== undefined}
           {@const active = isDictation
             ? w.start >= currentCharIndex && w.end <= (highlightEndIndex ?? 0)
-            : globalIdx === currentWordIdx}
+            : currentCharIndex >= w.start && currentCharIndex < w.end}
           {@const past = w.end <= currentCharIndex}
           <span
             class="inline-block transition-all duration-200 {active

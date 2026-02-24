@@ -18,8 +18,8 @@ describe("FeedSlide Component", () => {
     videoAssetUrls.set({});
 
     // Mock HTMLMediaElement methods
-    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
-    HTMLMediaElement.prototype.pause = vi.fn();
+    window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    window.HTMLMediaElement.prototype.pause = vi.fn();
   });
 
   afterEach(() => {
@@ -28,7 +28,6 @@ describe("FeedSlide Component", () => {
 
   const defaultProps = {
     segment: "Hello world",
-    index: 0,
     isActive: true,
     isPlaying: true,
     currentCharIndex: -1,
@@ -49,27 +48,14 @@ describe("FeedSlide Component", () => {
       expect(screen.getByText("world")).toBeInTheDocument();
     });
 
-    it("renders only wordCount words if segment is long", () => {
+    it("renders entire sentence in Karaoke mode even if it is long", () => {
       const longSegment = "one two three four five six seven eight nine ten";
       render(FeedSlide, { ...defaultProps, segment: longSegment });
 
-      // Since wordCount is 8, we expect words 1-8 to be present, and 9-10 to be absent
+      // Previously (wordCount=8), "nine" and "ten" would be hidden.
+      // Now, all words in the sentence should be visible.
       expect(screen.getByText("one")).toBeInTheDocument();
       expect(screen.getByText("eight")).toBeInTheDocument();
-      expect(screen.queryByText("nine")).not.toBeInTheDocument();
-      expect(screen.queryByText("ten")).not.toBeInTheDocument();
-    });
-
-    it("shifts the window when currentCharIndex moves to the next set of words", () => {
-      const longSegment = "one two three four five six seven eight nine ten";
-      // one(0-3), two(4-7), three(8-13), four(14-18), five(19-23), six(24-27), seven(28-33), eight(34-39), nine(40-44)
-      render(FeedSlide, {
-        ...defaultProps,
-        segment: longSegment,
-        currentCharIndex: 41, // Index of 'i' in 'nine'
-      });
-
-      expect(screen.queryByText("one")).not.toBeInTheDocument();
       expect(screen.getByText("nine")).toBeInTheDocument();
       expect(screen.getByText("ten")).toBeInTheDocument();
     });
@@ -199,19 +185,19 @@ describe("FeedSlide Component", () => {
       // Since we mock play, we can check if it was called.
       // Note: The component calls play() in a reactive statement.
       await new Promise((resolve) => setTimeout(resolve, 0)); // Tick
-      expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+      expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
     });
 
     it("pauses video when inactive", async () => {
       render(FeedSlide, { ...defaultProps, isActive: false, isPlaying: true });
       await new Promise((resolve) => setTimeout(resolve, 0)); // Tick
-      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+      expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
 
     it("pauses video when not playing (global pause)", async () => {
       render(FeedSlide, { ...defaultProps, isActive: true, isPlaying: false });
       await new Promise((resolve) => setTimeout(resolve, 0)); // Tick
-      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+      expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
 
     it("uses cached video source if available", async () => {
@@ -253,7 +239,6 @@ describe("FeedSlide Component", () => {
     it("handles undefined segment gracefully", () => {
       const defaultProps = {
         segment: "Hello world",
-        index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
@@ -274,7 +259,6 @@ describe("FeedSlide Component", () => {
     it("uses highlightStartIndex to determine visible words range", () => {
       const defaultProps = {
         segment: "Hello world",
-        index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
@@ -314,7 +298,6 @@ describe("FeedSlide Component", () => {
     it("defaults to currentCharIndex if highlightStartIndex is missing", () => {
       const defaultProps = {
         segment: "Hello world",
-        index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
@@ -342,7 +325,6 @@ describe("FeedSlide Component", () => {
   describe("Scrubbing Interaction", () => {
     const defaultProps = {
       segment: "Hello world",
-      index: 0,
       isActive: true,
       isPlaying: true,
       currentCharIndex: -1,
