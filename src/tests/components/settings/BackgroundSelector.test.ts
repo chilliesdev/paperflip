@@ -5,12 +5,12 @@ import BackgroundSelector from "$lib/components/settings/BackgroundSelector.svel
 describe("BackgroundSelector", () => {
   const backgrounds = [
     {
-      url: "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
-      alt: "Nebula",
+      url: "https://www.w3schools.com/tags/mov_bbb.mp4",
+      alt: "Test Video 1",
     },
     {
-      url: "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
-      alt: "Forest",
+      url: "https://www.w3schools.com/tags/mov_bbb.mp4#t=5",
+      alt: "Test Video 2",
     },
   ];
 
@@ -18,8 +18,8 @@ describe("BackgroundSelector", () => {
     const { getByAltText } = render(BackgroundSelector, {
       selected: backgrounds[0].url,
     });
-    expect(getByAltText("Nebula")).toBeInTheDocument();
-    expect(getByAltText("Forest")).toBeInTheDocument();
+    expect(getByAltText("Test Video 1")).toBeInTheDocument();
+    expect(getByAltText("Test Video 2")).toBeInTheDocument();
   });
 
   it("highlights the selected background", () => {
@@ -38,7 +38,7 @@ describe("BackgroundSelector", () => {
       selected: backgrounds[0].url,
     });
 
-    const forestBg = getByAltText("Forest");
+    const forestBg = getByAltText("Test Video 2");
     await fireEvent.click(forestBg);
     // Note: Since we are not binding, the visual state won't update in this test unless BackgroundSelector uses its own state.
     // However, it's meant to be $bindable.

@@ -12,7 +12,7 @@ describe("Settings Store", () => {
   it("should have correct default values", () => {
     expect(get(videoLength)).toBe(15);
     expect(get(backgroundUrl)).toBe(
-      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+      "https://www.w3schools.com/tags/mov_bbb.mp4",
     );
     expect(get(autoResume)).toBe(true);
     expect(get(darkMode)).toBe(true);

@@ -375,11 +375,11 @@ describe("Feed Component", () => {
     expect(videos).toHaveLength(2);
     expect(videos[0]).toHaveAttribute(
       "src",
-      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-1.mp4",
+      "https://www.w3schools.com/tags/mov_bbb.mp4",
     );
     expect(videos[1]).toHaveAttribute(
       "src",
-      "https://hcidefilvllxloywohwf.supabase.co/storage/v1/object/public/paperflip/bg-video-2.mp4",
+      "https://www.w3schools.com/tags/mov_bbb.mp4#t=5",
     );
 
     // Check that slides are rendered
