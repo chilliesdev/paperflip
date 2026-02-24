@@ -112,7 +112,7 @@
     }
   }
 
-  function speakCurrentSlide() {
+  function speakCurrentSlide(overrideStartIndex?: number) {
     stopTTS(); // Stop any previous speech
     if (boundaryCheckTimeout) clearTimeout(boundaryCheckTimeout);
     currentCharIndex = -1;
@@ -120,10 +120,14 @@
     highlightStartIndex = undefined;
 
     // Determine start index:
+    // If overrideStartIndex is provided, use it.
     // If it's the very first play and we are on the initial index, use initialProgress.
     // Otherwise, start from 0.
-    let startIndex = 0;
-    if (isFirstPlay && activeIndex === initialIndex) {
+    let startIndex = overrideStartIndex ?? 0;
+
+    if (overrideStartIndex !== undefined) {
+      isFirstPlay = false;
+    } else if (isFirstPlay && activeIndex === initialIndex) {
       startIndex = initialProgress;
       isFirstPlay = false;
     }
@@ -138,6 +142,24 @@
     } else {
       speakKaraoke(currentSegment, startIndex);
     }
+  }
+
+  function handleScrubStart() {
+    stopTTS();
+    isPlaying = false;
+  }
+
+  function handleScrub(index: number) {
+    currentCharIndex = index;
+    currentSegmentProgress = index;
+    // Clear highlighting during scrub so it doesn't look weird
+    highlightEndIndex = undefined;
+    highlightStartIndex = undefined;
+  }
+
+  function handleScrubEnd(index: number) {
+    isPlaying = true;
+    speakCurrentSlide(index);
   }
 
   function speakKaraoke(text: string, startIndex: number) {
@@ -342,6 +364,9 @@
               videoSource={$backgroundUrl ||
                 videoSources[i % videoSources.length].url}
               textScale={$textScale}
+              onScrubStart={handleScrubStart}
+              onScrub={handleScrub}
+              onScrubEnd={handleScrubEnd}
             />
           {:else}
             <!-- Render placeholder for off-screen slides to save memory -->
