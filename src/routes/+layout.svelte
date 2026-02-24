@@ -1,12 +1,21 @@
 <script lang="ts">
   import favicon from "$lib/assets/favicon.svg";
   import "../app.css";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { isLoading, loadingStatus } from "$lib/stores/loading";
   import { waitForVoices } from "$lib/audio";
-  import { videoSources } from "$lib/constants";
-  import { videoAssetUrls } from "$lib/stores/assets";
-  import { darkMode, settingsStores, autoResume } from "$lib/stores/settings";
+  import {
+    videoAssetUrls,
+    getCachedVideoBlob,
+    saveVideoToCache,
+    deleteOtherVideosFromCache,
+  } from "$lib/stores/assets";
+  import {
+    darkMode,
+    settingsStores,
+    autoResume,
+    backgroundUrl,
+  } from "$lib/stores/settings";
   import { audioStores } from "$lib/stores/audio";
   import { syncStoresWithDb } from "$lib/stores/sync";
   import { getRecentUploads } from "$lib/database";
@@ -39,6 +48,65 @@
     }
   });
 
+  // Background Video Reactive Loading
+  $effect(() => {
+    if (browser && $backgroundUrl) {
+      const url = $backgroundUrl;
+
+      // Skip if already loaded as blob
+      const current = untrack(() => get(videoAssetUrls)[url]);
+      if (current && current.startsWith("blob:")) {
+        return;
+      }
+
+      const loadVideo = async () => {
+        try {
+          // 1. Check Cache API
+          const cachedBlob = await getCachedVideoBlob(url);
+          if (cachedBlob) {
+            const objectUrl = URL.createObjectURL(cachedBlob);
+            updateVideoAssetUrl(url, objectUrl);
+          } else {
+            // 2. Fetch and Cache
+            const response = await fetch(url);
+            if (!response.ok)
+              throw new Error(`HTTP error! status: ${response.status}`);
+            const blob = await response.blob();
+            await saveVideoToCache(url, blob);
+            const objectUrl = URL.createObjectURL(blob);
+            updateVideoAssetUrl(url, objectUrl);
+          }
+
+          // 3. Cleanup other caches
+          await deleteOtherVideosFromCache(url);
+        } catch (e) {
+          console.error(`Failed to load background video: ${url}`, e);
+          // Fallback to original URL
+          updateVideoAssetUrl(url, url);
+        }
+      };
+
+      loadVideo();
+    }
+  });
+
+  function updateVideoAssetUrl(src: string, blobUrl: string) {
+    videoAssetUrls.update((prev) => {
+      const next: Record<string, string> = {};
+
+      // Revoke ALL existing blob URLs in the store to prevent memory leaks
+      Object.entries(prev).forEach(([_key, val]) => {
+        if (val.startsWith("blob:")) {
+          URL.revokeObjectURL(val);
+        }
+      });
+
+      // Set the new one
+      next[src] = blobUrl;
+      return next;
+    });
+  }
+
   onMount(async () => {
     try {
       loadingStatus.set("Initializing database...");
@@ -60,40 +128,9 @@
       sessionStorage.setItem("hasAutoResumed", "true");
     }
 
-    if (Object.keys($videoAssetUrls).length > 0) {
-      isLoading.set(false);
-      return;
-    }
     try {
       loadingStatus.set("Initializing voices...");
       await waitForVoices();
-
-      loadingStatus.set("Loading videos...");
-      const urls: Record<string, string> = {};
-
-      const promises = videoSources.map(async (src) => {
-        try {
-          const response = await fetch(src.url);
-          if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          urls[src.url] = url;
-        } catch (e) {
-          console.error(`Failed to fetch video: ${src.url}`, e);
-          // Fallback to original source if fetch fails
-          urls[src.url] = src.url;
-        }
-      });
-
-      // Load videos in background without blocking UI
-      Promise.all(promises)
-        .then(() => {
-          videoAssetUrls.set(urls);
-        })
-        .catch((err) => {
-          console.error("Video loading error", err);
-        });
     } catch (e) {
       console.error("Loading error", e);
     } finally {

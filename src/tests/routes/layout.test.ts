@@ -3,10 +3,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import LayoutTestWrapper from "../mocks/LayoutTestWrapper.svelte";
 import { isLoading } from "../../lib/stores/loading";
 import { videoAssetUrls } from "../../lib/stores/assets";
+import * as assets from "../../lib/stores/assets";
 import * as audio from "../../lib/audio";
 import * as navigation from "$app/navigation";
 import * as database from "../../lib/database";
-import { autoResume } from "../../lib/stores/settings";
+import { autoResume, backgroundUrl } from "../../lib/stores/settings";
 
 // Mock stores
 vi.mock("../../lib/stores/loading", async () => {
@@ -21,6 +22,9 @@ vi.mock("../../lib/stores/assets", async () => {
   const { writable } = await import("svelte/store");
   return {
     videoAssetUrls: writable({}),
+    getCachedVideoBlob: vi.fn().mockResolvedValue(null),
+    saveVideoToCache: vi.fn().mockResolvedValue(undefined),
+    deleteOtherVideosFromCache: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -49,6 +53,7 @@ vi.mock("../../lib/stores/settings", async () => {
   return {
     autoResume: writable(true),
     darkMode: writable(true),
+    backgroundUrl: writable("http://example.com/video1.mp4"),
     settingsStores: {},
   };
 });
@@ -82,6 +87,7 @@ describe("Layout Component", () => {
     isLoading.set(true);
     videoAssetUrls.set({});
     autoResume.set(true);
+    backgroundUrl.set("http://example.com/video1.mp4");
     sessionStorage.clear();
 
     // Mock global fetch
@@ -92,6 +98,7 @@ describe("Layout Component", () => {
 
     // Mock URL.createObjectURL
     global.URL.createObjectURL = vi.fn((_blob) => "blob:video");
+    global.URL.revokeObjectURL = vi.fn();
 
     // Mock window.location
     vi.stubGlobal("location", { pathname: "/" });
@@ -102,7 +109,7 @@ describe("Layout Component", () => {
     vi.unstubAllGlobals();
   });
 
-  it("initializes resources on first load", async () => {
+  it("initializes resources on first load and fetches active video", async () => {
     render(LayoutTestWrapper);
 
     // Should start loading
@@ -110,11 +117,16 @@ describe("Layout Component", () => {
       expect(audio.waitForVoices).toHaveBeenCalled();
     });
 
-    // Should fetch videos
+    // Should fetch the CURRENT background video
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
         "http://example.com/video1.mp4",
       );
+    });
+
+    // Should save to cache
+    await waitFor(() => {
+      expect(assets.saveVideoToCache).toHaveBeenCalled();
     });
 
     // Eventually loading finishes and content appears
@@ -126,17 +138,50 @@ describe("Layout Component", () => {
     );
   });
 
-  it("skips initialization if assets already cached", async () => {
+  it("retrieves from cache if available", async () => {
+    (assets.getCachedVideoBlob as any).mockResolvedValueOnce(new Blob(["cached data"]));
+
+    render(LayoutTestWrapper);
+
+    await waitFor(() => {
+      expect(assets.getCachedVideoBlob).toHaveBeenCalledWith("http://example.com/video1.mp4");
+    });
+
+    // Should NOT fetch if in cache
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("layout-content")).toBeInTheDocument();
+    });
+  });
+
+  it("revokes old object URLs when background changes", async () => {
+    // Start with a blob URL already set
+    videoAssetUrls.set({ "http://example.com/old.mp4": "blob:old" });
+    backgroundUrl.set("http://example.com/video1.mp4");
+
+    render(LayoutTestWrapper);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith("http://example.com/video1.mp4");
+    });
+
+    await waitFor(() => {
+      expect(global.URL.revokeObjectURL).toHaveBeenCalledWith("blob:old");
+    });
+  });
+
+  it("skips initialization if assets already cached in store", async () => {
     videoAssetUrls.set({ "http://example.com/video1.mp4": "blob:video" });
 
     render(LayoutTestWrapper);
 
-    // Should NOT fetch or wait for voices
     await waitFor(() => {
       expect(screen.getByTestId("layout-content")).toBeInTheDocument();
     });
 
-    expect(audio.waitForVoices).not.toHaveBeenCalled();
+    expect(audio.waitForVoices).toHaveBeenCalled();
+    // But it should NOT fetch again because videoAssetUrls already has it
     expect(global.fetch).not.toHaveBeenCalled();
   });
 

@@ -894,9 +894,9 @@ describe("Feed Component", () => {
     // Mock pointer capture methods
     const setPointerCapture = vi.fn();
     const releasePointerCapture = vi.fn();
-    // @ts-ignore
+    // @ts-expect-error - Mocking pointer capture methods for JSDOM
     HTMLElement.prototype.setPointerCapture = setPointerCapture;
-    // @ts-ignore
+    // @ts-expect-error - Mocking pointer capture methods for JSDOM
     HTMLElement.prototype.releasePointerCapture = releasePointerCapture;
 
     const segments = ["Hello world"]; // Length 11
@@ -946,9 +946,9 @@ describe("Feed Component", () => {
     // The progress bar width is reactive to currentCharIndex.
     // If handleScrub updated currentCharIndex, the width should change.
     await waitFor(() => {
-        const progressBar = slider.querySelector(".bg-gradient-to-r");
-        const style = progressBar?.getAttribute("style");
-        expect(style).toContain("width: 45.");
+      const progressBar = slider.querySelector(".bg-gradient-to-r");
+      const style = progressBar?.getAttribute("style");
+      expect(style).toContain("width: 45.");
     });
 
     // 3. End scrubbing (Pointer Up)
@@ -963,9 +963,9 @@ describe("Feed Component", () => {
     // startIndex is the 4th argument (index 3)
     expect(lastCall[3]).toBe(8);
 
-    // @ts-ignore
+    // @ts-expect-error - Cleaning up mock for JSDOM
     delete HTMLElement.prototype.setPointerCapture;
-    // @ts-ignore
+    // @ts-expect-error - Cleaning up mock for JSDOM
     delete HTMLElement.prototype.releasePointerCapture;
   });
 
@@ -973,9 +973,9 @@ describe("Feed Component", () => {
     // Mock pointer capture methods
     const setPointerCapture = vi.fn();
     const releasePointerCapture = vi.fn();
-    // @ts-ignore
+    // @ts-expect-error - Mocking pointer capture methods for JSDOM
     HTMLElement.prototype.setPointerCapture = setPointerCapture;
-    // @ts-ignore
+    // @ts-expect-error - Mocking pointer capture methods for JSDOM
     HTMLElement.prototype.releasePointerCapture = releasePointerCapture;
 
     const segments = ["Hello world"]; // Length 11
@@ -1026,9 +1026,9 @@ describe("Feed Component", () => {
     const lastCall = mockCalls[mockCalls.length - 1];
     expect(lastCall[3]).toBe(5);
 
-    // @ts-ignore
+    // @ts-expect-error - Cleaning up mock for JSDOM
     delete HTMLElement.prototype.setPointerCapture;
-    // @ts-ignore
+    // @ts-expect-error - Cleaning up mock for JSDOM
     delete HTMLElement.prototype.releasePointerCapture;
   });
 
@@ -1039,9 +1039,9 @@ describe("Feed Component", () => {
     // Mock pointer capture methods
     const setPointerCapture = vi.fn();
     const releasePointerCapture = vi.fn();
-    // @ts-ignore
+    // @ts-expect-error - Mocking pointer capture methods for JSDOM
     HTMLElement.prototype.setPointerCapture = setPointerCapture;
-    // @ts-ignore
+    // @ts-expect-error - Mocking pointer capture methods for JSDOM
     HTMLElement.prototype.releasePointerCapture = releasePointerCapture;
 
     const segments = ["Hello world. This is test."];
@@ -1093,9 +1093,9 @@ describe("Feed Component", () => {
     // Reset mode
     isDictationMode.set(false);
 
-    // @ts-ignore
+    // @ts-expect-error - Cleaning up mock for JSDOM
     delete HTMLElement.prototype.setPointerCapture;
-    // @ts-ignore
+    // @ts-expect-error - Cleaning up mock for JSDOM
     delete HTMLElement.prototype.releasePointerCapture;
   });
 });
