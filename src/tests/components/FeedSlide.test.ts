@@ -18,8 +18,8 @@ describe("FeedSlide Component", () => {
     videoAssetUrls.set({});
 
     // Mock HTMLMediaElement methods
-    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
-    HTMLMediaElement.prototype.pause = vi.fn();
+    window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    window.HTMLMediaElement.prototype.pause = vi.fn();
   });
 
   afterEach(() => {
@@ -28,7 +28,6 @@ describe("FeedSlide Component", () => {
 
   const defaultProps = {
     segment: "Hello world",
-    index: 0,
     isActive: true,
     isPlaying: true,
     currentCharIndex: -1,
@@ -49,6 +48,17 @@ describe("FeedSlide Component", () => {
       expect(screen.getByText("world")).toBeInTheDocument();
     });
 
+    it("renders entire sentence in Karaoke mode even if it is long", () => {
+      const longSegment = "one two three four five six seven eight nine ten";
+      render(FeedSlide, { ...defaultProps, segment: longSegment });
+
+      // Previously (wordCount=8), "nine" and "ten" would be hidden.
+      // Now, all words in the sentence should be visible.
+      expect(screen.getByText("one")).toBeInTheDocument();
+      expect(screen.getByText("eight")).toBeInTheDocument();
+      expect(screen.getByText("nine")).toBeInTheDocument();
+      expect(screen.getByText("ten")).toBeInTheDocument();
+    });
   });
 
   describe("Logic & Interactions", () => {
@@ -175,19 +185,19 @@ describe("FeedSlide Component", () => {
       // Since we mock play, we can check if it was called.
       // Note: The component calls play() in a reactive statement.
       await new Promise((resolve) => setTimeout(resolve, 0)); // Tick
-      expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+      expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
     });
 
     it("pauses video when inactive", async () => {
       render(FeedSlide, { ...defaultProps, isActive: false, isPlaying: true });
       await new Promise((resolve) => setTimeout(resolve, 0)); // Tick
-      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+      expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
 
     it("pauses video when not playing (global pause)", async () => {
       render(FeedSlide, { ...defaultProps, isActive: true, isPlaying: false });
       await new Promise((resolve) => setTimeout(resolve, 0)); // Tick
-      expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+      expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     });
 
     it("uses cached video source if available", async () => {
@@ -229,7 +239,6 @@ describe("FeedSlide Component", () => {
     it("handles undefined segment gracefully", () => {
       const defaultProps = {
         segment: "Hello world",
-        index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
@@ -250,7 +259,6 @@ describe("FeedSlide Component", () => {
     it("uses highlightStartIndex to determine visible words range", () => {
       const defaultProps = {
         segment: "Hello world",
-        index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
@@ -290,7 +298,6 @@ describe("FeedSlide Component", () => {
     it("defaults to currentCharIndex if highlightStartIndex is missing", () => {
       const defaultProps = {
         segment: "Hello world",
-        index: 0,
         isActive: true,
         isPlaying: true,
         currentCharIndex: -1,
@@ -318,7 +325,6 @@ describe("FeedSlide Component", () => {
   describe("Scrubbing Interaction", () => {
     const defaultProps = {
       segment: "Hello world",
-      index: 0,
       isActive: true,
       isPlaying: true,
       currentCharIndex: -1,
