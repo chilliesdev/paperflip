@@ -70,15 +70,15 @@ describe("FeedSlide Karaoke Mode", () => {
   });
 
   it("highlights the current word correctly", () => {
-     // "Hello" is 0-5. Index 2 is inside "Hello".
-     render(FeedSlide, { ...defaultProps, currentCharIndex: 2 });
+    // "Hello" is 0-5. Index 2 is inside "Hello".
+    render(FeedSlide, { ...defaultProps, currentCharIndex: 2 });
 
-     const hello = screen.getByText("Hello");
-     // active class has 'text-brand-primary'
-     expect(hello).toHaveClass("text-brand-primary");
+    const hello = screen.getByText("Hello");
+    // active class has 'text-brand-primary'
+    expect(hello).toHaveClass("text-brand-primary");
 
-     const world = screen.getByText("world.");
-     expect(world).not.toHaveClass("text-brand-primary");
+    const world = screen.getByText("world.");
+    expect(world).not.toHaveClass("text-brand-primary");
   });
 
   describe("Edge Cases", () => {
@@ -95,13 +95,21 @@ describe("FeedSlide Karaoke Mode", () => {
     });
 
     it("handles single word segment correctly", () => {
-      render(FeedSlide, { ...defaultProps, segment: "SingleWordOnly", currentCharIndex: 5 });
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "SingleWordOnly",
+        currentCharIndex: 5,
+      });
 
       expect(screen.getByText("SingleWordOnly")).toBeInTheDocument();
     });
 
     it("handles segment with just punctuation", () => {
-      render(FeedSlide, { ...defaultProps, segment: "...", currentCharIndex: 1 });
+      render(FeedSlide, {
+        ...defaultProps,
+        segment: "...",
+        currentCharIndex: 1,
+      });
 
       expect(screen.getByText("...")).toBeInTheDocument();
     });
@@ -116,14 +124,14 @@ describe("FeedSlide Karaoke Mode", () => {
     });
 
     it("handles trailing spaces correctly (part of previous sentence)", () => {
-       // "First.   Second."
-       // "First.   " is usually sentence 1.
-       const segment = "First.   Second.";
-       // Index in the spaces. "First." length 6. Spaces at 6,7,8.
-       render(FeedSlide, { ...defaultProps, segment, currentCharIndex: 7 });
+      // "First.   Second."
+      // "First.   " is usually sentence 1.
+      const segment = "First.   Second.";
+      // Index in the spaces. "First." length 6. Spaces at 6,7,8.
+      render(FeedSlide, { ...defaultProps, segment, currentCharIndex: 7 });
 
-       expect(screen.getByText("First.")).toBeInTheDocument();
-       expect(screen.queryByText("Second.")).not.toBeInTheDocument();
+      expect(screen.getByText("First.")).toBeInTheDocument();
+      expect(screen.queryByText("Second.")).not.toBeInTheDocument();
     });
   });
 });

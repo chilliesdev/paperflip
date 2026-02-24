@@ -139,12 +139,16 @@ describe("Layout Component", () => {
   });
 
   it("retrieves from cache if available", async () => {
-    (assets.getCachedVideoBlob as any).mockResolvedValueOnce(new Blob(["cached data"]));
+    (assets.getCachedVideoBlob as any).mockResolvedValueOnce(
+      new Blob(["cached data"]),
+    );
 
     render(LayoutTestWrapper);
 
     await waitFor(() => {
-      expect(assets.getCachedVideoBlob).toHaveBeenCalledWith("http://example.com/video1.mp4");
+      expect(assets.getCachedVideoBlob).toHaveBeenCalledWith(
+        "http://example.com/video1.mp4",
+      );
     });
 
     // Should NOT fetch if in cache
@@ -163,7 +167,9 @@ describe("Layout Component", () => {
     render(LayoutTestWrapper);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("http://example.com/video1.mp4");
+      expect(global.fetch).toHaveBeenCalledWith(
+        "http://example.com/video1.mp4",
+      );
     });
 
     await waitFor(() => {

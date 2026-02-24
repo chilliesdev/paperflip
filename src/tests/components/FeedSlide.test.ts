@@ -18,7 +18,9 @@ describe("FeedSlide Component", () => {
     videoAssetUrls.set({});
 
     // Mock HTMLMediaElement methods
-    window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    window.HTMLMediaElement.prototype.play = vi
+      .fn()
+      .mockResolvedValue(undefined);
     window.HTMLMediaElement.prototype.pause = vi.fn();
   });
 
@@ -322,148 +324,151 @@ describe("FeedSlide Component", () => {
   });
 });
 
-  describe("Scrubbing Interaction", () => {
-    const defaultProps = {
-      segment: "Hello world",
-      isActive: true,
-      isPlaying: true,
-      currentCharIndex: -1,
-      videoSource: "http://example.com/video.mp4",
-    };
+describe("Scrubbing Interaction", () => {
+  const defaultProps = {
+    segment: "Hello world",
+    isActive: true,
+    isPlaying: true,
+    currentCharIndex: -1,
+    videoSource: "http://example.com/video.mp4",
+  };
 
-    let mockSetPointerCapture: ReturnType<typeof vi.fn>;
-    let mockReleasePointerCapture: ReturnType<typeof vi.fn>;
+  let mockSetPointerCapture: ReturnType<typeof vi.fn>;
+  let mockReleasePointerCapture: ReturnType<typeof vi.fn>;
 
-    beforeEach(() => {
-      mockSetPointerCapture = vi.fn();
-      mockReleasePointerCapture = vi.fn();
-      HTMLElement.prototype.setPointerCapture = mockSetPointerCapture;
-      HTMLElement.prototype.releasePointerCapture = mockReleasePointerCapture;
-    });
-
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-
-    it("triggers onScrubStart and onScrub on pointerdown", () => {
-      const onScrubStart = vi.fn();
-      const onScrub = vi.fn();
-      render(FeedSlide, {
-        ...defaultProps,
-        onScrubStart,
-        onScrub,
-      });
-
-      const slider = screen.getByRole("slider");
-
-      // Mock getBoundingClientRect
-      vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
-        width: 100,
-        left: 0,
-        top: 0,
-        right: 100,
-        bottom: 10,
-        height: 10,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
-
-      // Click at 50px (50% of 100px width). Segment length is 11 ("Hello world").
-      // Expected index: floor(0.5 * 11) = 5
-      fireEvent.pointerDown(slider, {
-        clientX: 50,
-        pointerId: 1,
-      });
-
-      expect(mockSetPointerCapture).toHaveBeenCalledWith(1);
-      expect(onScrubStart).toHaveBeenCalled();
-      expect(onScrub).toHaveBeenCalledWith(5);
-    });
-
-    it("triggers onScrub on pointermove while dragging", () => {
-      const onScrub = vi.fn();
-      render(FeedSlide, {
-        ...defaultProps,
-        onScrub,
-      });
-
-      const slider = screen.getByRole("slider");
-      vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
-        width: 100,
-        left: 0,
-        top: 0,
-        right: 100,
-        bottom: 10,
-        height: 10,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
-
-      // Start dragging
-      fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
-      onScrub.mockClear();
-
-      // Move to 80px (80%). Expected index: floor(0.8 * 11) = 8
-      fireEvent.pointerMove(slider, { clientX: 80, pointerId: 1 });
-
-      expect(onScrub).toHaveBeenCalledWith(8);
-    });
-
-    it("does not trigger onScrub on pointermove if not dragging", () => {
-      const onScrub = vi.fn();
-      render(FeedSlide, {
-        ...defaultProps,
-        onScrub,
-      });
-
-      const slider = screen.getByRole("slider");
-      fireEvent.pointerMove(slider, { clientX: 50 });
-
-      expect(onScrub).not.toHaveBeenCalled();
-    });
-
-    it("triggers onScrubEnd and releases capture on pointerup", () => {
-      const onScrubEnd = vi.fn();
-      render(FeedSlide, {
-        ...defaultProps,
-        onScrubEnd,
-      });
-
-      const slider = screen.getByRole("slider");
-      vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
-        width: 100,
-        left: 0,
-        top: 0,
-        right: 100,
-        bottom: 10,
-        height: 10,
-        x: 0,
-        y: 0,
-        toJSON: () => {},
-      });
-
-      // Start dragging
-      fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
-
-      // End dragging at 20px (20%). Expected index: floor(0.2 * 11) = 2
-      fireEvent.pointerUp(slider, { clientX: 20, pointerId: 1 });
-
-      expect(mockReleasePointerCapture).toHaveBeenCalledWith(1);
-      expect(onScrubEnd).toHaveBeenCalledWith(2);
-    });
-
-    it("stops event propagation to prevent Swiper interference", () => {
-      render(FeedSlide, {
-        ...defaultProps,
-      });
-
-      const slider = screen.getByRole("slider");
-      const event = new PointerEvent("pointerdown", { bubbles: true, cancelable: true });
-      const stopPropagationSpy = vi.spyOn(event, "stopPropagation");
-
-      slider.dispatchEvent(event);
-      expect(stopPropagationSpy).toHaveBeenCalled();
-    });
+  beforeEach(() => {
+    mockSetPointerCapture = vi.fn();
+    mockReleasePointerCapture = vi.fn();
+    HTMLElement.prototype.setPointerCapture = mockSetPointerCapture;
+    HTMLElement.prototype.releasePointerCapture = mockReleasePointerCapture;
   });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("triggers onScrubStart and onScrub on pointerdown", () => {
+    const onScrubStart = vi.fn();
+    const onScrub = vi.fn();
+    render(FeedSlide, {
+      ...defaultProps,
+      onScrubStart,
+      onScrub,
+    });
+
+    const slider = screen.getByRole("slider");
+
+    // Mock getBoundingClientRect
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 10,
+      height: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // Click at 50px (50% of 100px width). Segment length is 11 ("Hello world").
+    // Expected index: floor(0.5 * 11) = 5
+    fireEvent.pointerDown(slider, {
+      clientX: 50,
+      pointerId: 1,
+    });
+
+    expect(mockSetPointerCapture).toHaveBeenCalledWith(1);
+    expect(onScrubStart).toHaveBeenCalled();
+    expect(onScrub).toHaveBeenCalledWith(5);
+  });
+
+  it("triggers onScrub on pointermove while dragging", () => {
+    const onScrub = vi.fn();
+    render(FeedSlide, {
+      ...defaultProps,
+      onScrub,
+    });
+
+    const slider = screen.getByRole("slider");
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 10,
+      height: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // Start dragging
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+    onScrub.mockClear();
+
+    // Move to 80px (80%). Expected index: floor(0.8 * 11) = 8
+    fireEvent.pointerMove(slider, { clientX: 80, pointerId: 1 });
+
+    expect(onScrub).toHaveBeenCalledWith(8);
+  });
+
+  it("does not trigger onScrub on pointermove if not dragging", () => {
+    const onScrub = vi.fn();
+    render(FeedSlide, {
+      ...defaultProps,
+      onScrub,
+    });
+
+    const slider = screen.getByRole("slider");
+    fireEvent.pointerMove(slider, { clientX: 50 });
+
+    expect(onScrub).not.toHaveBeenCalled();
+  });
+
+  it("triggers onScrubEnd and releases capture on pointerup", () => {
+    const onScrubEnd = vi.fn();
+    render(FeedSlide, {
+      ...defaultProps,
+      onScrubEnd,
+    });
+
+    const slider = screen.getByRole("slider");
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 10,
+      height: 10,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // Start dragging
+    fireEvent.pointerDown(slider, { clientX: 0, pointerId: 1 });
+
+    // End dragging at 20px (20%). Expected index: floor(0.2 * 11) = 2
+    fireEvent.pointerUp(slider, { clientX: 20, pointerId: 1 });
+
+    expect(mockReleasePointerCapture).toHaveBeenCalledWith(1);
+    expect(onScrubEnd).toHaveBeenCalledWith(2);
+  });
+
+  it("stops event propagation to prevent Swiper interference", () => {
+    render(FeedSlide, {
+      ...defaultProps,
+    });
+
+    const slider = screen.getByRole("slider");
+    const event = new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+    });
+    const stopPropagationSpy = vi.spyOn(event, "stopPropagation");
+
+    slider.dispatchEvent(event);
+    expect(stopPropagationSpy).toHaveBeenCalled();
+  });
+});

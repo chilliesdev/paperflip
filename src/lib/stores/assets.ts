@@ -31,7 +31,7 @@ export async function saveVideoToCache(url: string, blob: Blob): Promise<void> {
  * Clears other videos from the cache to ensure only the currently selected background is stored.
  */
 export async function deleteOtherVideosFromCache(
-  currentUrl: string
+  currentUrl: string,
 ): Promise<void> {
   if (typeof caches === "undefined") return;
   const cache = await caches.open(CACHE_NAME);

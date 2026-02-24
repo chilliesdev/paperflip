@@ -68,14 +68,15 @@
       return sentences.length > 0 ? sentences[0] : null;
     }
     const found = sentences.find(
-      (s) => currentCharIndex >= s.start && currentCharIndex < s.end
+      (s) => currentCharIndex >= s.start && currentCharIndex < s.end,
     );
     if (found) return found;
 
     // If not found (e.g. gaps, or out of bounds)
     if (sentences.length === 0) return null;
     if (currentCharIndex < sentences[0].start) return sentences[0];
-    if (currentCharIndex >= sentences[sentences.length - 1].end) return sentences[sentences.length - 1];
+    if (currentCharIndex >= sentences[sentences.length - 1].end)
+      return sentences[sentences.length - 1];
 
     // Fallback: find closest previous sentence
     // This handles gaps between sentences (like spaces)
@@ -83,7 +84,7 @@
     // Usually spaces are attached to previous sentence by Intl.Segmenter.
     // But if we are in a gap, showing previous sentence seems safer or next?
     // Let's try to find the last sentence that started before currentCharIndex.
-    const prev = sentences.filter(s => s.start <= currentCharIndex).pop();
+    const prev = sentences.filter((s) => s.start <= currentCharIndex).pop();
     return prev || sentences[0];
   });
 
@@ -143,7 +144,7 @@
       // Karaoke Mode: show current sentence
       if (!currentSentence) return words; // Default to all if no sentence structure? Or empty?
       return words.filter(
-        (w) => w.start >= currentSentence.start && w.end <= currentSentence.end
+        (w) => w.start >= currentSentence.start && w.end <= currentSentence.end,
       );
     }
   });

@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getCachedVideoBlob, saveVideoToCache, deleteOtherVideosFromCache } from "../../lib/stores/assets";
+import {
+  getCachedVideoBlob,
+  saveVideoToCache,
+  deleteOtherVideosFromCache,
+} from "../../lib/stores/assets";
 
 describe("Assets Store Cache Helpers", () => {
   const mockUrl = "https://example.com/video.mp4";
@@ -21,10 +25,15 @@ describe("Assets Store Cache Helpers", () => {
     };
 
     vi.stubGlobal("caches", mockCaches);
-    vi.stubGlobal("Response", class {
-      constructor(public blobData: any) {}
-      async blob() { return this.blobData; }
-    });
+    vi.stubGlobal(
+      "Response",
+      class {
+        constructor(public blobData: any) {}
+        async blob() {
+          return this.blobData;
+        }
+      },
+    );
   });
 
   it("getCachedVideoBlob returns blob if found in cache", async () => {
