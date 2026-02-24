@@ -1,32 +1,37 @@
-import { render, screen } from "@testing-library/svelte";
-import FeedSlide from "$lib/components/FeedSlide.svelte";
-import { vi, describe, it, expect } from "vitest";
-import { videoAssetUrls } from "$lib/stores/assets";
+import { render, screen, cleanup } from "@testing-library/svelte";
+import FeedSlide from "../../lib/components/FeedSlide.svelte";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { videoAssetUrls } from "../../lib/stores/assets";
 
 // Mock dependencies
-vi.mock("$lib/stores/assets", () => ({
-  videoAssetUrls: {
-    subscribe: (fn: (val: Record<string, string>) => void) => {
-      fn({});
-      return () => {};
-    },
-  },
-}));
+vi.mock("../../lib/stores/assets", async () => {
+  const { writable } = await import("svelte/store");
+  return {
+    videoAssetUrls: writable({}),
+  };
+});
 
-vi.mock("$lib/stores/audio", () => ({
-  isMuted: {
-    subscribe: (fn: (val: boolean) => void) => {
-      fn(false);
-      return () => {};
-    },
-  },
-}));
+vi.mock("../../lib/stores/audio", async () => {
+  const { writable } = await import("svelte/store");
+  return {
+    isMuted: writable(false),
+  };
+});
 
 // Mock HTMLMediaElement
 window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
 window.HTMLMediaElement.prototype.pause = vi.fn();
 
 describe("FeedSlide Karaoke Mode", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    videoAssetUrls.set({});
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
   const defaultProps = {
     segment: "Hello world. This is a second sentence.",
     isActive: true,
@@ -40,9 +45,6 @@ describe("FeedSlide Karaoke Mode", () => {
 
     // "Hello world."
     expect(screen.getByText("Hello")).toBeInTheDocument();
-    // note: "world." might be split differently depending on regex but usually punctuation stays
-    // The word regex /\S+/g keeps punctuation attached to word if no space.
-    // "world." matches /\S+/
     expect(screen.getByText("world.")).toBeInTheDocument();
 
     // "This is a second sentence." should NOT be visible
@@ -77,5 +79,51 @@ describe("FeedSlide Karaoke Mode", () => {
 
      const world = screen.getByText("world.");
      expect(world).not.toHaveClass("text-brand-primary");
+  });
+
+  describe("Edge Cases", () => {
+    it("handles index beyond the end of text by showing the last sentence", () => {
+      // Segment length is roughly 40 chars. Index 100 is way past end.
+      render(FeedSlide, { ...defaultProps, currentCharIndex: 100 });
+
+      // Should show last sentence: "This is a second sentence."
+      expect(screen.getByText("This")).toBeInTheDocument();
+      expect(screen.getByText("sentence.")).toBeInTheDocument();
+
+      // Should NOT show first sentence
+      expect(screen.queryByText("Hello")).not.toBeInTheDocument();
+    });
+
+    it("handles single word segment correctly", () => {
+      render(FeedSlide, { ...defaultProps, segment: "SingleWordOnly", currentCharIndex: 5 });
+
+      expect(screen.getByText("SingleWordOnly")).toBeInTheDocument();
+    });
+
+    it("handles segment with just punctuation", () => {
+      render(FeedSlide, { ...defaultProps, segment: "...", currentCharIndex: 1 });
+
+      expect(screen.getByText("...")).toBeInTheDocument();
+    });
+
+    it("handles empty segment gracefully", () => {
+      render(FeedSlide, { ...defaultProps, segment: "", currentCharIndex: 0 });
+
+      // Should render nothing inside the text container
+      const container = document.querySelector(".backdrop-blur-xl");
+      expect(container).toBeInTheDocument();
+      expect(container?.textContent?.trim()).toBe("");
+    });
+
+    it("handles trailing spaces correctly (part of previous sentence)", () => {
+       // "First.   Second."
+       // "First.   " is usually sentence 1.
+       const segment = "First.   Second.";
+       // Index in the spaces. "First." length 6. Spaces at 6,7,8.
+       render(FeedSlide, { ...defaultProps, segment, currentCharIndex: 7 });
+
+       expect(screen.getByText("First.")).toBeInTheDocument();
+       expect(screen.queryByText("Second.")).not.toBeInTheDocument();
+    });
   });
 });
