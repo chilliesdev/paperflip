@@ -3,6 +3,8 @@
 let cachedSentenceSegmenter: Intl.Segmenter | null = null;
 
 const DEFAULT_MAX_SEGMENT_LENGTH = 1000;
+const PARAGRAPH_SPLIT_REGEX = /\n\s*\n/;
+const SENTENCE_FALLBACK_REGEX = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
 
 /**
  * Splits raw text into manageable segments for processing.
@@ -26,7 +28,9 @@ export function segmentText(
   // Ensure maxChars is at least 1 to avoid infinite loops in chunking
   maxChars = Math.max(1, maxChars);
 
-  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
+  const paragraphs = text
+    .split(PARAGRAPH_SPLIT_REGEX)
+    .filter((p) => p.trim().length > 0);
   const segments: string[] = [];
 
   for (const paragraph of paragraphs) {
@@ -135,9 +139,9 @@ export function splitSentences(
     }
   } else {
     // Fallback: simpler regex-based split that preserves offsets
-    const regex = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
+    SENTENCE_FALLBACK_REGEX.lastIndex = 0;
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = SENTENCE_FALLBACK_REGEX.exec(text)) !== null) {
       if (match[0].trim().length > 0) {
         sentences.push({
           text: match[0],
