@@ -41,10 +41,13 @@
     }
   });
 
+  // Reuse regex instance to avoid reallocation
+  const wordRegex = /\S+/g;
+
   let words = $derived.by(() => {
     if (!segment) return [];
     const w: { word: string; start: number; end: number }[] = [];
-    const wordRegex = /\S+/g;
+    wordRegex.lastIndex = 0;
     let match;
     while ((match = wordRegex.exec(segment)) !== null) {
       w.push({
@@ -79,13 +82,13 @@
       return sentences[sentences.length - 1];
 
     // Fallback: find closest previous sentence
-    // This handles gaps between sentences (like spaces)
-    // We want to show the sentence that we just finished or are about to start?
-    // Usually spaces are attached to previous sentence by Intl.Segmenter.
-    // But if we are in a gap, showing previous sentence seems safer or next?
-    // Let's try to find the last sentence that started before currentCharIndex.
-    const prev = sentences.filter((s) => s.start <= currentCharIndex).pop();
-    return prev || sentences[0];
+    // Optimized: Reverse loop avoids O(N) allocation of filter(...).pop()
+    for (let i = sentences.length - 1; i >= 0; i--) {
+      if (sentences[i].start <= currentCharIndex) {
+        return sentences[i];
+      }
+    }
+    return sentences[0];
   });
 
   // Progress based on character index for smoother animation
