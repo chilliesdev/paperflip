@@ -84,8 +84,14 @@
     // Usually spaces are attached to previous sentence by Intl.Segmenter.
     // But if we are in a gap, showing previous sentence seems safer or next?
     // Let's try to find the last sentence that started before currentCharIndex.
-    const prev = sentences.filter((s) => s.start <= currentCharIndex).pop();
-    return prev || sentences[0];
+    // ⚡ Bolt: Replaced .filter(...).pop() with a reverse loop to avoid allocating
+    // a new array on every frame during playback/scrubbing when in a gap.
+    for (let i = sentences.length - 1; i >= 0; i--) {
+      if (sentences[i].start <= currentCharIndex) {
+        return sentences[i];
+      }
+    }
+    return sentences[0];
   });
 
   // Progress based on character index for smoother animation
@@ -135,17 +141,29 @@
   // Uses highlightStartIndex if provided, else falls back to currentCharIndex.
   let visibleWords = $derived.by(() => {
     if (highlightEndIndex !== undefined) {
-      return words.filter(
-        (w) =>
-          w.start >= (highlightStartIndex ?? currentCharIndex) &&
-          w.end <= highlightEndIndex,
-      );
+      // ⚡ Bolt: Replaced .filter() with a loop to avoid allocating arrays every frame
+      // when currentCharIndex changes during dictation playback.
+      const startIndex = highlightStartIndex ?? currentCharIndex;
+      const res = [];
+      for (let i = 0; i < words.length; i++) {
+        if (words[i].start >= startIndex && words[i].end <= highlightEndIndex) {
+          res.push(words[i]);
+        }
+      }
+      return res;
     } else {
       // Karaoke Mode: show current sentence
       if (!currentSentence) return words; // Default to all if no sentence structure? Or empty?
-      return words.filter(
-        (w) => w.start >= currentSentence.start && w.end <= currentSentence.end,
-      );
+      // ⚡ Bolt: Replaced .filter() with a loop to avoid allocating arrays every frame
+      const res = [];
+      const start = currentSentence.start;
+      const end = currentSentence.end;
+      for (let i = 0; i < words.length; i++) {
+        if (words[i].start >= start && words[i].end <= end) {
+          res.push(words[i]);
+        }
+      }
+      return res;
     }
   });
 </script>
