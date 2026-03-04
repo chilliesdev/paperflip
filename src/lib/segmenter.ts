@@ -1,6 +1,7 @@
 // paperflip/src/lib/segmenter.ts
 
 let cachedSentenceSegmenter: Intl.Segmenter | null = null;
+const SENTENCE_SPLIT_REGEX = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
 
 const DEFAULT_MAX_SEGMENT_LENGTH = 1000;
 
@@ -135,9 +136,9 @@ export function splitSentences(
     }
   } else {
     // Fallback: simpler regex-based split that preserves offsets
-    const regex = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
+    SENTENCE_SPLIT_REGEX.lastIndex = 0;
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = SENTENCE_SPLIT_REGEX.exec(text)) !== null) {
       if (match[0].trim().length > 0) {
         sentences.push({
           text: match[0],
