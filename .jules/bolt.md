@@ -12,3 +12,8 @@
 
 **Learning:** Blocking the application initialization (`await Promise.all(...)`) for large assets like video blobs degrades LCP and TTI significantly. However, switching to non-blocking loading introduces a race condition where components might mount before assets are ready. If components reactively update their source when the asset loads, it can cause playback interruptions (glitches/reloads).
 **Action:** Use non-blocking promises for asset loading in `+layout.svelte`. In consuming components (`FeedSlide.svelte`), use `$derived.by` with `untrack()` to read the asset store. This allows the component to use the asset if available at mount (or when other dependencies like `videoSource` change), but ignore subsequent store updates, effectively "locking" the resource for the component's lifecycle to ensure stable playback.
+
+## 2025-05-31 - Hoisting RegExp and Preventing Array Allocations in Reactive Blocks
+
+**Learning:** Svelte 5 `$derived.by` runs frequently (e.g., on every `currentCharIndex` tick during playback or scrubbing). Using `.filter().pop()` inside these blocks creates and discards arrays rapidly, leading to high garbage collection pressure. Similarly, defining a `new RegExp` or `/.../g` inside these blocks re-allocates the RegExp object.
+**Action:** Replace allocating array methods with simple imperative `for` loops (e.g., iterating backwards to find the last match) to achieve zero-allocation logic. Hoist RegExp definitions with the `/g` flag outside reactive blocks or functions, and manually reset `.lastIndex = 0` before executing them to safely reuse the same instance without state leakage.
