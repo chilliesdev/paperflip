@@ -41,12 +41,15 @@
     }
   });
 
+  // Hoist regex to avoid recreation in high-frequency derived block
+  const WORD_SPLIT_REGEX = /\S+/g;
+
   let words = $derived.by(() => {
     if (!segment) return [];
     const w: { word: string; start: number; end: number }[] = [];
-    const wordRegex = /\S+/g;
+    WORD_SPLIT_REGEX.lastIndex = 0; // Reset before use due to global flag
     let match;
-    while ((match = wordRegex.exec(segment)) !== null) {
+    while ((match = WORD_SPLIT_REGEX.exec(segment)) !== null) {
       w.push({
         word: match[0],
         start: match.index,
@@ -84,8 +87,13 @@
     // Usually spaces are attached to previous sentence by Intl.Segmenter.
     // But if we are in a gap, showing previous sentence seems safer or next?
     // Let's try to find the last sentence that started before currentCharIndex.
-    const prev = sentences.filter((s) => s.start <= currentCharIndex).pop();
-    return prev || sentences[0];
+    // Optimize: avoid O(N) filter and pop allocation
+    for (let i = sentences.length - 1; i >= 0; i--) {
+      if (sentences[i].start <= currentCharIndex) {
+        return sentences[i];
+      }
+    }
+    return sentences[0];
   });
 
   // Progress based on character index for smoother animation

@@ -12,3 +12,8 @@
 
 **Learning:** Blocking the application initialization (`await Promise.all(...)`) for large assets like video blobs degrades LCP and TTI significantly. However, switching to non-blocking loading introduces a race condition where components might mount before assets are ready. If components reactively update their source when the asset loads, it can cause playback interruptions (glitches/reloads).
 **Action:** Use non-blocking promises for asset loading in `+layout.svelte`. In consuming components (`FeedSlide.svelte`), use `$derived.by` with `untrack()` to read the asset store. This allows the component to use the asset if available at mount (or when other dependencies like `videoSource` change), but ignore subsequent store updates, effectively "locking" the resource for the component's lifecycle to ensure stable playback.
+
+## 2025-06-05 - GC Thrashing in High-Frequency Reactive Blocks
+
+**Learning:** In Svelte 5, executing array allocations (like `.filter().pop()`) or re-instantiating Objects/RegExes inside a `$derived` block that is tied to high-frequency state (e.g. `currentCharIndex` updating at 60fps during audio scrub) causes significant garbage collection thrashing and micro-stutters.
+**Action:** Always hoist RegEx objects out of high-frequency reactive blocks (resetting `lastIndex` if global) and replace allocating array methods with standard, non-allocating `for` loops.
