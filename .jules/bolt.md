@@ -12,3 +12,8 @@
 
 **Learning:** Blocking the application initialization (`await Promise.all(...)`) for large assets like video blobs degrades LCP and TTI significantly. However, switching to non-blocking loading introduces a race condition where components might mount before assets are ready. If components reactively update their source when the asset loads, it can cause playback interruptions (glitches/reloads).
 **Action:** Use non-blocking promises for asset loading in `+layout.svelte`. In consuming components (`FeedSlide.svelte`), use `$derived.by` with `untrack()` to read the asset store. This allows the component to use the asset if available at mount (or when other dependencies like `videoSource` change), but ignore subsequent store updates, effectively "locking" the resource for the component's lifecycle to ensure stable playback.
+
+## 2025-10-27 - Concurrent PDF Page Parsing
+
+**Learning:** Extracting text from multi-page PDFs sequentially using `await pdf.getPage(i)` inside a `for` loop significantly slows down file processing, creating a performance bottleneck for user uploads. PDF.js worker can handle concurrent page extraction requests effectively.
+**Action:** Refactored the PDF text extraction loop in `PdfUploader.svelte` to initiate all page extractions concurrently by mapping pages to promises and resolving them with `await Promise.all()`. This approach maximizes CPU and I/O utilization during the extraction phase, measurably decreasing total parsing time.
