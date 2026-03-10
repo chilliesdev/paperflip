@@ -97,18 +97,22 @@
       const loadingTask = pdfjsLib.getDocument(arrayBuffer);
       const pdf = await loadingTask.promise;
 
-      // Performance optimization: Use array join instead of string concatenation in loop
-      // to avoid O(n^2) memory copying for large PDFs.
-      const pageTexts: string[] = [];
+      // Performance optimization: Process all pages concurrently via Promise.all
+      // rather than sequentially, and use array join to avoid O(n^2) memory copying
+      // for large PDFs. This significantly improves I/O throughput.
+      const pagePromises: Promise<string>[] = [];
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const text = await page.getTextContent();
-        const pageText = text.items
-          .map((item) => ("str" in item ? item.str : ""))
-          .join(" ");
-        pageTexts.push(pageText);
+        pagePromises.push(
+          pdf.getPage(i).then(async (page) => {
+            const text = await page.getTextContent();
+            return text.items
+              .map((item) => ("str" in item ? item.str : ""))
+              .join(" ");
+          }),
+        );
       }
 
+      const pageTexts = await Promise.all(pagePromises);
       const textContent = pageTexts.join(" ");
       onPdfParsed({ text: textContent, filename: file.name });
       debugStatus = "Done";
