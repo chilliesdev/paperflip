@@ -84,7 +84,18 @@
     // Usually spaces are attached to previous sentence by Intl.Segmenter.
     // But if we are in a gap, showing previous sentence seems safer or next?
     // Let's try to find the last sentence that started before currentCharIndex.
-    const prev = sentences.filter((s) => s.start <= currentCharIndex).pop();
+
+    // Performance Optimization:
+    // Replaced `sentences.filter((s) => s.start <= currentCharIndex).pop()`
+    // with a backwards loop to avoid allocating a new array on every tick during playback/scrubbing.
+    // Reduces garbage collection overhead significantly during reactive updates.
+    let prev;
+    for (let i = sentences.length - 1; i >= 0; i--) {
+      if (sentences[i].start <= currentCharIndex) {
+        prev = sentences[i];
+        break;
+      }
+    }
     return prev || sentences[0];
   });
 
