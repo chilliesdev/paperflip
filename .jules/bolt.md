@@ -12,3 +12,8 @@
 
 **Learning:** Blocking the application initialization (`await Promise.all(...)`) for large assets like video blobs degrades LCP and TTI significantly. However, switching to non-blocking loading introduces a race condition where components might mount before assets are ready. If components reactively update their source when the asset loads, it can cause playback interruptions (glitches/reloads).
 **Action:** Use non-blocking promises for asset loading in `+layout.svelte`. In consuming components (`FeedSlide.svelte`), use `$derived.by` with `untrack()` to read the asset store. This allows the component to use the asset if available at mount (or when other dependencies like `videoSource` change), but ignore subsequent store updates, effectively "locking" the resource for the component's lifecycle to ensure stable playback.
+
+## 2025-06-01 - Array Allocations in High-Frequency Reactive Stores
+
+**Learning:** Using array iteration methods that allocate new arrays (like `sentences.filter(...).pop()`) inside Svelte 5 `$derived` blocks that update on high-frequency events (like scrubbing video progress) creates immense garbage collection overhead. Since Svelte 5 reactivity is designed to be very fast, avoiding unnecessary memory allocations inside reactive closures is critical for smooth animation.
+**Action:** Replaced array creation methods (`filter`, `map`, etc.) with non-allocating imperative constructs (like `for` loops searching backwards to find an item without creating intermediary arrays) inside reactive blocks bound to continuous interactions (e.g., `currentCharIndex` during scrubbing).
