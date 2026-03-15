@@ -1,7 +1,3 @@
-/** @type {import("prettier").Config} */
-const config = {
-  plugins: ["prettier-plugin-svelte"],
-  overrides: [{ files: "*.svelte", options: { parser: "svelte" } }],
-};
+import config from "@paperflip/prettier-config";
 
 export default config;
