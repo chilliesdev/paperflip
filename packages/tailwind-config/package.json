@@ -1,0 +1,7 @@
+{
+  "name": "@paperflip/tailwind-config",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "tailwind.config.js"
+}
