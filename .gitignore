@@ -25,3 +25,8 @@ vite.config.ts.timestamp-*
 
 # video files
 *.mp4
+
+# svelte-kit & build
+.svelte-kit
+build
+.turbo
