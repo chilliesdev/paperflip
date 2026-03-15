@@ -23,6 +23,10 @@
     ]
   },
   "devDependencies": {
+    "@paperflip/eslint-config": "workspace:*",
+    "@paperflip/prettier-config": "workspace:*",
+    "@paperflip/tailwind-config": "workspace:*",
+    "@paperflip/ts-config": "workspace:*",
     "@sveltejs/adapter-auto": "^7.0.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
