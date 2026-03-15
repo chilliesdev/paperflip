@@ -4,15 +4,22 @@
   let { document, onShowOptions } = $props();
 
   const progress = $derived.by(() => {
-    const totalSegments = document.segments?.length || 0;
+    // Use optimized metadata fields if available, fallback to segments array
+    const totalSegments =
+      document.totalSegments ?? (document.segments?.length || 0);
+
     if (totalSegments === 0) return 0;
 
     const currentIdx = document.currentSegmentIndex || 0;
     const currentProgress = document.currentSegmentProgress || 0;
-    const currentSegmentLength = document.segments[currentIdx]?.length || 1;
+
+    // Use optimized metadata field if available, fallback to segments array lookup
+    const currentSegmentLength =
+      document.currentSegmentLength ??
+      (document.segments?.[currentIdx]?.length || 1);
 
     // Calculate percentage within current segment
-    const segmentPercentage = currentProgress / currentSegmentLength;
+    const segmentPercentage = currentProgress / (currentSegmentLength || 1);
 
     // Calculate total percentage
     return Math.min(
@@ -83,7 +90,8 @@
           {document.documentId}
         </h4>
         <p class="text-[9px] text-brand-text-muted truncate">
-          {document.segments?.length || 0} Segments • PDF
+          {document.totalSegments ?? (document.segments?.length || 0)} Segments •
+          PDF
         </p>
       </div>
       <div class="mt-2">

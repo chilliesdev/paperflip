@@ -17,3 +17,8 @@
 
 **Learning:** Svelte 5 `$derived.by` or similar reactive computations that trigger during high-frequency events (like word-by-word playback updates where `currentCharIndex` changes rapidly) are highly sensitive to memory allocations. Using declarative array methods like `.filter((...).pop()` creates new arrays on every execution. This causes substantial garbage collection pressure during animations or real-time playback updates, potentially leading to visual stutter.
 **Action:** For high-frequency read paths, replace `.filter()` and similar array-allocating methods with imperative `for` loops. Specifically, finding an item by iterating backward (`for (let i = len - 1; i >= 0; i--)`) is significantly faster and avoids allocating intermediary arrays compared to `.filter().pop()`.
+
+## 2025-06-05 - Concurrent PDF Parsing with Promise.all
+
+**Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
+**Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
