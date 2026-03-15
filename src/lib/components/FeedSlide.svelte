@@ -84,7 +84,15 @@
     // Usually spaces are attached to previous sentence by Intl.Segmenter.
     // But if we are in a gap, showing previous sentence seems safer or next?
     // Let's try to find the last sentence that started before currentCharIndex.
-    const prev = sentences.filter((s) => s.start <= currentCharIndex).pop();
+    // ⚡ Bolt Optimization: Replace allocating array filter().pop() with imperative backward loop
+    // to prevent garbage collection overhead during high-frequency reactive playback updates
+    let prev;
+    for (let i = sentences.length - 1; i >= 0; i--) {
+      if (sentences[i].start <= currentCharIndex) {
+        prev = sentences[i];
+        break;
+      }
+    }
     return prev || sentences[0];
   });
 
@@ -134,19 +142,29 @@
   // If highlightEndIndex is set, find all words within [start, highlightEndIndex].
   // Uses highlightStartIndex if provided, else falls back to currentCharIndex.
   let visibleWords = $derived.by(() => {
+    // ⚡ Bolt Optimization: Replaced declarative `.filter()` with an imperative loop
+    // to eliminate lambda execution overhead and array allocation during
+    // high-frequency per-word rendering updates
+    const result = [];
     if (highlightEndIndex !== undefined) {
-      return words.filter(
-        (w) =>
-          w.start >= (highlightStartIndex ?? currentCharIndex) &&
-          w.end <= highlightEndIndex,
-      );
+      const startIndex = highlightStartIndex ?? currentCharIndex;
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        if (w.start >= startIndex && w.end <= highlightEndIndex) {
+          result.push(w);
+        }
+      }
     } else {
       // Karaoke Mode: show current sentence
       if (!currentSentence) return words; // Default to all if no sentence structure? Or empty?
-      return words.filter(
-        (w) => w.start >= currentSentence.start && w.end <= currentSentence.end,
-      );
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        if (w.start >= currentSentence.start && w.end <= currentSentence.end) {
+          result.push(w);
+        }
+      }
     }
+    return result;
   });
 </script>
 
