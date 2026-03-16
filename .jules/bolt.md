@@ -22,3 +22,8 @@
 
 **Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
 **Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
+
+## 2025-06-05 - Avoid .split().reduce() inside High-Frequency Reactive Updates
+
+**Learning:** Svelte 5 `$derived` blocks that compute derived state (like deterministic colors/icons based on string hashes) are evaluated whenever their dependencies change. Using declarative string/array methods like `.split("").reduce(...)` allocates a new array of characters on every evaluation. This causes unnecessary garbage collection pressure, particularly when rendering lists of components that frequently update (e.g., progress bars in document lists).
+**Action:** Replace allocating declarative patterns with non-allocating imperative loops (e.g., `let acc = 0; for(let i=0; i<str.length; i++) acc += str.charCodeAt(i);`) inside a `$derived.by(() => { ... })` block to minimize memory footprint and avoid GC stutters.
