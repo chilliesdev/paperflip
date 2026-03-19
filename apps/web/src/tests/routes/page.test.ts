@@ -7,18 +7,18 @@ import {
 } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Page from "../../routes/+page.svelte";
-import * as database from "../../lib/database";
+import * as database from "$lib/database-init";
 
 import * as navigation from "$app/navigation";
 
 // Mock external modules
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   getDb: vi.fn(),
   upsertDocument: vi.fn(),
   getRecentUploads: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("../../lib/segmenter", () => ({
+vi.mock("@paperflip/core/segmenter", () => ({
   segmentText: vi.fn((_text) => ["Segment 1", "Segment 2"]),
 }));
 

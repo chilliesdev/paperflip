@@ -1,5 +1,5 @@
 import { writable, type Writable } from "svelte/store";
-import { videoSources } from "$lib/constants";
+import { videoSources } from "@paperflip/core/constants";
 
 export const videoLength = writable<number>(15);
 export const backgroundUrl = writable<string>(videoSources[0].url);

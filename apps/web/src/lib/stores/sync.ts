@@ -3,7 +3,7 @@ import {
   updateSettings,
   getSettingsObservable,
   type Settings,
-} from "$lib/database";
+} from "$lib/database-init";
 
 export const isHydrated = writable<boolean>(false);
 

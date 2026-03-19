@@ -23,7 +23,7 @@ vi.mock("../../lib/audio", () => {
 });
 
 // Mock database module
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   updateDocumentProgress: vi.fn(),
 }));
 

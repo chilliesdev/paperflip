@@ -3,9 +3,9 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".svelte-kit/**", "build/**"]
+      "outputs": [".svelte-kit/**", "build/**", "dist/**"]
     },
-    "test": {},
+    "test": { "dependsOn": ["^build"] },
     "lint": {},
     "check": {},
     "dev": {

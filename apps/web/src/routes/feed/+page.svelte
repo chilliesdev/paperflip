@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { page } from "$app/stores";
   import { resolve } from "$app/paths";
-  import { getDocument, getDb, resegmentDocument } from "$lib/database";
+  import { getDocument, getDb, resegmentDocument } from "$lib/database-init";
   import Feed from "$lib/components/Feed.svelte";
   import { autoResume, videoLength } from "$lib/stores/settings";
   import { isHydrated } from "$lib/stores/sync";

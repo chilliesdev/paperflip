@@ -22,7 +22,7 @@ vi.mock("../../lib/stores/audio", async (importOriginal) => {
 });
 
 // Mock segmenter
-vi.mock("../../lib/segmenter", () => ({
+vi.mock("@paperflip/core/segmenter", () => ({
   splitSentences: vi.fn((text) => {
     if (text === "Sentence 1. Sentence 2.") {
       return [
@@ -49,7 +49,7 @@ vi.mock("../../lib/audio", () => {
 });
 
 // Mock database module
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   updateDocumentProgress: vi.fn(),
 }));
 

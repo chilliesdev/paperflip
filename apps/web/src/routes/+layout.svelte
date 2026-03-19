@@ -18,7 +18,7 @@
   } from "$lib/stores/settings";
   import { audioStores } from "$lib/stores/audio";
   import { syncStoresWithDb } from "$lib/stores/sync";
-  import { getRecentUploads } from "$lib/database";
+  import { getRecentUploads } from "$lib/database-init";
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";

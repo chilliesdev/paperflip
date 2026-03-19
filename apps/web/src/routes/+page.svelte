@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getDb, upsertDocument } from "$lib/database";
-  import { segmentText } from "$lib/segmenter";
+  import { getDb, upsertDocument } from "$lib/database-init";
+  import { segmentText } from "@paperflip/core/segmenter";
   import { videoLength } from "$lib/stores/settings";
-  import { CHARS_PER_SECOND } from "$lib/constants";
+  import { CHARS_PER_SECOND } from "@paperflip/core/constants";
   import { get } from "svelte/store";
   import PdfUploader from "$lib/components/PdfUploader.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";

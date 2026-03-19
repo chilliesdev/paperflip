@@ -8,7 +8,7 @@ import {
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Feed from "../../lib/components/Feed.svelte";
 import * as audio from "../../lib/audio";
-import * as database from "../../lib/database";
+import * as database from "$lib/database-init";
 import { isDictationMode, autoScroll } from "../../lib/stores/audio";
 import { backgroundUrl } from "../../lib/stores/settings";
 
@@ -66,7 +66,7 @@ vi.mock("../../lib/audio", () => {
 });
 
 // Mock database module
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   updateDocumentProgress: vi.fn(),
 }));
 

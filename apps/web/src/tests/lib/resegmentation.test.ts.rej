@@ -1,0 +1,13 @@
+--- apps/web/src/tests/lib/resegmentation.test.ts
++++ apps/web/src/tests/lib/resegmentation.test.ts
+@@ -49,7 +49,10 @@
+   RxStorage: {},
+ }));
+
+ vi.mock("rxdb/plugins/storage-dexie", () => ({
+-  getRxStorageDexie: mockGetRxStorageDexie,
++  getRxStorageDexie: () => {
++    const { getRxStorageMemory } = require("rxdb/plugins/storage-memory");
++    return getRxStorageMemory();
++  },
+ }));

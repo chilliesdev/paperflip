@@ -1,0 +1,11 @@
+--- packages/core/src/database.ts
++++ packages/core/src/database.ts
+@@ -137,7 +137,7 @@
+
+   try {
+     const db = await createRxDatabase({
+-      name: "paperflipdb",
++      name: "paperflipdb" + (isDev ? Math.random().toString(36).substring(7) : ""),
+       storage,
+       ignoreDuplicate: true,
+     });

@@ -1,0 +1,53 @@
+{
+  "name": "@paperflip/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./database": {
+      "import": "./dist/database.js",
+      "require": "./dist/database.cjs",
+      "types": "./dist/database.d.ts"
+    },
+    "./segmenter": {
+      "import": "./dist/segmenter.js",
+      "require": "./dist/segmenter.cjs",
+      "types": "./dist/segmenter.d.ts"
+    },
+    "./constants": {
+      "import": "./dist/constants.js",
+      "require": "./dist/constants.cjs",
+      "types": "./dist/constants.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "require": "./dist/types.cjs",
+      "types": "./dist/types.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "rxdb": "^16.21.1",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@paperflip/eslint-config": "workspace:*",
+    "@paperflip/ts-config": "workspace:*",
+    "@types/node": "^25.5.0",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}

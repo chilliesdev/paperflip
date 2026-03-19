@@ -2,7 +2,7 @@ import { render, waitFor, cleanup } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock external modules FIRST
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   getDb: vi.fn(),
   getDocument: vi.fn(),
 }));
@@ -32,7 +32,7 @@ vi.mock("../../lib/components/Feed.svelte", async () => {
 });
 
 import Page from "../../routes/feed/+page.svelte";
-import * as database from "../../lib/database";
+import * as database from "$lib/database-init";
 import { autoResume } from "../../lib/stores/settings";
 import { isHydrated } from "../../lib/stores/sync";
 

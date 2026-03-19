@@ -12,9 +12,9 @@
   } from "$lib/audio";
   import { isDictationMode, autoScroll, isMuted } from "$lib/stores/audio";
   import { backgroundUrl, textScale } from "$lib/stores/settings";
-  import { splitSentences } from "$lib/segmenter";
-  import { updateDocumentProgress } from "$lib/database";
-  import { videoSources } from "$lib/constants";
+  import { splitSentences } from "@paperflip/core/segmenter";
+  import { updateDocumentProgress } from "$lib/database-init";
+  import { videoSources } from "@paperflip/core/constants";
   import FeedSlide from "$lib/components/FeedSlide.svelte";
   import ReadingOptionsSheet from "$lib/components/ReadingOptionsSheet.svelte";
   import {

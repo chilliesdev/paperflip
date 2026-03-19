@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { videoSources } from "$lib/constants";
+  import { videoSources } from "@paperflip/core/constants";
 
   let { selected = $bindable() } = $props();
 

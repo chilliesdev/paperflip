@@ -1,5 +1,12 @@
 import { vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
+import { setDbStorage } from "@paperflip/core/database";
+import * as matchers from "@testing-library/jest-dom/matchers";
+expect.extend(matchers);
+
+// Initialize the database storage for tests
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+setDbStorage({} as any, false);
 
 if (typeof window !== "undefined") {
   // Mock File.prototype.arrayBuffer globally
@@ -25,7 +32,7 @@ if (typeof window !== "undefined") {
   });
 
   // Mock constants
-  vi.mock("$lib/constants", () => ({
+  vi.mock("@paperflip/core/constants", () => ({
     wordCount: 8,
     CHARS_PER_SECOND: 16.6,
     videoSources: [

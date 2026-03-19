@@ -1,0 +1,24 @@
+--- apps/web/src/tests/lib/resegmentation.test.ts
++++ apps/web/src/tests/lib/resegmentation.test.ts
+@@ -80,11 +80,12 @@
+ }));
+
++import { setDbStorage } from "@paperflip/core/database";
++import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
++import { removeRxDatabase } from "rxdb";
+ import { resegmentDocument, resetDb } from "$lib/database-init";
+-import { setDbStorage } from "@paperflip/core/database";
+-import { removeRxDatabase } from "rxdb";
+
+ setDbStorage(getRxStorageDexie(), true);
+
+ describe("resegmentDocument", () => {
+@@ -112,7 +116,7 @@
+   });
+
+   afterEach(async () => {
+-    await removeRxDatabase("paperflipdb", getRxStorageDexie() as any);
++    await removeRxDatabase("paperflipdb", getRxStorageDexie() as any).catch(() => {});
+     resetDb();
+     vi.unstubAllGlobals();
+   });

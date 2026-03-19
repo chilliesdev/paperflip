@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { get, writable } from "svelte/store";
 import { syncStoresWithDb } from "$lib/stores/sync";
-import * as db from "$lib/database";
+import * as db from "$lib/database-init";
 
-vi.mock("$lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   getSettingsObservable: vi.fn(),
   updateSettings: vi.fn(),
   DEFAULT_SETTINGS: {

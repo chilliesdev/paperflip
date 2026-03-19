@@ -6,7 +6,7 @@ import { videoAssetUrls } from "../../lib/stores/assets";
 import * as assets from "../../lib/stores/assets";
 import * as audio from "../../lib/audio";
 import * as navigation from "$app/navigation";
-import * as database from "../../lib/database";
+import * as database from "$lib/database-init";
 import { autoResume, backgroundUrl } from "../../lib/stores/settings";
 
 // Mock stores
@@ -43,7 +43,7 @@ vi.mock("$app/paths", () => ({
 }));
 
 // Mock database
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   getRecentUploads: vi.fn().mockResolvedValue([]),
 }));
 

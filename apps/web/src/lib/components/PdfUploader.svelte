@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
-  import { getRecentUploads } from "$lib/database";
+  import { getRecentUploads } from "$lib/database-init";
   import {
     Upload,
     Shield,

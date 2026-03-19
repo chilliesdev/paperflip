@@ -1,3 +1,4 @@
+process.env.NODE_ENV = "test";
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 
@@ -80,7 +81,7 @@ vi.mock("rxdb/plugins/dev-mode", () => ({
 }));
 
 // Import the module after mocks are set up
-import { resegmentDocument, resetDb } from "../../lib/database";
+import { resegmentDocument, resetDb } from "$lib/database-init";
 
 describe("resegmentDocument", () => {
   let mockDb: any;
@@ -89,6 +90,7 @@ describe("resegmentDocument", () => {
     vi.stubGlobal("window", {});
     setMockBrowser(true);
     vi.clearAllMocks();
+    resetDb();
     resetDb();
 
     mockDb = {
@@ -105,10 +107,14 @@ describe("resegmentDocument", () => {
     };
 
     mockCreateRxDatabase.mockResolvedValue(mockDb);
+    (globalThis as any).__mockDb = mockDb;
     mockAddCollections.mockResolvedValue(undefined);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // await removeRxDatabase
+
+    resetDb();
     vi.unstubAllGlobals();
   });
 

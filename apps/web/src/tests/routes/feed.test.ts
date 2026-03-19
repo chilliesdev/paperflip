@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import FeedPage from "../../routes/feed/+page.svelte";
-import { getDocument } from "../../lib/database";
+import { getDocument } from "$lib/database-init";
 import { page } from "$app/stores";
 
 // Mock $app/stores
@@ -17,8 +17,8 @@ vi.mock("$app/paths", () => ({
   base: "",
 }));
 
-// Mock $lib/database
-vi.mock("../../lib/database", () => ({
+// Mock $lib/database-init
+vi.mock("$lib/database-init", () => ({
   getDocument: vi.fn(),
   getDb: vi.fn().mockResolvedValue({}),
 }));

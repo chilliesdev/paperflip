@@ -4,7 +4,7 @@
     getAllDocuments,
     deleteDocument,
     toggleFavourite,
-  } from "$lib/database";
+  } from "$lib/database-init";
   import LibraryHeader from "$lib/components/LibraryHeader.svelte";
   import FavouriteCard from "$lib/components/FavouriteCard.svelte";
   import DocumentList from "$lib/components/DocumentList.svelte";

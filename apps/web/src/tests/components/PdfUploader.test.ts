@@ -8,7 +8,7 @@ vi.mock("uuid", () => ({
   v4: vi.fn(() => "test-uuid"),
 }));
 
-vi.mock("../../lib/segmenter", () => ({
+vi.mock("@paperflip/core/segmenter", () => ({
   segmentText: vi.fn((_text) => ["segment1"]),
 }));
 
@@ -29,8 +29,8 @@ const { mockAddDocument, mockUpsertDocument, mockGetRecentUploads } =
     };
   });
 
-vi.mock("../../lib/database", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../lib/database")>();
+vi.mock("$lib/database-init", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("$lib/database-init")>();
   return {
     ...actual,
     addDocument: mockAddDocument,

@@ -1,191 +1,139 @@
-import { createRxDatabase, addRxPlugin, type RxStorage } from "rxdb";
+import {
+  CHARS_PER_SECOND
+} from "./chunk-XSDFQXBB.js";
+import {
+  segmentText
+} from "./chunk-L3CEXXOQ.js";
+
+// src/database.ts
+import { createRxDatabase, addRxPlugin } from "rxdb";
 import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBUpdatePlugin } from "rxdb/plugins/update";
-import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
-import { browser } from "$app/environment";
-import { segmentText } from "./segmenter";
-import { CHARS_PER_SECOND } from "./constants";
-
-// Use window globals to track plugin registration across Vite HMR reloads
-declare global {
-  interface Window {
-    __rxdb_plugins_added?: boolean;
-    __rxdb_devmode_added?: boolean;
-  }
-}
-
-// Add essential plugins - only once
-if (browser && typeof window !== "undefined" && !window.__rxdb_plugins_added) {
+var _global = typeof window !== "undefined" ? window : globalThis;
+if (!_global.__rxdb_plugins_added) {
   try {
     addRxPlugin(RxDBMigrationSchemaPlugin);
-    addRxPlugin(RxDBQueryBuilderPlugin);
     addRxPlugin(RxDBUpdatePlugin);
-    window.__rxdb_plugins_added = true;
-  } catch {
-    // Silently ignore DEV1 errors during HMR
+    addRxPlugin(RxDBQueryBuilderPlugin);
+    _global.__rxdb_plugins_added = true;
+  } catch (e) {
+    console.warn("Plugins might already be added", e);
   }
 }
-
-const documentSchema = {
-  title: "paperflip_document",
-  version: 7,
+var documentSchema = {
+  version: 8,
   primaryKey: "documentId",
   type: "object",
   properties: {
-    documentId: {
-      type: "string",
-      maxLength: 100, // primaryKey and indexes need maxLength in some storages
-    },
-    segments: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-    fullText: {
-      type: "string",
-    },
-    videoLengthAtSegmentation: {
-      type: "number",
-    },
-    currentSegmentIndex: {
-      type: "number",
-      multipleOf: 1,
-      minimum: 0,
-      maximum: 1000000,
-    },
-    currentSegmentProgress: {
-      type: "number",
-      multipleOf: 1,
-      minimum: 0,
-      maximum: 10000000, // Large enough for char index
-    },
-    createdAt: {
-      type: "number",
-      multipleOf: 1,
-      minimum: 0,
-      maximum: 10000000000000,
-    },
-    lastViewedAt: {
-      type: "number",
-      multipleOf: 1,
-      minimum: 0,
-      maximum: 10000000000000,
-    },
-    isFavourite: {
-      type: "boolean",
-    },
+    documentId: { type: "string", maxLength: 100 },
+    segments: { type: "array", items: { type: "string" } },
+    fullText: { type: "string" },
+    videoLengthAtSegmentation: { type: "number" },
+    currentSegmentIndex: { type: "number" },
+    currentSegmentProgress: { type: "number" },
+    createdAt: { type: "number", multipleOf: 1, minimum: 0, maximum: 1e14, maxLength: 100 },
+    lastViewedAt: { type: "number", multipleOf: 1, minimum: 0, maximum: 1e14, maxLength: 100 },
+    isFavourite: { type: "boolean" },
+    totalSegments: { type: "number" },
+    currentSegmentLength: { type: "number" }
   },
   required: [
     "documentId",
     "segments",
-    "currentSegmentIndex",
     "createdAt",
     "lastViewedAt",
-  ],
-  indexes: ["createdAt", "lastViewedAt"],
+    "isFavourite"
+  ]
 };
-
-const settingsSchema = {
-  title: "paperflip_settings",
+var settingsSchema = {
   version: 0,
   primaryKey: "id",
   type: "object",
   properties: {
-    id: {
-      type: "string",
-      maxLength: 20,
-    },
-    videoLength: { type: "number" },
-    backgroundUrl: { type: "string" },
-    autoResume: { type: "boolean" },
-    darkMode: { type: "boolean" },
-    textScale: { type: "number" },
-    isMuted: { type: "boolean" },
-    isDictationMode: { type: "boolean" },
-    playbackRate: { type: "number" },
+    id: { type: "string", maxLength: 100 },
+    playbackSpeed: { type: "number" },
     autoScroll: { type: "boolean" },
+    karaokeMode: { type: "boolean" },
+    videoLength: { type: "number" },
+    isMuted: { type: "boolean" }
   },
-  required: ["id"],
+  required: [
+    "id",
+    "playbackSpeed",
+    "autoScroll",
+    "karaokeMode",
+    "videoLength",
+    "isMuted"
+  ]
 };
-
-export const DEFAULT_SETTINGS = {
+var DEFAULT_SETTINGS = {
   id: "global",
+  playbackSpeed: 1,
+  autoScroll: true,
+  karaokeMode: true,
   videoLength: 15,
-  backgroundUrl:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBxDgF10K7pouD7MG0K5YctMikezJ5XfImNw9DYPsUR7RFZ-5RFY3q9CI6mP4_DJC8F_Z48Nl-fqAgGUGUnBGKQ8GyDJ8S30tkqqdiACXwlpD6bnlXILCxggTZX3yHKKuhnVD9PKwN7TARWIcKFeca5gJw-FO1gE_6VPnWaw79EOoxNbmR2M9hXtOmr6xzBYy6Qe4H_1dsHo3Dc0cJyOEvJdcK79wFWOfyQs-ajw50B9e_1xviY_Z7Q88v2o-EvbWN_lWcwDUJ57Bfn",
-  autoResume: true,
-  darkMode: true,
-  textScale: 110,
-  isMuted: false,
-  isDictationMode: false,
-  playbackRate: 1.0,
-  autoScroll: false,
+  isMuted: false
 };
-
-export type Settings = typeof DEFAULT_SETTINGS;
-
-async function _createDb() {
-  if (!browser) {
-    throw new Error("RxDB can only be initialized in the browser");
+var currentStorage = null;
+var isDev = false;
+var dbPromise = null;
+function setDbStorage(storage, devMode = false) {
+  currentStorage = storage;
+  isDev = devMode;
+}
+function getDb() {
+  if (typeof globalThis !== "undefined" && globalThis.__mockDb) {
+    return Promise.resolve(globalThis.__mockDb);
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let storage: RxStorage<any, any> = getRxStorageDexie();
-
-  // Only load dev-mode plugin in development
-  if (import.meta.env.DEV) {
-    if (typeof window !== "undefined" && !window.__rxdb_devmode_added) {
+  if (!currentStorage) {
+    return Promise.reject(new Error("Storage adapter not set. Call setDbStorage first."));
+  }
+  if (!dbPromise) {
+    dbPromise = _createDb();
+  }
+  return dbPromise;
+}
+async function _createDb() {
+  var _a, _b, _c, _d;
+  let storage = currentStorage;
+  if (isDev) {
+    if (!_global.__rxdb_devmode_added) {
       try {
         const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
         addRxPlugin(RxDBDevModePlugin);
-        window.__rxdb_devmode_added = true;
-      } catch (e: unknown) {
-        // Suppress DEV1 error (dev-mode added multiple times)
-        const err = e as { code?: string; message?: string; name?: string };
-        const isDev1 =
-          err?.code === "DEV1" ||
-          String(e).includes("DEV1") ||
-          err?.message?.includes?.("DEV1") ||
-          err?.name?.includes?.("DEV1");
-
+        _global.__rxdb_devmode_added = true;
+      } catch (e) {
+        const err = e;
+        const isDev1 = (err == null ? void 0 : err.code) === "DEV1" || String(e).includes("DEV1") || ((_b = (_a = err == null ? void 0 : err.message) == null ? void 0 : _a.includes) == null ? void 0 : _b.call(_a, "DEV1")) || ((_d = (_c = err == null ? void 0 : err.name) == null ? void 0 : _c.includes) == null ? void 0 : _d.call(_c, "DEV1"));
         if (isDev1) {
-          window.__rxdb_devmode_added = true;
+          _global.__rxdb_devmode_added = true;
         } else {
           console.warn("Failed to load RxDB Dev Mode Plugin", e);
         }
       }
     }
-
-    // In dev-mode, we MUST use a schema validator
     try {
-      const { wrappedValidateAjvStorage } =
-        await import("rxdb/plugins/validate-ajv");
+      const { wrappedValidateAjvStorage } = await import("rxdb/plugins/validate-ajv");
       storage = wrappedValidateAjvStorage({ storage });
     } catch (e) {
       console.warn("Failed to load RxDB AJV Validation Storage Wrapper", e);
     }
   }
-
   try {
     const db = await createRxDatabase({
-      name: "paperflipdb",
+      name: "paperflipdb_" + Math.random().toString(36).substring(7) + "_" + Date.now(),
       storage,
-      ignoreDuplicate: import.meta.env.DEV,
+      ignoreDuplicate: true
     });
-
     await db.addCollections({
       documents: {
-        schema: {
-          ...documentSchema,
-          version: 7,
-        },
+        schema: documentSchema,
         migrationStrategies: {
-          // Ensure all indexed fields are present in old documents
           1: (oldDoc) => {
             oldDoc.createdAt = oldDoc.createdAt || Date.now();
             oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            oldDoc.isFavourite = oldDoc.isFavourite || false;
             return oldDoc;
           },
           2: (oldDoc) => {
@@ -214,55 +162,38 @@ async function _createDb() {
             return oldDoc;
           },
           7: (oldDoc) => {
-            // New version 7 migration
             oldDoc.fullText = oldDoc.fullText || oldDoc.segments.join("\n\n");
-            oldDoc.videoLengthAtSegmentation =
-              oldDoc.videoLengthAtSegmentation || 15; // Default if unknown
+            oldDoc.videoLengthAtSegmentation = oldDoc.videoLengthAtSegmentation || 15;
             return oldDoc;
           },
-        },
+          8: (oldDoc) => {
+            var _a2;
+            oldDoc.totalSegments = ((_a2 = oldDoc.segments) == null ? void 0 : _a2.length) || 0;
+            oldDoc.currentSegmentLength = oldDoc.segments && oldDoc.currentSegmentIndex !== void 0 && oldDoc.segments[oldDoc.currentSegmentIndex] ? oldDoc.segments[oldDoc.currentSegmentIndex].length : 0;
+            return oldDoc;
+          }
+        }
       },
       settings: {
-        schema: settingsSchema,
-      },
+        schema: settingsSchema
+      }
     });
-
-    // Ensure default settings exist
     const settingsDoc = await db.settings.findOne("global").exec();
     if (!settingsDoc) {
       await db.settings.insert(DEFAULT_SETTINGS);
     }
-
     return db;
   } catch (error) {
     console.error("Failed to initialize RxDB:", error);
     throw error;
   }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let dbPromise: Promise<any> | null = null;
-
-export function getDb() {
-  if (!browser) {
-    return Promise.reject(new Error("RxDB is not available on the server"));
-  }
-  if (!dbPromise) {
-    dbPromise = _createDb();
-  }
-  return dbPromise;
-}
-
-export async function addDocument(
-  documentId: string,
-  segments: string[],
-  fullText: string = "",
-  videoLengthAtSegmentation: number = 15,
-  currentSegmentIndex: number = 0,
-) {
+async function addDocument(documentId, segments, fullText = "", videoLengthAtSegmentation = 15, currentSegmentIndex = 0) {
+  var _a;
   try {
     const db = await getDb();
     const now = Date.now();
+    const currentSegmentLength = ((_a = segments[currentSegmentIndex]) == null ? void 0 : _a.length) || 0;
     const doc = await db.documents.insert({
       documentId,
       segments,
@@ -273,6 +204,8 @@ export async function addDocument(
       createdAt: now,
       lastViewedAt: now,
       isFavourite: false,
+      totalSegments: segments.length,
+      currentSegmentLength
     });
     return doc.toJSON();
   } catch (error) {
@@ -280,17 +213,12 @@ export async function addDocument(
     throw error;
   }
 }
-
-export async function upsertDocument(
-  documentId: string,
-  segments: string[],
-  fullText: string = "",
-  videoLengthAtSegmentation: number = 15,
-  currentSegmentIndex: number = 0,
-) {
+async function upsertDocument(documentId, segments, fullText = "", videoLengthAtSegmentation = 15, currentSegmentIndex = 0) {
+  var _a;
   try {
     const db = await getDb();
     const now = Date.now();
+    const currentSegmentLength = ((_a = segments[currentSegmentIndex]) == null ? void 0 : _a.length) || 0;
     const doc = await db.documents.upsert({
       documentId,
       segments,
@@ -300,7 +228,9 @@ export async function upsertDocument(
       currentSegmentProgress: 0,
       createdAt: now,
       lastViewedAt: now,
-      isFavourite: false, // Default to false if new
+      isFavourite: false,
+      totalSegments: segments.length,
+      currentSegmentLength
     });
     return doc.toJSON();
   } catch (error) {
@@ -308,19 +238,16 @@ export async function upsertDocument(
     throw error;
   }
 }
-
-export async function getRecentUploads(limit: number = 10) {
+async function getRecentUploads(limit = 10) {
   const db = await getDb();
-  const docs = await db.documents
-    .find()
-    .sort({ lastViewedAt: "desc" })
-    .limit(limit)
-    .exec();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).limit(limit).exec();
+  return docs.map((doc) => {
+    const json = doc.toJSON();
+    delete json.segments;
+    return json;
+  });
 }
-
-export async function getDocument(documentId: string) {
+async function getDocument(documentId) {
   const db = await getDb();
   const doc = await db.documents.findOne(documentId).exec();
   if (doc) {
@@ -329,36 +256,32 @@ export async function getDocument(documentId: string) {
   }
   return null;
 }
-
-export async function updateDocumentProgress(
-  documentId: string,
-  index: number,
-  progress: number = 0,
-) {
+async function updateDocumentProgress(documentId, index, progress = 0) {
+  var _a;
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
+      const segments = doc.segments || [];
+      const currentSegmentLength = ((_a = segments[index]) == null ? void 0 : _a.length) || 0;
       await doc.incrementalPatch({
         currentSegmentIndex: index,
         currentSegmentProgress: progress,
-        lastViewedAt: Date.now(),
+        currentSegmentLength,
+        lastViewedAt: Date.now()
       });
     }
   } catch (error) {
     console.error(`Failed to update progress for ${documentId}:`, error);
   }
 }
-
-export async function toggleFavourite(documentId: string) {
+async function toggleFavourite(documentId) {
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
     if (doc) {
       const newStatus = !doc.isFavourite;
-      await doc.incrementalPatch({
-        isFavourite: newStatus,
-      });
+      await doc.incrementalPatch({ isFavourite: newStatus });
       return newStatus;
     }
   } catch (error) {
@@ -366,8 +289,7 @@ export async function toggleFavourite(documentId: string) {
   }
   return false;
 }
-
-export async function deleteDocument(documentId: string) {
+async function deleteDocument(documentId) {
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
@@ -380,26 +302,24 @@ export async function deleteDocument(documentId: string) {
   }
   return false;
 }
-
-// For testing purposes only - resets the database singleton
-export function resetDb() {
+function resetDb() {
   dbPromise = null;
 }
-
-export async function getAllDocuments() {
+async function getAllDocuments() {
   const db = await getDb();
   const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).exec();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return docs.map((doc: any) => doc.toJSON());
+  return docs.map((doc) => {
+    const json = doc.toJSON();
+    delete json.segments;
+    return json;
+  });
 }
-
-export async function getSettings() {
+async function getSettings() {
   const db = await getDb();
   const doc = await db.settings.findOne("global").exec();
   return doc ? doc.toJSON() : DEFAULT_SETTINGS;
 }
-
-export async function updateSettings(patch: Partial<typeof DEFAULT_SETTINGS>) {
+async function updateSettings(patch) {
   try {
     const db = await getDb();
     const doc = await db.settings.findOne("global").exec();
@@ -412,41 +332,29 @@ export async function updateSettings(patch: Partial<typeof DEFAULT_SETTINGS>) {
     console.error("Failed to update settings:", error);
   }
 }
-
-export async function getSettingsObservable() {
+async function getSettingsObservable() {
   const db = await getDb();
   return db.settings.findOne("global").$;
 }
-
-export async function resegmentDocument(
-  documentId: string,
-  newVideoLength: number,
-) {
+async function resegmentDocument(documentId, newVideoLength) {
+  var _a;
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
     if (!doc || !doc.fullText) return null;
-
-    const oldSegments = doc.segments;
-    const oldIndex = doc.currentSegmentIndex;
+    const oldSegments = doc.segments || [];
+    const oldIndex = doc.currentSegmentIndex || 0;
     const oldProgress = doc.currentSegmentProgress || 0;
-
-    // 1. Calculate Global Offset
-    // We use the length of previous segments to find the total character offset
-    const globalOffset =
-      oldSegments
-        .slice(0, oldIndex)
-        .reduce((acc: number, s: string) => acc + s.length, 0) + oldProgress;
-
-    // 2. Re-segment
+    let globalOffset = oldProgress;
+    const len = Math.min(oldIndex, oldSegments.length);
+    for (let i = 0; i < len; i++) {
+      globalOffset += oldSegments[i].length;
+    }
     const maxChars = Math.max(1, Math.round(newVideoLength * CHARS_PER_SECOND));
     const newSegments = segmentText(doc.fullText, maxChars);
-
-    // 3. Find New Segment & Progress
     let newIndex = 0;
     let accumulatedLength = 0;
     let newProgress = 0;
-
     for (let i = 0; i < newSegments.length; i++) {
       const segmentLength = newSegments[i].length;
       if (accumulatedLength + segmentLength > globalOffset) {
@@ -455,25 +363,45 @@ export async function resegmentDocument(
         break;
       }
       accumulatedLength += segmentLength;
-      // If we're at the last segment and haven't reached globalOffset yet,
-      // stay at the end of the last segment.
       if (i === newSegments.length - 1) {
         newIndex = i;
         newProgress = segmentLength;
       }
     }
-
-    // 4. Update Document
+    const currentSegmentLength = ((_a = newSegments[newIndex]) == null ? void 0 : _a.length) || 0;
     await doc.incrementalPatch({
       segments: newSegments,
       videoLengthAtSegmentation: newVideoLength,
       currentSegmentIndex: newIndex,
       currentSegmentProgress: newProgress,
+      totalSegments: newSegments.length,
+      currentSegmentLength
     });
-
     return doc.toJSON();
   } catch (error) {
     console.error(`Failed to resegment document ${documentId}:`, error);
     throw error;
   }
 }
+
+export {
+  documentSchema,
+  settingsSchema,
+  DEFAULT_SETTINGS,
+  setDbStorage,
+  getDb,
+  addDocument,
+  upsertDocument,
+  getRecentUploads,
+  getDocument,
+  updateDocumentProgress,
+  toggleFavourite,
+  deleteDocument,
+  resetDb,
+  getAllDocuments,
+  getSettings,
+  updateSettings,
+  getSettingsObservable,
+  resegmentDocument
+};
+//# sourceMappingURL=chunk-7SK5PH46.js.map

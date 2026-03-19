@@ -41,10 +41,12 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "prettier-plugin-svelte": "^3.4.1",
+    "storage-memory": "link:rxdb/plugins/storage-memory",
     "typescript-eslint": "^8.55.0",
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@paperflip/core": "workspace:^",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.50.2",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",

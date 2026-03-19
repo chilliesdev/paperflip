@@ -2,10 +2,10 @@ import "@testing-library/jest-dom";
 import { render, screen, waitFor, fireEvent } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import LibraryPage from "../../routes/library/+page.svelte";
-import * as database from "../../lib/database";
+import * as database from "$lib/database-init";
 
 // Mock database functions
-vi.mock("../../lib/database", () => ({
+vi.mock("$lib/database-init", () => ({
   getAllDocuments: vi.fn(),
 }));
 
