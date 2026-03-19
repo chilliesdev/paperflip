@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { segmentText, splitSentences } from "@paperflip/core/segmenter";
+import { segmentText, splitSentences } from "../segmenter.js";
 
 describe("segmentText", () => {
   it("splits text by double newlines into segments", () => {

@@ -81,7 +81,7 @@ vi.mock("rxdb/plugins/dev-mode", () => ({
 }));
 
 // Import the module after mocks are set up
-import { resegmentDocument, resetDb } from "$lib/database-init";
+import { resegmentDocument, resetDb } from "../database.js";
 
 describe("resegmentDocument", () => {
   let mockDb: any;

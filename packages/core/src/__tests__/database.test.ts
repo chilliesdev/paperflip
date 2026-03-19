@@ -98,8 +98,8 @@ import {
   resetDb,
   toggleFavourite,
   deleteDocument,
-} from "$lib/database-init";
-import { setDbStorage } from "@paperflip/core/database";
+} from "../database.js";
+import { setDbStorage } from "../database.js";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import { removeRxDatabase } from "rxdb";
 
