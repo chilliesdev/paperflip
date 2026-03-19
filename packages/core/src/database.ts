@@ -2,8 +2,8 @@ import { createRxDatabase, addRxPlugin, type RxStorage } from "rxdb";
 import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
-import { segmentText } from "./segmenter.js";
-import { CHARS_PER_SECOND } from "./constants.js";
+import { segmentText } from "./segmenter";
+import { CHARS_PER_SECOND } from "./constants";
 
 // Use window/global to track plugin registration across HMR/reloads
 declare global {
@@ -36,8 +36,20 @@ export const documentSchema = {
     videoLengthAtSegmentation: { type: "number" },
     currentSegmentIndex: { type: "number" },
     currentSegmentProgress: { type: "number" },
-    createdAt: { type: "number", multipleOf: 1, minimum: 0, maximum: 100000000000000, maxLength: 100 },
-    lastViewedAt: { type: "number", multipleOf: 1, minimum: 0, maximum: 100000000000000, maxLength: 100 },
+    createdAt: {
+      type: "number",
+      multipleOf: 1,
+      minimum: 0,
+      maximum: 100000000000000,
+      maxLength: 100,
+    },
+    lastViewedAt: {
+      type: "number",
+      multipleOf: 1,
+      minimum: 0,
+      maximum: 100000000000000,
+      maxLength: 100,
+    },
     isFavourite: { type: "boolean" },
     totalSegments: { type: "number" },
     currentSegmentLength: { type: "number" },
@@ -85,10 +97,17 @@ export const DEFAULT_SETTINGS = {
 let currentStorage: RxStorage<any, any> | null = null;
 let isDev: boolean = false;
 let dbPromise: Promise<any> | null = null;
+let currentHashFunction: ((data: string) => Promise<string>) | undefined =
+  undefined;
 
-export function setDbStorage(storage: RxStorage<any, any>, devMode: boolean = false) {
+export function setDbStorage(
+  storage: RxStorage<any, any>,
+  devMode: boolean = false,
+  hashFunction?: (data: string) => Promise<string>,
+) {
   currentStorage = storage;
   isDev = devMode;
+  currentHashFunction = hashFunction;
 }
 
 export function getDb() {
@@ -98,7 +117,9 @@ export function getDb() {
   }
 
   if (!currentStorage) {
-    return Promise.reject(new Error("Storage adapter not set. Call setDbStorage first."));
+    return Promise.reject(
+      new Error("Storage adapter not set. Call setDbStorage first."),
+    );
   }
   if (!dbPromise) {
     dbPromise = _createDb();
@@ -132,7 +153,8 @@ async function _createDb() {
     }
 
     try {
-      const { wrappedValidateAjvStorage } = await import("rxdb/plugins/validate-ajv");
+      const { wrappedValidateAjvStorage } =
+        await import("rxdb/plugins/validate-ajv");
       storage = wrappedValidateAjvStorage({ storage });
     } catch (e) {
       console.warn("Failed to load RxDB AJV Validation Storage Wrapper", e);
@@ -141,31 +163,66 @@ async function _createDb() {
 
   try {
     const db = await createRxDatabase({
-      name: "paperflipdb_" + Math.random().toString(36).substring(7) + "_" + Date.now(),
+      name:
+        "paperflipdb_" +
+        Math.random().toString(36).substring(7) +
+        "_" +
+        Date.now(),
       storage,
-      ignoreDuplicate: true,
+      // Only use ignoreDuplicate if devMode is loaded, otherwise it triggers DB9
+      ignoreDuplicate: !!_global.__rxdb_devmode_added,
+      hashFunction: currentHashFunction,
     });
 
     await db.addCollections({
       documents: {
         schema: documentSchema,
         migrationStrategies: {
-          1: (oldDoc: any) => { oldDoc.createdAt = oldDoc.createdAt || Date.now(); oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt; oldDoc.isFavourite = oldDoc.isFavourite || false; return oldDoc; },
-          2: (oldDoc: any) => { oldDoc.createdAt = oldDoc.createdAt || Date.now(); oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt; return oldDoc; },
-          3: (oldDoc: any) => { oldDoc.createdAt = oldDoc.createdAt || Date.now(); oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt; return oldDoc; },
-          4: (oldDoc: any) => { oldDoc.createdAt = oldDoc.createdAt || Date.now(); oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt; return oldDoc; },
-          5: (oldDoc: any) => { oldDoc.createdAt = oldDoc.createdAt || Date.now(); oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt; return oldDoc; },
-          6: (oldDoc: any) => { oldDoc.createdAt = oldDoc.createdAt || Date.now(); oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt; return oldDoc; },
+          1: (oldDoc: any) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            oldDoc.isFavourite = oldDoc.isFavourite || false;
+            return oldDoc;
+          },
+          2: (oldDoc: any) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          3: (oldDoc: any) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          4: (oldDoc: any) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          5: (oldDoc: any) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
+          6: (oldDoc: any) => {
+            oldDoc.createdAt = oldDoc.createdAt || Date.now();
+            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
+            return oldDoc;
+          },
           7: (oldDoc: any) => {
             oldDoc.fullText = oldDoc.fullText || oldDoc.segments.join("\n\n");
-            oldDoc.videoLengthAtSegmentation = oldDoc.videoLengthAtSegmentation || 15;
+            oldDoc.videoLengthAtSegmentation =
+              oldDoc.videoLengthAtSegmentation || 15;
             return oldDoc;
           },
           8: (oldDoc: any) => {
             oldDoc.totalSegments = oldDoc.segments?.length || 0;
-            oldDoc.currentSegmentLength = oldDoc.segments && oldDoc.currentSegmentIndex !== undefined && oldDoc.segments[oldDoc.currentSegmentIndex]
-              ? oldDoc.segments[oldDoc.currentSegmentIndex].length
-              : 0;
+            oldDoc.currentSegmentLength =
+              oldDoc.segments &&
+              oldDoc.currentSegmentIndex !== undefined &&
+              oldDoc.segments[oldDoc.currentSegmentIndex]
+                ? oldDoc.segments[oldDoc.currentSegmentIndex].length
+                : 0;
             return oldDoc;
           },
         },
@@ -187,7 +244,13 @@ async function _createDb() {
   }
 }
 
-export async function addDocument(documentId: string, segments: string[], fullText: string = "", videoLengthAtSegmentation: number = 15, currentSegmentIndex: number = 0) {
+export async function addDocument(
+  documentId: string,
+  segments: string[],
+  fullText: string = "",
+  videoLengthAtSegmentation: number = 15,
+  currentSegmentIndex: number = 0,
+) {
   try {
     const db = await getDb();
     const now = Date.now();
@@ -212,7 +275,13 @@ export async function addDocument(documentId: string, segments: string[], fullTe
   }
 }
 
-export async function upsertDocument(documentId: string, segments: string[], fullText: string = "", videoLengthAtSegmentation: number = 15, currentSegmentIndex: number = 0) {
+export async function upsertDocument(
+  documentId: string,
+  segments: string[],
+  fullText: string = "",
+  videoLengthAtSegmentation: number = 15,
+  currentSegmentIndex: number = 0,
+) {
   try {
     const db = await getDb();
     const now = Date.now();
@@ -239,7 +308,11 @@ export async function upsertDocument(documentId: string, segments: string[], ful
 
 export async function getRecentUploads(limit: number = 10) {
   const db = await getDb();
-  const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).limit(limit).exec();
+  const docs = await db.documents
+    .find()
+    .sort({ lastViewedAt: "desc" })
+    .limit(limit)
+    .exec();
   return docs.map((doc: any) => {
     const json = doc.toJSON();
     delete json.segments;
@@ -257,7 +330,11 @@ export async function getDocument(documentId: string) {
   return null;
 }
 
-export async function updateDocumentProgress(documentId: string, index: number, progress: number = 0) {
+export async function updateDocumentProgress(
+  documentId: string,
+  index: number,
+  progress: number = 0,
+) {
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();
@@ -345,7 +422,10 @@ export async function getSettingsObservable() {
   return db.settings.findOne("global").$;
 }
 
-export async function resegmentDocument(documentId: string, newVideoLength: number) {
+export async function resegmentDocument(
+  documentId: string,
+  newVideoLength: number,
+) {
   try {
     const db = await getDb();
     const doc = await db.documents.findOne(documentId).exec();

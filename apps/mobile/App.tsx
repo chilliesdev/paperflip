@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
+import * as Crypto from 'expo-crypto';
 import './global.css';
 
 // Import from workspace core package
@@ -8,7 +9,12 @@ import { DEFAULT_SETTINGS, setDbStorage, getDb } from '@paperflip/core';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 
 // Setup DB Storage for mobile (using memory storage for verification purposes)
-setDbStorage(getRxStorageMemory(), true);
+setDbStorage(getRxStorageMemory(), true, async (data: string) => {
+  return await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    data
+  );
+});
 
 export default function App() {
   const [dbReady, setDbReady] = useState(false);
@@ -17,7 +23,10 @@ export default function App() {
   useEffect(() => {
     getDb()
       .then(() => setDbReady(true))
-      .catch((err) => setDbError(err.message));
+      .catch((err) => {
+        console.error('getDb error', err);
+        setDbError(err.message);
+      });
   }, []);
 
   return (

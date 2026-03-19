@@ -139,7 +139,7 @@ describe("database.ts", () => {
 
     // Reset window globals
     if (typeof window !== "undefined") {
-      delete (window as Window).__rxdb_devmode_added;
+      delete (window as any).__rxdb_devmode_added;
     }
 
     // Reset the dbPromise singleton

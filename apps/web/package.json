@@ -41,7 +41,6 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "prettier-plugin-svelte": "^3.4.1",
-    "storage-memory": "link:rxdb/plugins/storage-memory",
     "typescript-eslint": "^8.55.0",
     "vitest": "^4.0.18"
   },

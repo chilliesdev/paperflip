@@ -1,19 +1,12 @@
 {
-  "extends": [
-    "@paperflip/ts-config/base.json",
-    "expo/tsconfig.base"
-  ],
+  "extends": ["@paperflip/ts-config/base.json", "expo/tsconfig.base"],
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
     "paths": {
       "@paperflip/*": ["../../packages/*/src"]
     },
-    "types": ["nativewind/types"]
+    "types": ["nativewind/types", "jest", "node"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "nativewind-env.d.ts"]
 }

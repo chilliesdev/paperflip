@@ -18,8 +18,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// 3. Force Metro to resolve (sub)dependencies only from the `nodeModulesPaths`
-// This ensures that packages relying on React or React Native are forced to use the shared copies.
-config.resolver.disableHierarchicalLookup = true;
+// 3. Allow hierarchical lookup to resolve pnpm's nested dependencies
+config.resolver.disableHierarchicalLookup = false;
+
+// 4. Prioritize .js, .mjs, .cjs and .json over .ts to avoid resolving to broken .ts files in node_modules/rxdb
+config.resolver.sourceExts = ['js', 'mjs', 'cjs', 'jsx', 'json', 'ts', 'tsx'];
 
 module.exports = withNativeWind(config, { input: './global.css' });
