@@ -1,4 +1,4 @@
-**PaperFlip** is a local-first mobile application that transforms static PDFs into an immersive, TikTok-style vertical video feed. Using a real-time playback engine, it overlays PDF text onto high-engagement background videos with synchronized word highlighting powered by native text-to-speech.
+**PaperFlip** is a local-first, cross-platform application (Web & Mobile) that transforms static PDFs into an immersive, TikTok-style vertical video feed. Using a real-time playback engine, it overlays PDF text onto high-engagement background videos with synchronized word highlighting powered by native text-to-speech.
 
 Key features include:
 

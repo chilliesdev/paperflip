@@ -8,12 +8,12 @@
     "baseUrl": ".",
     "paths": {
       "@paperflip/*": ["../../packages/*/src"]
-    }
+    },
+    "types": ["nativewind/types"]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    ".expo/types/**/*.ts"
   ]
 }

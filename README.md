@@ -1,44 +1,41 @@
 # Paperflip (v1.0) - Study Shorts
 
-**Paperflip** is a web application designed to modernize the studying process. Its flagship feature, **"Study Shorts,"** transforms dense, static PDF learning materials into engaging, short-form video content (similar to TikTok or YouTube Shorts).
+**Paperflip** is a local-first application designed to modernize the studying process. Its flagship feature, **"Study Shorts,"** transforms dense, static PDF learning materials into engaging, short-form video content (similar to TikTok or YouTube Shorts).
 
-This repository contains the **Client-Side MVP** implementation of Paperflip, focusing on privacy and speed by processing documents entirely within the browser.
+This repository contains the **Monorepo** implementation of Paperflip, focusing on privacy and speed by processing documents entirely on-device. It includes both a Web App and a Mobile App that share core business logic.
 
 ## 🚀 Features
 
-### Current Implementation (v1.0)
-
-- **📄 PDF Upload & Parsing:** Drag-and-drop PDF upload processed locally using `pdfjs-dist`. No server upload required.
+- **📄 PDF Upload & Parsing:** Drag-and-drop PDF upload processed locally. No server upload required.
 - **✂️ Smart Chunking:** Automatically segments text into digestible chunks for "short" video consumption.
-- **🗣️ Text-to-Speech (TTS):** Uses the Web Speech API to read content aloud with real-time word highlighting (Karaoke style).
-- **📱 Vertical Feed:** A TikTok-style vertical swipe interface powered by Swiper for seamless navigation between chunks.
-- **💾 Offline Storage:** Uses RxDB to store your study sessions locally in the browser.
-- **🎨 Responsive Design:** Built with Tailwind CSS for a mobile-first experience.
+- **🗣️ Text-to-Speech (TTS):** Uses native device APIs (Web Speech API / Native Voice) to read content aloud with real-time word highlighting.
+- **📱 Vertical Feed:** A TikTok-style vertical swipe interface for seamless navigation between chunks.
+- **💾 Offline Storage:** Uses RxDB to store your study sessions locally across both platforms.
+- **🎨 Consistent Design:** Built with Tailwind CSS (Web) and NativeWind (Mobile) for a seamless experience.
 
-### Planned Features (v2.0 / Roadmap)
+## 🏢 Architecture
 
-Based on the full Product Requirements Document (PRD), future versions aim to include:
+Paperflip is structured as a **Turborepo** monorepo using `pnpm`:
 
-- **Server-Side Processing:** Robust backend with NestJS and MongoDB for handling larger files and cross-device sync.
-- **AI-Powered Summarization:** Integration with LLMs (e.g., GPT-4) for smarter text segmentation and summarization.
-- **Premium TTS:** Integration with ElevenLabs or OpenAI Audio API for high-quality, natural-sounding voices.
-- **Quiz Injection:** Automatically generated quizzes inserted between video segments.
+- `apps/web`: SvelteKit web application.
+- `apps/mobile`: React Native (Expo) mobile application.
+- `packages/core`: Shared TypeScript logic (Database, Segmenter, Constants).
+- `packages/*-config`: Shared configuration packages (ESLint, Prettier, Tailwind, TypeScript).
 
 ## 🛠️ Tech Stack
 
-- **Framework:** [SvelteKit](https://kit.svelte.dev/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Web Framework:** [SvelteKit](https://kit.svelte.dev/)
+- **Mobile Framework:** [Expo](https://expo.dev/) (React Native)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) / [NativeWind](https://www.nativewind.dev/)
 - **State/Database:** [RxDB](https://rxdb.info/) (Client-side NoSQL)
-- **PDF Processing:** [PDF.js](https://mozilla.github.io/pdf.js/) (`pdfjs-dist`)
-- **Audio/TTS:** Web Speech API (`SpeechSynthesis`)
-- **UI Components:** [Swiper](https://swiperjs.com/) (for the vertical feed)
+- **Monorepo Tooling:** [Turborepo](https://turbo.build/) & [pnpm](https://pnpm.io/)
 
 ## 📦 Installation & Setup
 
 ### Prerequisites
 
 - Node.js (v18+ recommended)
-- npm
+- pnpm (v9+)
 
 ### 1. Clone the repository
 
@@ -50,45 +47,30 @@ cd paperflip
 ### 2. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
-### 3. Add Background Videos (Important!)
+### 3. Run the development environment
 
-The application expects background video files to be present in the `static/videos/` directory.
+To start all applications and packages in development mode from the root:
+
+```bash
+pnpm run dev
+```
+
+Alternatively, you can run apps individually:
+- **Web App:** `cd apps/web && pnpm run dev` (Runs on `http://localhost:5173`)
+- **Mobile App:** `cd apps/mobile && pnpm run start` (Opens the Expo bundler)
+
+### 4. Background Videos (Web App)
+
+The web application expects background video files to be present in the `apps/web/static/videos/` directory.
 
 1.  Create the directory:
     ```bash
-    mkdir -p static/videos
+    mkdir -p apps/web/static/videos
     ```
 2.  Add video files named `bg-video-1.mp4`, `bg-video-2.mp4`, etc., to this folder.
-    - _Note: You can update the video sources in `src/lib/components/Feed.svelte` if you prefer different filenames._
-
-### 4. Run the development server
-
-```bash
-npm run dev
-```
-
-Visit `http://localhost:5173` (or the URL shown in your terminal) to start using Paperflip.
-
-## 📂 Project Structure
-
-```
-src/
-├── lib/
-│   ├── audio.ts        # TTS (Text-to-Speech) logic
-│   ├── database.ts     # RxDB database configuration
-│   ├── segmenter.ts    # Text chunking logic
-│   └── components/
-│       ├── Feed.svelte # Main vertical video player
-│       └── ...
-├── routes/
-│   └── +page.svelte    # Main entry point (Upload & Feed view)
-static/
-├── pdf.worker.min.mjs  # PDF.js worker file
-└── videos/             # (User Created) Background video assets
-```
 
 ## 🤝 Contributing
 
