@@ -15,7 +15,10 @@ jest.mock('expo-sqlite', () => ({
 // Mock expo-crypto
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'test-uuid'),
-  digestStringAsync: jest.fn(),
+  digestStringAsync: jest.fn().mockResolvedValue('mocked-hash'),
+  CryptoDigestAlgorithm: {
+    SHA256: 'SHA-256',
+  },
 }), { virtual: true });
 
 // Mock nativewind
