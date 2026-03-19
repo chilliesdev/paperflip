@@ -1,0 +1,34 @@
+{
+  "name": "@paperflip/mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "dev": "expo start",
+    "lint": "eslint .",
+    "test": "echo \"No tests specified\"",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@paperflip/core": "workspace:*",
+    "expo": "~55.0.8",
+    "expo-sqlite": "^55.0.11",
+    "expo-status-bar": "~55.0.4",
+    "nativewind": "^4.2.3",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "tailwindcss": "3.3.2"
+  },
+  "devDependencies": {
+    "@paperflip/eslint-config": "workspace:*",
+    "@paperflip/tailwind-config": "workspace:*",
+    "@paperflip/ts-config": "workspace:*",
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
+  },
+  "private": true,
+  "type": "module"
+}
