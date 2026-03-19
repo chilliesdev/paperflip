@@ -14,5 +14,14 @@ export default [
     rules: {
       "@typescript-eslint/no-require-imports": "off"
     }
+  },
+  {
+    files: ["jest.setup.cjs"],
+    languageOptions: {
+      globals: {
+        jest: "readonly",
+        global: "writable"
+      }
+    }
   }
 ];

@@ -36,9 +36,20 @@ export async function deleteOtherVideosFromCache(
   if (typeof caches === "undefined") return;
   const cache = await caches.open(CACHE_NAME);
   const keys = await cache.keys();
-  for (const request of keys) {
+
+  // ⚡ Bolt: Performance optimization
+  // Replaced sequential await in for-loop with Promise.all
+  // This allows the browser to process cache deletions concurrently,
+  // reducing blocking time during background asset synchronization.
+  const deletions = [];
+  for (let i = 0; i < keys.length; i++) {
+    const request = keys[i];
     if (request.url !== currentUrl) {
-      await cache.delete(request);
+      deletions.push(cache.delete(request));
     }
+  }
+
+  if (deletions.length > 0) {
+    await Promise.all(deletions);
   }
 }
