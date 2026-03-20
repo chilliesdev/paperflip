@@ -45,6 +45,9 @@ importers:
       '@paperflip/core':
         specifier: workspace:*
         version: link:../../packages/core
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       expo:
         specifier: ~55.0.8
         version: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.7)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)

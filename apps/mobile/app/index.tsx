@@ -54,7 +54,7 @@ if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined
 }
 
 // Import from workspace core package
-import { DEFAULT_SETTINGS, setDbStorage, getDb } from '@paperflip/core';
+import { DEFAULT_SETTINGS, setDbStorage, getDb, upsertDocument, getAllDocuments, segmentText, CHARS_PER_SECOND } from '@paperflip/core';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 
 // Setup DB Storage for mobile (using memory storage for verification purposes)
