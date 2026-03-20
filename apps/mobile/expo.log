@@ -1,0 +1,68 @@
+
+> @paperflip/mobile@1.0.0 web /app/apps/mobile
+> expo start --web
+
+Starting project at /app/apps/mobile
+Expo Autolinking module resolution enabled
+Starting Metro Bundler
+
+The following packages should be updated for best compatibility with the installed expo version:
+  react-native-safe-area-context@5.7.0 - expected version: ~5.6.2
+  react-native-screens@4.24.0 - expected version: ~4.23.0
+  @types/jest@30.0.0 - expected version: 29.5.14
+  jest@30.3.0 - expected version: ~29.7.0
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web apps/mobile/index.ts ▓▓▓▓▓░░░░░░░░░░░ 37.1% (201/412)
+Web apps/mobile/index.ts ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 72.8% (596/709)
+Web apps/mobile/index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 83.4% (1077/1179)
+Web Bundled 12313ms apps/mobile/index.ts (1513 modules)
+ LOG  [web] Logs will appear in the browser console
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 71ms apps/mobile/index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundling failed 135ms apps/mobile/index.ts (1 module)
+Unable to resolve "../src/components/LibraryHeader" from "apps/mobile/app/library.tsx"
+[0m [90m 4 |[39m [36mimport[39m { getDb[33m,[39m getAllDocuments } [36mfrom[39m [32m'@paperflip/core'[39m[33m;[39m
+ [90m 5 |[39m [36mimport[39m { [33mBottomNavigation[39m } [36mfrom[39m [32m'../src/components/BottomNavigation'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 6 |[39m [36mimport[39m { [33mLibraryHeader[39m } [36mfrom[39m [32m'../src/components/LibraryHeader'[39m[33m;[39m
+ [90m   |[39m                                [31m[1m^[22m[39m
+ [90m 7 |[39m [36mimport[39m { [33mDocumentListItem[39m } [36mfrom[39m [32m'../src/components/DocumentListItem'[39m[33m;[39m
+ [90m 8 |[39m [36mimport[39m { [33mDocumentGridItem[39m } [36mfrom[39m [32m'../src/components/DocumentGridItem'[39m[33m;[39m
+ [90m 9 |[39m [36mimport[39m { [33mSafeAreaView[39m } [36mfrom[39m [32m'react-native-safe-area-context'[39m[33m;[39m[0m
+
+Import stack:
+
+ apps/mobile/app/library.tsx
+ | import "../src/components/LibraryHeader"
+
+ apps/mobile/app (require.context)
+
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 785ms apps/mobile/index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 586ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/dev-mode/index.mjs (553 modules)
+Web Bundled 1038ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/validate-ajv/index.mjs (335 modules)
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 178ms apps/mobile/index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 29ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/dev-mode/index.mjs (1 module)
+Web Bundled 9ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/validate-ajv/index.mjs (1 module)
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 139ms apps/mobile/index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 28ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/dev-mode/index.mjs (1 module)
+Web Bundled 9ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/validate-ajv/index.mjs (1 module)
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 75ms apps/mobile/index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 35ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/dev-mode/index.mjs (1 module)
+Web Bundled 19ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/validate-ajv/index.mjs (1 module)
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 124ms apps/mobile/index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web Bundled 27ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/dev-mode/index.mjs (1 module)
+Web Bundled 9ms node_modules/.pnpm/rxdb@16.21.1_rxjs@7.8.2/node_modules/rxdb/plugins/validate-ajv/index.mjs (1 module)

@@ -1,9 +1,167 @@
-import { View, Text } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { getDb, getAllDocuments } from '@paperflip/core';
+import { BottomNavigation } from '../src/components/BottomNavigation';
+import { LibraryHeader } from '../src/components/LibraryHeader';
+import { DocumentListItem } from '../src/components/DocumentListItem';
+import { DocumentGridItem } from '../src/components/DocumentGridItem';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function LibraryScreen() {
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDocuments = async () => {
+    try {
+      const docs = await getAllDocuments();
+      setDocuments(docs);
+      setError(null);
+    } catch (err: any) {
+      console.error('Failed to load documents:', err);
+      setError(err.message || 'Failed to load library');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments();
+
+    let sub: any;
+    getDb().then(db => {
+      if (db && db.documents) {
+        sub = db.documents.find().$.subscribe((docs: any) => {
+          setDocuments(docs.map((d: any) => {
+            const json = d.toJSON();
+            delete json.segments;
+            return json;
+          }).sort((a: any, b: any) => b.lastViewedAt - a.lastViewedAt));
+        });
+      }
+    }).catch(console.error);
+
+    // Mock data injection for testing
+    if (typeof window !== 'undefined') {
+      const handleInject = (e: any) => {
+        setDocuments(e.detail);
+        setLoading(false);
+      };
+      window.addEventListener('testing:inject-docs', handleInject);
+      return () => {
+        window.removeEventListener('testing:inject-docs', handleInject);
+        if (sub) sub.unsubscribe();
+      };
+    }
+
+    return () => {
+      if (sub) sub.unsubscribe();
+    };
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadDocuments();
+  }, []);
+
+  const filteredDocuments = useMemo(() => {
+    if (!searchQuery.trim()) return documents;
+    const lowerQuery = searchQuery.toLowerCase();
+    return documents.filter(doc =>
+      doc.documentId?.toLowerCase().includes(lowerQuery) ||
+      doc.fullText?.toLowerCase().includes(lowerQuery)
+    );
+  }, [documents, searchQuery]);
+
+  const renderHeader = () => (
+    <View>
+      <LibraryHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+
+      <View className="flex-row items-center justify-between px-6 mb-4">
+        <Text className="text-white font-semibold text-lg">
+          {filteredDocuments.length} Documents
+        </Text>
+        <View className="flex-row bg-brand-surface-dark border border-white/5 rounded-lg p-1">
+          <Pressable
+            className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-white/10' : ''}`}
+            onPress={() => setViewMode('grid')}
+          >
+            <MaterialIcons name="grid-view" size={20} color={viewMode === 'grid' ? '#00FF88' : '#888'} />
+          </Pressable>
+          <Pressable
+            className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white/10' : ''}`}
+            onPress={() => setViewMode('list')}
+          >
+            <MaterialIcons name="view-list" size={20} color={viewMode === 'list' ? '#00FF88' : '#888'} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderEmpty = () => (
+    <View className="flex-1 items-center justify-center py-20 px-6">
+      <MaterialIcons name="menu-book" size={64} color="#333" />
+      <Text className="text-white text-lg font-bold mt-4 text-center">
+        {searchQuery ? 'No results found' : 'Your library is empty'}
+      </Text>
+      <Text className="text-brand-text-muted text-center mt-2">
+        {searchQuery ? 'Try adjusting your search query.' : 'Upload a PDF from the home screen to get started.'}
+      </Text>
+    </View>
+  );
+
   return (
-    <View className="flex-1 items-center justify-center bg-brand-bg">
-      <Text className="text-white text-2xl font-bold">Library</Text>
+    <View className="flex-1 bg-brand-bg">
+      <SafeAreaView style={{flex: 1}} edges={['top']}>
+        {loading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#00FF88" />
+          </View>
+        ) : error ? (
+          <View className="flex-1 items-center justify-center px-6">
+            <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+            <Text className="text-white text-lg font-bold mt-4 text-center">Failed to load library</Text>
+            <Text className="text-brand-text-muted text-center mt-2 mb-6">{error}</Text>
+            <Pressable
+              className="bg-brand-primary px-6 py-3 rounded-xl"
+              onPress={loadDocuments}
+            >
+              <Text className="text-black font-bold">Try Again</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View className="flex-1">
+            <FlatList
+              data={filteredDocuments}
+              key={viewMode} // Force re-render when changing numColumns
+              numColumns={viewMode === 'grid' ? 2 : 1}
+              keyExtractor={(item) => item.documentId}
+              ListHeaderComponent={renderHeader}
+              ListEmptyComponent={renderEmpty}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00FF88" />
+              }
+              contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 24 }}
+              columnWrapperStyle={viewMode === 'grid' ? { justifyContent: 'space-between' } : undefined}
+              renderItem={({ item }) =>
+                viewMode === 'grid' ? (
+                  <DocumentGridItem document={item} onShowOptions={(doc) => console.log('Options for', doc.documentId)} />
+                ) : (
+                  <DocumentListItem document={item} onShowOptions={(doc) => console.log('Options for', doc.documentId)} />
+                )
+              }
+            />
+          </View>
+        )}
+      </SafeAreaView>
+      <BottomNavigation />
     </View>
   );
 }
