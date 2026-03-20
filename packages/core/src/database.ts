@@ -5,10 +5,13 @@ import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { segmentText } from "./segmenter";
 import { CHARS_PER_SECOND } from "./constants";
 
-// Use window/global to track plugin registration across HMR/reloads
+// Use globalThis to track DB state across module instances
 declare global {
   var __rxdb_plugins_added: boolean | undefined;
   var __rxdb_devmode_added: boolean | undefined;
+  var __rxdb_storage: RxStorage<any, any> | null;
+  var __rxdb_is_dev: boolean;
+  var __rxdb_hash_function: ((data: any) => Promise<string>) | undefined;
 }
 
 const _global = typeof window !== "undefined" ? window : globalThis;
@@ -26,6 +29,7 @@ if (!_global.__rxdb_plugins_added) {
 }
 
 export const documentSchema = {
+  // ... rest of schema ...
   version: 8,
   primaryKey: "documentId",
   type: "object",
@@ -41,14 +45,12 @@ export const documentSchema = {
       multipleOf: 1,
       minimum: 0,
       maximum: 100000000000000,
-      maxLength: 100,
     },
     lastViewedAt: {
       type: "number",
       multipleOf: 1,
       minimum: 0,
       maximum: 100000000000000,
-      maxLength: 100,
     },
     isFavourite: { type: "boolean" },
     totalSegments: { type: "number" },
@@ -94,20 +96,16 @@ export const DEFAULT_SETTINGS = {
   isMuted: false,
 };
 
-let currentStorage: RxStorage<any, any> | null = null;
-let isDev: boolean = false;
 let dbPromise: Promise<any> | null = null;
-let currentHashFunction: ((data: string) => Promise<string>) | undefined =
-  undefined;
 
 export function setDbStorage(
   storage: RxStorage<any, any>,
   devMode: boolean = false,
-  hashFunction?: (data: string) => Promise<string>,
+  hashFunction?: (data: any) => Promise<string>,
 ) {
-  currentStorage = storage;
-  isDev = devMode;
-  currentHashFunction = hashFunction;
+  _global.__rxdb_storage = storage;
+  _global.__rxdb_is_dev = devMode;
+  _global.__rxdb_hash_function = hashFunction;
 }
 
 export function getDb() {
@@ -116,7 +114,7 @@ export function getDb() {
     return Promise.resolve((globalThis as any).__mockDb);
   }
 
-  if (!currentStorage) {
+  if (!_global.__rxdb_storage) {
     return Promise.reject(
       new Error("Storage adapter not set. Call setDbStorage first."),
     );
@@ -128,9 +126,13 @@ export function getDb() {
 }
 
 async function _createDb() {
-  let storage: RxStorage<any, any> = currentStorage!;
+  console.log(
+    "_createDb: currentHashFunction is",
+    typeof _global.__rxdb_hash_function,
+  );
+  let storage: RxStorage<any, any> = _global.__rxdb_storage!;
 
-  if (isDev) {
+  if (_global.__rxdb_is_dev) {
     if (!_global.__rxdb_devmode_added) {
       try {
         const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
@@ -171,7 +173,7 @@ async function _createDb() {
       storage,
       // Only use ignoreDuplicate if devMode is loaded, otherwise it triggers DB9
       ignoreDuplicate: !!_global.__rxdb_devmode_added,
-      hashFunction: currentHashFunction,
+      hashFunction: _global.__rxdb_hash_function,
     });
 
     await db.addCollections({

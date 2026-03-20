@@ -4,16 +4,67 @@ import { useEffect, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import './global.css';
 
+// Polyfill crypto.subtle.digest for RxDB and other libraries
+if (typeof global.crypto === 'undefined') {
+  (global as any).crypto = {};
+}
+if (typeof (global as any).crypto.subtle === 'undefined') {
+  (global as any).crypto.subtle = {
+    digest: async (_algorithm: string, data: Uint8Array | ArrayBuffer | string) => {
+      let str: string;
+      if (typeof data === 'string') {
+        str = data;
+      } else {
+        // Handle ArrayBuffer/Uint8Array
+        const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+        // Simple conversion to string for hashing
+        // RxDB internal hashing is mostly for small strings (schema, IDs)
+        str = Array.from(uint8)
+          .map((b) => String.fromCharCode(b))
+          .join('');
+      }
+
+      const hash = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        str
+      );
+
+      // SubtleCrypto.digest expects an ArrayBuffer return
+      // We convert the hex string back to ArrayBuffer
+      const hexToBuf = (hex: string) => {
+        const view = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+          view[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+        }
+        return view.buffer;
+      };
+      return hexToBuf(hash);
+    },
+  };
+}
+
 // Import from workspace core package
 import { DEFAULT_SETTINGS, setDbStorage, getDb } from '@paperflip/core';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 
 // Setup DB Storage for mobile (using memory storage for verification purposes)
-setDbStorage(getRxStorageMemory(), true, async (data: string) => {
-  return await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    data
-  );
+setDbStorage(getRxStorageMemory(), true, async (data: any) => {
+  if (typeof data === 'string') {
+    return await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      data
+    );
+  } else {
+    // Handle non-string data if RxDB passes it
+    const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+    const str = Array.from(uint8)
+      .map((b) => String.fromCharCode(b))
+      .join('');
+    return await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      str
+    );
+  }
 });
 
 export default function App() {
