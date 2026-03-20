@@ -1,15 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
 import * as Crypto from 'expo-crypto';
-import './global.css';
+import '../global.css';
 
 // Polyfill crypto.subtle.digest for RxDB and other libraries
 if (typeof global.crypto === 'undefined') {
-  (global as any).crypto = {};
+  Object.assign(global, { crypto: {} });
 }
-if (typeof (global as any).crypto.subtle === 'undefined') {
-  (global as any).crypto.subtle = {
+if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined') {
+  (global as { crypto: { subtle?: any } }).crypto.subtle = {
     digest: async (_algorithm: string, data: Uint8Array | ArrayBuffer | string) => {
       let str: string;
       if (typeof data === 'string') {
@@ -48,7 +49,7 @@ import { DEFAULT_SETTINGS, setDbStorage, getDb } from '@paperflip/core';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 
 // Setup DB Storage for mobile (using memory storage for verification purposes)
-setDbStorage(getRxStorageMemory(), true, async (data: any) => {
+setDbStorage(getRxStorageMemory(), true, async (data: string | Uint8Array) => {
   if (typeof data === 'string') {
     return await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
@@ -81,7 +82,7 @@ export default function App() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-brand-bg items-center justify-center">
       <Text className="text-2xl font-bold text-blue-500 mb-4">Paperflip Mobile</Text>
 
       <Text className="text-lg text-gray-700 mb-2">Core Settings Verification:</Text>
@@ -110,11 +111,3 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
