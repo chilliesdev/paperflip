@@ -1,4 +1,18 @@
+import { Platform } from 'react-native';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
+if (Platform.OS === 'web') {
+  try {
+    const { StyleSheet } = require('react-native-css-interop');
+    if (StyleSheet.setFlag) {
+      StyleSheet.setFlag('darkMode', 'class');
+    }
+  } catch {
+    // Ignore error
+  }
+}
+
 import { StatusBar } from 'expo-status-bar';
 import { Text, View } from 'react-native';
 import { useEffect, useState } from 'react';
@@ -16,10 +30,7 @@ if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined
       if (typeof data === 'string') {
         str = data;
       } else {
-        // Handle ArrayBuffer/Uint8Array
         const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
-        // Simple conversion to string for hashing
-        // RxDB internal hashing is mostly for small strings (schema, IDs)
         str = Array.from(uint8)
           .map((b) => String.fromCharCode(b))
           .join('');
@@ -30,8 +41,6 @@ if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined
         str
       );
 
-      // SubtleCrypto.digest expects an ArrayBuffer return
-      // We convert the hex string back to ArrayBuffer
       const hexToBuf = (hex: string) => {
         const view = new Uint8Array(hex.length / 2);
         for (let i = 0; i < hex.length; i += 2) {
@@ -56,7 +65,6 @@ setDbStorage(getRxStorageMemory(), true, async (data: string | Uint8Array) => {
       data
     );
   } else {
-    // Handle non-string data if RxDB passes it
     const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
     const str = Array.from(uint8)
       .map((b) => String.fromCharCode(b))
@@ -110,4 +118,3 @@ export default function App() {
     </View>
   );
 }
-
