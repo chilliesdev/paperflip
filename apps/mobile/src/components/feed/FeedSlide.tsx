@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { splitSentences } from '@paperflip/core/segmenter';
+import { splitSentences } from '@paperflip/core';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');

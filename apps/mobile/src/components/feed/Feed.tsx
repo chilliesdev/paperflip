@@ -4,8 +4,8 @@ import PagerView from 'react-native-pager-view';
 import * as Speech from 'expo-speech';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { splitSentences } from '@paperflip/core/segmenter';
-import { videoSources } from '@paperflip/core/constants';
+import { splitSentences } from '@paperflip/core';
+import { videoSources } from '@paperflip/core';
 import { updateDocumentProgress, DEFAULT_SETTINGS } from '@paperflip/core';
 import { FeedSlide } from './FeedSlide';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,8 +47,8 @@ export function Feed({
     boundaryFired: false,
   });
 
-  const saveTimeout = useRef<NodeJS.Timeout>();
-  const boundaryCheckTimeout = useRef<NodeJS.Timeout>();
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const boundaryCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveProgress = useCallback((immediate = false) => {
     if (!documentId) return;
@@ -57,9 +57,9 @@ export function Feed({
     if (immediate) {
       updateDocumentProgress(documentId, activeIndex, stateRef.current.currentSegmentProgress);
     } else {
-      saveTimeout.current = setTimeout(() => {
+      saveTimeout.current = (setTimeout(() => {
         updateDocumentProgress(documentId, activeIndex, stateRef.current.currentSegmentProgress);
-      }, 1000);
+      }, 1000) as unknown as ReturnType<typeof setTimeout>);
     }
   }, [documentId, activeIndex]);
 
@@ -75,8 +75,8 @@ export function Feed({
     setIsPlaying(true);
 
     const voiceOptions: Speech.SpeechOptions = {
-      onBoundary: (event) => {
-        if (!event || !event.charIndex) return; // Sometimes undefined depending on platform
+      onBoundary: (event: any) => {
+        if (!event || event.charIndex === undefined) return; // Sometimes undefined depending on platform
         stateRef.current.boundaryFired = true;
         if (boundaryCheckTimeout.current) clearTimeout(boundaryCheckTimeout.current);
         const newIndex = event.charIndex + startIndex; // Adjust if using offset (not supported on all platforms natively with offset)
@@ -282,6 +282,7 @@ export function Feed({
       <SafeAreaView style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 40}} edges={['top']}>
         <View className="p-4 flex-row items-center justify-between pointer-events-none">
           <Pressable
+            testID="back-button"
             onPress={() => { stopTTS(); router.back(); }}
             className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15 pointer-events-auto"
           >
