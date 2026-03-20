@@ -57,6 +57,12 @@ importers:
       expo-crypto:
         specifier: ^55.0.10
         version: 55.0.10(expo@55.0.8)
+      expo-document-picker:
+        specifier: ^55.0.9
+        version: 55.0.9(expo@55.0.8)
+      expo-file-system:
+        specifier: ^55.0.11
+        version: 55.0.11(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))
       expo-linear-gradient:
         specifier: ^55.0.9
         version: 55.0.9(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
@@ -81,6 +87,9 @@ importers:
       nativewind:
         specifier: ^4.2.3
         version: 4.2.3(react-native-reanimated@4.2.2(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native-safe-area-context@5.7.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(tailwindcss@3.3.2)
+      pdfjs-dist:
+        specifier: ^5.4.624
+        version: 5.5.207
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -3968,6 +3977,11 @@ packages:
 
   expo-crypto@55.0.10:
     resolution: {integrity: sha512-3emt67pWch07F7DPQutn7CUpaiCJI8OOFxCGiwmzeSqSjuWP9upGOXkLQNVWf+29KZQRTVgf88LhDC2GFshMNA==}
+    peerDependencies:
+      expo: '*'
+
+  expo-document-picker@55.0.9:
+    resolution: {integrity: sha512-XtkhmZ9alOj1n2Ok782lK9qtfk9TbaBoOJotSDK0pvq5oa+3UyHlLLTUmnC5UPMmFKoLGLJC3R2fLBFEiN5jCQ==}
     peerDependencies:
       expo: '*'
 
@@ -11547,6 +11561,10 @@ snapshots:
       - typescript
 
   expo-crypto@55.0.10(expo@55.0.8):
+    dependencies:
+      expo: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.7)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+
+  expo-document-picker@55.0.9(expo@55.0.8):
     dependencies:
       expo: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.7)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
 
