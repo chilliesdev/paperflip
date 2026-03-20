@@ -22,3 +22,8 @@
 
 **Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
 **Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
+
+## 2025-06-05 - Avoid array allocations in string hashing within reactive boundaries
+
+**Learning:** In Svelte 5, computing hashes for deterministic UI components (like colors or icons derived from IDs) using declarative string methods like `.split("").reduce(...)` inside a `$derived` block causes severe performance and memory implications. The `.split("")` call inherently allocates a new array of length N for each computation, leading to frequent garbage collection pressure during reactive updates, particularly for fast-re-rendering lists.
+**Action:** Replace `.split("").reduce(...)` for string hashing with a purely imperative `for (let i = 0; i < str.length; i++) { hash += str.charCodeAt(i); }` inside a `$derived.by` closure. This avoids all intermediate array allocations, running in O(N) time with O(1) space, keeping the reactivity graph lightweight.
