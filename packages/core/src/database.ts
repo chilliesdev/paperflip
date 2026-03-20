@@ -76,6 +76,7 @@ export const settingsSchema: any = {
     karaokeMode: { type: "boolean" },
     videoLength: { type: "number" },
     isMuted: { type: "boolean" },
+    autoResume: { type: "boolean" },
   },
   required: [
     "id",
@@ -84,6 +85,7 @@ export const settingsSchema: any = {
     "karaokeMode",
     "videoLength",
     "isMuted",
+    "autoResume",
   ],
 } as const;
 
@@ -94,6 +96,7 @@ export const DEFAULT_SETTINGS = {
   karaokeMode: true,
   videoLength: 15,
   isMuted: false,
+  autoResume: true,
 };
 
 let dbPromise: Promise<any> | null = null;
