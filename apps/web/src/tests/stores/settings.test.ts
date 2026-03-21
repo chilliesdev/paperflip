@@ -8,6 +8,18 @@ import {
   textScale,
 } from "../../lib/stores/settings";
 
+vi.mock("@paperflip/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@paperflip/core")>();
+  return {
+    ...actual,
+    videoSources: [
+      {
+        url: "https://www.w3schools.com/tags/mov_bbb.mp4",
+      },
+    ],
+  };
+});
+
 describe("Settings Store", () => {
   it("should have correct default values", () => {
     expect(get(videoLength)).toBe(15);
