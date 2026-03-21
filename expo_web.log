@@ -1,0 +1,176 @@
+
+> @paperflip/mobile@1.0.0 web /app/apps/mobile
+> expo start --web
+
+Starting project at /app/apps/mobile
+Expo Autolinking module resolution enabled
+Starting Metro Bundler
+
+The following packages should be updated for best compatibility with the installed expo version:
+  react-native-safe-area-context@5.7.0 - expected version: ~5.6.2
+  react-native-screens@4.24.0 - expected version: ~4.23.0
+  @types/jest@30.0.0 - expected version: 29.5.14
+  jest@30.3.0 - expected version: ~29.7.0
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web apps/mobile/index.ts ▓▓▓▓▓▓░░░░░░░░░░ 38.3% ( 82/218)
+Web apps/mobile/index.ts ▓▓▓▓▓▓░░░░░░░░░░ 40.7% (377/596)
+Web apps/mobile/index.ts ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.6% (735/857)
+Web apps/mobile/index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.6% (1237/1373)
+Web apps/mobile/index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.5% (1584/1715)
+Web Bundling failed 20358ms apps/mobile/index.ts (2063 modules)
+Unable to resolve "../../src/private/devsupport/rndevtools/ReactDevToolsSettingsManager" from "node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Core/setUpReactDevTools.js"
+[0m [90m 39 |[39m   } [33m=[39m require([32m'react-devtools-core'[39m)[33m;[39m
+ [90m 40 |[39m
+[31m[1m>[22m[39m[90m 41 |[39m   [36mconst[39m reactDevToolsSettingsManager [33m=[39m require([32m'../../src/private/devsupport/rndevtools/ReactDevToolsSettingsManager'[39m)[33m;[39m
+ [90m    |[39m                                                 [31m[1m^[22m[39m
+ [90m 42 |[39m   [36mconst[39m serializedHookSettings [33m=[39m
+ [90m 43 |[39m     reactDevToolsSettingsManager[33m.[39mgetGlobalHookSettings()[33m;[39m
+ [90m 44 |[39m   [36mconst[39m maybeReactDevToolsRuntimeSettingsModuleModule [33m=[39m[0m
+
+Import stack:
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Core/setUpReactDevTools.js
+ | import "../../src/private/devsupport/rndevtools/ReactDevToolsSettingsManager"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/src/private/setup/setUpDefaultReactNativeEnvironment.js
+ | import "../../../Libraries/Core/setUpReactDevTools"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Core/InitializeCore.js
+ | import "../../src/private/setup/setUpDefaultReactNativeEnvironment"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactPrivate/ReactNativePrivateInitializeCore.js
+ | import "../Core/InitializeCore"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Renderer/implementations/ReactFabric-prod.js
+ | import "react-native/Libraries/ReactPrivate/ReactNativePrivateInitializeCore"
+           ^ Importing react-native internals is not supported on web.
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Renderer/shims/ReactFabric.js
+ | import "../implementations/ReactFabric-prod"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactNative/RendererImplementation.js
+ | import "../Renderer/shims/ReactFabric"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactNative/RendererProxy.js
+ | import "./RendererImplementation"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Utilities/codegenNativeCommands.js
+ | import "../ReactNative/RendererProxy"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Components/TextInput/RCTSingelineTextInputNativeComponent.js
+ | import "../../Utilities/codegenNativeCommands"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Components/TextInput/TextInputState.js
+ | import "../../Components/TextInput/RCTSingelineTextInputNativeComponent"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactPrivate/ReactNativePrivateInterface.js
+ | import "../Components/TextInput/TextInputState"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Renderer/shims/createReactNativeComponentClass.js
+ | import "react-native/Libraries/ReactPrivate/ReactNativePrivateInterface"
+           ^ Importing react-native internals is not supported on web.
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactNative/requireNativeComponent.js
+ | import "../Renderer/shims/createReactNativeComponentClass"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Utilities/codegenNativeComponent.js
+ | import "../../Libraries/ReactNative/requireNativeComponent"
+
+ node_modules/.pnpm/react-native-pager-view@8.0.0_react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0__react@19.2.0/node_modules/react-native-pager-view/lib/module/PagerViewNativeComponent.ts
+ | import "react-native/Libraries/Utilities/codegenNativeComponent"
+           ^ Importing react-native internals is not supported on web.
+
+ node_modules/.pnpm/react-native-pager-view@8.0.0_react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0__react@19.2.0/node_modules/react-native-pager-view/lib/module/PagerView.js
+ | import "./PagerViewNativeComponent"
+
+ node_modules/.pnpm/react-native-pager-view@8.0.0_react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0__react@19.2.0/node_modules/react-native-pager-view/lib/module/index.js
+ | import "./PagerView"
+
+ apps/mobile/src/components/feed/Feed.tsx
+ | import "react-native-pager-view"
+
+ apps/mobile/app/feed.tsx
+ | import "../src/components/feed/Feed"
+
+ apps/mobile/app (require.context)
+
+Web apps/mobile/index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundling failed 1430ms apps/mobile/index.ts (2034 modules)
+Unable to resolve "../../src/private/devsupport/rndevtools/ReactDevToolsSettingsManager" from "node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Core/setUpReactDevTools.js"
+[0m [90m 39 |[39m   } [33m=[39m require([32m'react-devtools-core'[39m)[33m;[39m
+ [90m 40 |[39m
+[31m[1m>[22m[39m[90m 41 |[39m   [36mconst[39m reactDevToolsSettingsManager [33m=[39m require([32m'../../src/private/devsupport/rndevtools/ReactDevToolsSettingsManager'[39m)[33m;[39m
+ [90m    |[39m                                                 [31m[1m^[22m[39m
+ [90m 42 |[39m   [36mconst[39m serializedHookSettings [33m=[39m
+ [90m 43 |[39m     reactDevToolsSettingsManager[33m.[39mgetGlobalHookSettings()[33m;[39m
+ [90m 44 |[39m   [36mconst[39m maybeReactDevToolsRuntimeSettingsModuleModule [33m=[39m[0m
+
+Import stack:
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Core/setUpReactDevTools.js
+ | import "../../src/private/devsupport/rndevtools/ReactDevToolsSettingsManager"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/src/private/setup/setUpDefaultReactNativeEnvironment.js
+ | import "../../../Libraries/Core/setUpReactDevTools"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Core/InitializeCore.js
+ | import "../../src/private/setup/setUpDefaultReactNativeEnvironment"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactPrivate/ReactNativePrivateInitializeCore.js
+ | import "../Core/InitializeCore"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Renderer/implementations/ReactFabric-prod.js
+ | import "react-native/Libraries/ReactPrivate/ReactNativePrivateInitializeCore"
+           ^ Importing react-native internals is not supported on web.
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Renderer/shims/ReactFabric.js
+ | import "../implementations/ReactFabric-prod"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactNative/RendererImplementation.js
+ | import "../Renderer/shims/ReactFabric"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactNative/RendererProxy.js
+ | import "./RendererImplementation"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Utilities/codegenNativeCommands.js
+ | import "../ReactNative/RendererProxy"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Components/TextInput/RCTSingelineTextInputNativeComponent.js
+ | import "../../Utilities/codegenNativeCommands"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Components/TextInput/TextInputState.js
+ | import "../../Components/TextInput/RCTSingelineTextInputNativeComponent"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactPrivate/ReactNativePrivateInterface.js
+ | import "../Components/TextInput/TextInputState"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Renderer/shims/createReactNativeComponentClass.js
+ | import "react-native/Libraries/ReactPrivate/ReactNativePrivateInterface"
+           ^ Importing react-native internals is not supported on web.
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/ReactNative/requireNativeComponent.js
+ | import "../Renderer/shims/createReactNativeComponentClass"
+
+ node_modules/.pnpm/react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0/node_modules/react-native/Libraries/Utilities/codegenNativeComponent.js
+ | import "../../Libraries/ReactNative/requireNativeComponent"
+
+ node_modules/.pnpm/react-native-pager-view@8.0.0_react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0__react@19.2.0/node_modules/react-native-pager-view/lib/module/PagerViewNativeComponent.ts
+ | import "react-native/Libraries/Utilities/codegenNativeComponent"
+           ^ Importing react-native internals is not supported on web.
+
+ node_modules/.pnpm/react-native-pager-view@8.0.0_react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0__react@19.2.0/node_modules/react-native-pager-view/lib/module/PagerView.js
+ | import "./PagerViewNativeComponent"
+
+ node_modules/.pnpm/react-native-pager-view@8.0.0_react-native@0.83.2_@babel+core@7.29.0_@types+react@19.2.14_react@19.2.0__react@19.2.0/node_modules/react-native-pager-view/lib/module/index.js
+ | import "./PagerView"
+
+ apps/mobile/src/components/feed/Feed.tsx
+ | import "react-native-pager-view"
+
+ apps/mobile/app/feed.tsx
+ | import "../src/components/feed/Feed"
+
+ apps/mobile/app (require.context)

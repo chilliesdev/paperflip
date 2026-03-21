@@ -2,11 +2,12 @@ import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl } fr
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getDb, getAllDocuments } from '@paperflip/core';
-import { BottomNavigation } from '../src/components/BottomNavigation';
 import { LibraryHeader } from '../src/components/LibraryHeader';
 import { DocumentListItem } from '../src/components/DocumentListItem';
 import { DocumentGridItem } from '../src/components/DocumentGridItem';
+import { OptionsSheet } from '../src/components/OptionsSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { toggleFavourite, deleteDocument } from '@paperflip/core';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function LibraryScreen() {
@@ -16,6 +17,8 @@ export default function LibraryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [error, setError] = useState<string | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const loadDocuments = async () => {
     try {
@@ -105,6 +108,21 @@ export default function LibraryScreen() {
     </View>
   );
 
+  const handleToggleFavourite = async (id: string) => {
+    await toggleFavourite(id);
+    loadDocuments();
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteDocument(id);
+    loadDocuments();
+  };
+
+  const showOptions = (doc: any) => {
+    setSelectedDoc(doc);
+    setSheetVisible(true);
+  };
+
   const renderEmpty = () => (
     <View className="flex-1 items-center justify-center py-20 px-6">
       <MaterialIcons name="menu-book" size={64} color="#333" />
@@ -152,16 +170,23 @@ export default function LibraryScreen() {
               columnWrapperStyle={viewMode === 'grid' ? { justifyContent: 'space-between' } : undefined}
               renderItem={({ item }) =>
                 viewMode === 'grid' ? (
-                  <DocumentGridItem document={item} onShowOptions={(doc) => console.log('Options for', doc.documentId)} />
+                  <DocumentGridItem document={item} onShowOptions={showOptions} />
                 ) : (
-                  <DocumentListItem document={item} onShowOptions={(doc) => console.log('Options for', doc.documentId)} />
+                  <DocumentListItem document={item} onShowOptions={showOptions} />
                 )
               }
             />
           </View>
         )}
       </SafeAreaView>
-      <BottomNavigation />
+
+      <OptionsSheet
+        visible={sheetVisible}
+        document={selectedDoc}
+        onClose={() => setSheetVisible(false)}
+        onToggleFavourite={handleToggleFavourite}
+        onDelete={handleDelete}
+      />
     </View>
   );
 }

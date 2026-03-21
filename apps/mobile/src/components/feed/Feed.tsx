@@ -9,6 +9,7 @@ import { videoSources } from '@paperflip/core';
 import { updateDocumentProgress, DEFAULT_SETTINGS } from '@paperflip/core';
 import { FeedSlide } from './FeedSlide';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ReadingOptionsSheet } from '../ReadingOptionsSheet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +39,10 @@ export function Feed({
   const [backgroundUrlIndex, setBackgroundUrlIndex] = useState(0);
 
   const [isDictationMode, setIsDictationMode] = useState(false);
+
+  const [optionsVisible, setOptionsVisible] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [autoScroll, setAutoScroll] = useState(false);
 
   // Ref for mutable state that doesn't need to trigger re-renders but is accessed in callbacks
   const stateRef = useRef({
@@ -75,6 +80,7 @@ export function Feed({
     setIsPlaying(true);
 
     const voiceOptions: Speech.SpeechOptions = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onBoundary: (event: any) => {
         if (!event || event.charIndex === undefined) return; // Sometimes undefined depending on platform
         stateRef.current.boundaryFired = true;
@@ -100,7 +106,8 @@ export function Feed({
       onError: () => {
         setIsPlaying(false);
         stateRef.current.isPlaying = false;
-      }
+      },
+      rate: playbackRate
     };
 
     // React Native Expo Speech boundary events are notoriously unreliable across Android/iOS.
@@ -161,7 +168,8 @@ export function Feed({
         onError: () => {
           setIsPlaying(false);
           stateRef.current.isPlaying = false;
-        }
+        },
+        rate: playbackRate
       });
     };
 
@@ -296,6 +304,7 @@ export function Feed({
           </View>
 
           <Pressable
+            onPress={() => setOptionsVisible(true)}
             className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15 pointer-events-auto"
           >
             <Feather name="more-horizontal" size={24} color="white" />
@@ -364,6 +373,15 @@ export function Feed({
           </View>
         )}
       </View>
+
+      <ReadingOptionsSheet
+        visible={optionsVisible}
+        onClose={() => setOptionsVisible(false)}
+        playbackRate={playbackRate}
+        onPlaybackRateChange={setPlaybackRate}
+        autoScroll={autoScroll}
+        onAutoScrollToggle={() => setAutoScroll(!autoScroll)}
+      />
     </View>
   );
 }

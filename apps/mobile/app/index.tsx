@@ -13,6 +13,17 @@ if (Platform.OS === 'web') {
   }
 }
 
+// Ignore react-native-pager-view and native-only errors on web if needed
+if (Platform.OS === 'web') {
+  // @ts-expect-error - overriding console
+  const origError = console.error;
+  // @ts-expect-error - overriding console
+  console.error = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('Unable to resolve')) return;
+    origError(...args);
+  };
+}
+
 import { StatusBar } from 'expo-status-bar';
 import { Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';

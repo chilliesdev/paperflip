@@ -1,13 +1,7 @@
-import { writable, type Writable } from "svelte/store";
+import { AudioStore } from "@paperflip/core";
 
-export const isMuted = writable<boolean>(false);
-export const isDictationMode = writable<boolean>(false);
-export const playbackRate = writable<number>(1.0);
-export const autoScroll = writable<boolean>(false);
-
-export const audioStores: Record<string, Writable<boolean | number>> = {
-  isMuted,
-  isDictationMode,
-  playbackRate,
-  autoScroll,
-};
+export const isMuted = AudioStore.isMuted;
+export const isDictationMode = AudioStore.isDictationMode;
+export const playbackRate = AudioStore.playbackRate;
+export const autoScroll = AudioStore.autoScroll;
+export const audioStores = AudioStore.audioStores;

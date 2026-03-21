@@ -1,19 +1,8 @@
-import { writable, type Writable } from "svelte/store";
-import { videoSources } from "@paperflip/core/constants";
+import { SettingsStore } from "@paperflip/core";
 
-export const videoLength = writable<number>(15);
-export const backgroundUrl = writable<string>(videoSources[0].url);
-export const autoResume = writable<boolean>(true);
-export const darkMode = writable<boolean>(true);
-export const textScale = writable<number>(110);
-
-export const settingsStores: Record<
-  string,
-  Writable<string | number | boolean>
-> = {
-  videoLength,
-  backgroundUrl,
-  autoResume,
-  darkMode,
-  textScale,
-};
+export const videoLength = SettingsStore.videoLength;
+export const backgroundUrl = SettingsStore.backgroundUrl;
+export const autoResume = SettingsStore.autoResume;
+export const darkMode = SettingsStore.darkMode;
+export const textScale = SettingsStore.textScale;
+export const settingsStores = SettingsStore.settingsStores;

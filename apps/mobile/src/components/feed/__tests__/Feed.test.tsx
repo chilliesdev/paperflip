@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Feed } from '../Feed';
 import * as Speech from 'expo-speech';
@@ -36,7 +35,9 @@ jest.mock('expo-speech', () => ({
 
 // Mock react-native-pager-view
 jest.mock('react-native-pager-view', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return class MockPagerView extends React.Component {
     render() {
@@ -48,6 +49,7 @@ jest.mock('react-native-pager-view', () => {
 // Mock expo-av and FeedSlide
 jest.mock('../FeedSlide', () => ({
   FeedSlide: ({ segment }: { segment: string }) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text } = require('react-native');
     return <Text>{segment}</Text>;
   }
