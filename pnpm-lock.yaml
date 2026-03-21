@@ -69,6 +69,9 @@ importers:
       expo-linking:
         specifier: ^55.0.8
         version: 55.0.8(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      expo-pdf-text-extract:
+        specifier: ^1.0.1
+        version: 1.0.1(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       expo-router:
         specifier: ^55.0.7
         version: 55.0.7(ct2cavjkhaxs5667ilihnj6viy)
@@ -87,9 +90,6 @@ importers:
       nativewind:
         specifier: ^4.2.3
         version: 4.2.3(react-native-reanimated@4.2.2(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native-safe-area-context@5.7.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(tailwindcss@3.3.2)
-      pdfjs-dist:
-        specifier: ^5.4.624
-        version: 5.5.207
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -4044,6 +4044,14 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
+
+  expo-pdf-text-extract@1.0.1:
+    resolution: {integrity: sha512-5ytTRDZIL+exa9eqKw+kbntqknxFpN+WqH88le84RnEXJBGH7WbY1ubNnyuARrM2KCxLty2tJZ2UyLrQjLb5vA==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      expo: '>=49.0.0'
+      react: '>=18.0.0'
+      react-native: '>=0.72.0'
 
   expo-router@55.0.7:
     resolution: {integrity: sha512-UdraTi8/1LGCCEnq/3+wEVnM11b4ezFEIvMsWP9ajFvEhFGkcXlQitvSehT2yI5cbBrBaIMP2p/2naBiPyYVyw==}
@@ -11630,6 +11638,12 @@ snapshots:
   expo-modules-core@55.0.17(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
     dependencies:
       invariant: 2.2.4
+      react: 19.2.0
+      react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
+
+  expo-pdf-text-extract@1.0.1(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
+    dependencies:
+      expo: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.7)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       react: 19.2.0
       react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
 

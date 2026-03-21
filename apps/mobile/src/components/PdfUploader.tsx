@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure pdfjs worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+import { extractText } from 'expo-pdf-text-extract';
 
 interface PdfUploaderProps {
   onPdfParsed: (data: { text: string; filename: string }) => void;
@@ -32,41 +28,14 @@ export function PdfUploader({ onPdfParsed, onPdfError }: PdfUploaderProps) {
 
       const file = result.assets[0];
 
-      // Read the file as Base64 using expo-file-system
-      const fileUri = file.uri;
-      const base64Data = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Native PDF text extraction (100% on-device)
+      const text = await extractText(file.uri);
 
-      // Convert Base64 to binary array (Uint8Array)
-      const binaryString = atob(base64Data);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (!text || text.trim().length === 0) {
+        throw new Error('No readable text found in this PDF.');
       }
 
-      // Load PDF
-      const loadingTask = pdfjsLib.getDocument({ data: bytes });
-      const pdf = await loadingTask.promise;
-
-      // Parse PDF
-      const pagePromises: Promise<string>[] = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        pagePromises.push(
-          pdf.getPage(i).then(async (page) => {
-            const text = await page.getTextContent();
-            return text.items
-              .map((item) => ('str' in item ? item.str : ''))
-              .join(' ');
-          })
-        );
-      }
-
-      const pageTexts = await Promise.all(pagePromises);
-      const textContent = pageTexts.join(' ');
-
-      onPdfParsed({ text: textContent, filename: file.name });
+      onPdfParsed({ text, filename: file.name });
       setDebugStatus('Done');
     } catch (error: unknown) {
       console.error('Error parsing PDF:', error);

@@ -2,11 +2,8 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 import App from '../index';
 
-jest.mock('pdfjs-dist', () => ({
-  GlobalWorkerOptions: {
-    workerSrc: '',
-  },
-  getDocument: jest.fn(),
+jest.mock('expo-pdf-text-extract', () => ({
+  extractText: jest.fn(),
 }));
 
 jest.mock('expo-router', () => ({
@@ -18,6 +15,6 @@ jest.mock('expo-router', () => ({
 describe('App', () => {
   it('renders correctly', async () => {
     const { getByText } = render(<App />);
-    await waitFor(() => expect(getByText('Transform PDFs into immersive stories')).toBeTruthy());
+    await waitFor(() => expect(getByText(/Transform PDFs into immersive stories/i)).toBeTruthy());
   });
 });
