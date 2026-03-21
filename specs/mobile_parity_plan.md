@@ -46,8 +46,23 @@ The objective is to achieve **feature and visual parity** between the mobile app
 
 ### Phase 5: Polish & Parity Check
 
-1. **Settings:** Port `settings/+page.svelte` to `app/settings/index.tsx`.
-2. **Shared Stores:** Evaluate if some web stores (`audio.ts`, `settings.ts`) can be moved to `@paperflip/core` to minimize duplicate logic.
+1.  **Implement Settings Screen:**
+    - Port `settings/+page.svelte` to `app/settings.tsx`.
+    - Create mobile versions of `VideoLengthDial`, `BackgroundSelector`, `ToggleTile`, and `TextScaleSlider` using React Native primitives.
+    - Link settings to a persistent store (e.g., `react-native-mmkv` or RxDB `settings` collection).
+2.  **Document Options (OptionsSheet):**
+    - Implement a mobile-native bottom sheet (using `gorhom/bottom-sheet` or a custom `Modal`) to replace the console logs in `LibraryScreen`.
+    - Port the logic for "Set as Favourite" and "Delete Document" from the web's `OptionsSheet.svelte`.
+3.  **Reading Controls (ReadingOptionsSheet):**
+    - Implement the `ReadingOptionsSheet` for the `Feed` screen.
+    - Add playback speed controls (0.5x to 2.0x) and a toggle for "Auto Scroll" (or equivalent mobile behavior).
+4.  **UI Refinement & Navigation:**
+    - Resolve the redundant `BottomNavigation` calls (centralize in `_layout.tsx` and fix layout overlaps in `LibraryScreen`).
+    - Ensure consistent safe area handling across all devices (iOS notches/dynamic islands).
+5.  **Visual Parity (PDF Thumbnails):**
+    - Investigate on-device thumbnail generation for PDFs to match the web's visual Library experience, replacing the generic book icon.
+6.  **Shared Logic Optimization:**
+    - Evaluate if web stores like `audio.ts` and `settings.ts` can be moved to `@paperflip/core` or if a shared state management pattern can be established to minimize duplicate logic between Svelte and React.
 
 ## 4. Anticipated Challenges
 
