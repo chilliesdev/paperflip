@@ -6,7 +6,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { splitSentences } from '@paperflip/core';
 import { videoSources } from '@paperflip/core';
-import { updateDocumentProgress, DEFAULT_SETTINGS } from '@paperflip/core';
+import { updateDocumentProgress, DEFAULT_SETTINGS, getSettings, updateSettings } from '@paperflip/core';
 import { FeedSlide } from './FeedSlide';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ReadingOptionsSheet } from '../ReadingOptionsSheet';
@@ -43,6 +43,26 @@ export function Feed({
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [autoScroll, setAutoScroll] = useState(false);
+  const [karaokeMode, setKaraokeMode] = useState(true);
+
+  useEffect(() => {
+    getSettings().then(s => {
+      if (s.playbackSpeed) setPlaybackRate(s.playbackSpeed);
+      if (s.autoScroll !== undefined) setAutoScroll(s.autoScroll);
+      if (s.karaokeMode !== undefined) setKaraokeMode(s.karaokeMode);
+    }).catch(console.error);
+  }, []);
+
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate);
+    updateSettings({ playbackSpeed: rate });
+  };
+
+  const handleAutoScrollToggle = () => {
+    const newValue = !autoScroll;
+    setAutoScroll(newValue);
+    updateSettings({ autoScroll: newValue });
+  };
 
   // Ref for mutable state that doesn't need to trigger re-renders but is accessed in callbacks
   const stateRef = useRef({
@@ -205,7 +225,7 @@ export function Feed({
     if (!currentSegment) return;
 
     // Use current state settings
-    const modeDictation = isDictationMode || !DEFAULT_SETTINGS.karaokeMode;
+    const modeDictation = isDictationMode || !karaokeMode;
 
     if (modeDictation) {
       await speakDictation(currentSegment, startIndex);
@@ -378,9 +398,9 @@ export function Feed({
         visible={optionsVisible}
         onClose={() => setOptionsVisible(false)}
         playbackRate={playbackRate}
-        onPlaybackRateChange={setPlaybackRate}
+        onPlaybackRateChange={handlePlaybackRateChange}
         autoScroll={autoScroll}
-        onAutoScrollToggle={() => setAutoScroll(!autoScroll)}
+        onAutoScrollToggle={handleAutoScrollToggle}
       />
     </View>
   );

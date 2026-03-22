@@ -5,7 +5,7 @@ import { VideoLengthDial } from '../src/components/settings/VideoLengthDial';
 import { BackgroundSelector } from '../src/components/settings/BackgroundSelector';
 import { ToggleTile } from '../src/components/settings/ToggleTile';
 import { TextScaleSlider } from '../src/components/settings/TextScaleSlider';
-import { getSettings, updateSettings, videoSources } from '@paperflip/core';
+import { getSettings, updateSettings, videoSources, getAllDocuments, resegmentDocument } from '@paperflip/core';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState({
@@ -21,9 +21,21 @@ export default function SettingsScreen() {
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateSetting = (key: string, value: any) => {
+  const updateSetting = async (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
-    updateSettings({ [key]: value });
+    await updateSettings({ [key]: value });
+
+    if (key === 'videoLength') {
+      try {
+        const docs = await getAllDocuments();
+        // Resegment top 5 recent documents automatically
+        for (const doc of docs.slice(0, 5)) {
+          await resegmentDocument(doc.documentId, value);
+        }
+      } catch (e) {
+        console.error('Failed to resegment documents:', e);
+      }
+    }
   };
 
   return (

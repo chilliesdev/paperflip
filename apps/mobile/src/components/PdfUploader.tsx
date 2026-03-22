@@ -3,9 +3,10 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { extractText } from 'expo-pdf-text-extract';
+import PdfThumbnail from 'react-native-pdf-thumbnail';
 
 interface PdfUploaderProps {
-  onPdfParsed: (data: { text: string; filename: string }) => void;
+  onPdfParsed: (data: { text: string; filename: string; thumbnailUri?: string }) => void;
   onPdfError: (error: { error: string }) => void;
 }
 
@@ -35,7 +36,15 @@ export function PdfUploader({ onPdfParsed, onPdfError }: PdfUploaderProps) {
         throw new Error('No readable text found in this PDF.');
       }
 
-      onPdfParsed({ text, filename: file.name });
+      let thumbnailUri: string | undefined;
+      try {
+        const thumb = await PdfThumbnail.generate(file.uri, 0);
+        thumbnailUri = thumb.uri;
+      } catch (e) {
+        console.warn('Failed to generate thumbnail:', e);
+      }
+
+      onPdfParsed({ text, filename: file.name, thumbnailUri });
       setDebugStatus('Done');
     } catch (error: unknown) {
       console.error('Error parsing PDF:', error);

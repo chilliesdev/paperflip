@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useMemo } from 'react';
@@ -43,9 +43,12 @@ export function DocumentGridItem({ document, onShowOptions }: DocumentProps) {
       <Link href={`/feed?id=${encodeURIComponent(document.documentId)}`} asChild>
         <Pressable className="flex-col h-full w-full">
           <View className="h-24 bg-brand-surface-dark relative items-center justify-center overflow-hidden">
-            {/* Pseudo-gradient background since NativeWind gradient might be complex, just use dark surface */}
-            <MaterialIcons name={iconName} size={40} className={`${colorObj.text} opacity-40`} color="white" />
-            <View className="absolute inset-0 bg-black/20 opacity-0" /> {/* Hover effect placeholder */}
+            {document.thumbnailUri ? (
+              <Image source={{ uri: document.thumbnailUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            ) : (
+              <MaterialIcons name={iconName} size={40} className={`${colorObj.text} opacity-40`} color="white" />
+            )}
+            <View className="absolute inset-0 bg-black/20 opacity-0" />
           </View>
 
           <View className="p-2 flex-grow flex-col justify-between">

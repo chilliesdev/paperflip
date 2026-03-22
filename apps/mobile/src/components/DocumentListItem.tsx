@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useMemo } from 'react';
@@ -45,7 +45,11 @@ export function DocumentListItem({ document, onShowOptions }: DocumentProps) {
       <Link href={`/feed?id=${encodeURIComponent(document.documentId)}`} asChild>
         <Pressable className="flex-row flex-grow w-full">
           <View className="w-24 bg-brand-surface-dark relative flex-shrink-0 items-center justify-center">
-            <MaterialIcons name={iconName} size={30} className={`${textColor} opacity-40`} color="white" />
+            {document.thumbnailUri ? (
+              <Image source={{ uri: document.thumbnailUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            ) : (
+              <MaterialIcons name={iconName} size={30} className={`${textColor} opacity-40`} color="white" />
+            )}
           </View>
 
           <View className="p-3 flex-grow flex-col justify-center max-w-[65%]">

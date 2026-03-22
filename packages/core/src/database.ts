@@ -30,13 +30,14 @@ if (!_global.__rxdb_plugins_added) {
 
 export const documentSchema = {
   // ... rest of schema ...
-  version: 8,
+  version: 9,
   primaryKey: "documentId",
   type: "object",
   properties: {
     documentId: { type: "string", maxLength: 100 },
     segments: { type: "array", items: { type: "string" } },
     fullText: { type: "string" },
+    thumbnailUri: { type: "string" },
     videoLengthAtSegmentation: { type: "number" },
     currentSegmentIndex: { type: "number" },
     currentSegmentProgress: { type: "number" },
@@ -66,7 +67,7 @@ export const documentSchema = {
 } as const;
 
 export const settingsSchema: any = {
-  version: 0,
+  version: 1,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -77,6 +78,9 @@ export const settingsSchema: any = {
     videoLength: { type: "number" },
     isMuted: { type: "boolean" },
     autoResume: { type: "boolean" },
+    darkMode: { type: "boolean" },
+    textScale: { type: "number" },
+    backgroundUrl: { type: "string" },
   },
   required: [
     "id",
@@ -97,6 +101,9 @@ export const DEFAULT_SETTINGS = {
   videoLength: 15,
   isMuted: false,
   autoResume: true,
+  darkMode: true,
+  textScale: 100,
+  backgroundUrl: "",
 };
 
 let dbPromise: Promise<any> | null = null;
@@ -230,10 +237,23 @@ async function _createDb() {
                 : 0;
             return oldDoc;
           },
+          9: (oldDoc: any) => {
+            oldDoc.thumbnailUri = oldDoc.thumbnailUri || "";
+            return oldDoc;
+          },
         },
       },
       settings: {
         schema: settingsSchema,
+        migrationStrategies: {
+          1: (oldDoc: any) => {
+            oldDoc.darkMode =
+              oldDoc.darkMode !== undefined ? oldDoc.darkMode : true;
+            oldDoc.textScale = oldDoc.textScale || 100;
+            oldDoc.backgroundUrl = oldDoc.backgroundUrl || "";
+            return oldDoc;
+          },
+        },
       },
     });
 
@@ -255,6 +275,7 @@ export async function addDocument(
   fullText: string = "",
   videoLengthAtSegmentation: number = 15,
   currentSegmentIndex: number = 0,
+  thumbnailUri: string = "",
 ) {
   try {
     const db = await getDb();
@@ -264,6 +285,7 @@ export async function addDocument(
       documentId,
       segments,
       fullText,
+      thumbnailUri,
       videoLengthAtSegmentation,
       currentSegmentIndex,
       currentSegmentProgress: 0,
@@ -286,6 +308,7 @@ export async function upsertDocument(
   fullText: string = "",
   videoLengthAtSegmentation: number = 15,
   currentSegmentIndex: number = 0,
+  thumbnailUri: string = "",
 ) {
   try {
     const db = await getDb();
@@ -295,6 +318,7 @@ export async function upsertDocument(
       documentId,
       segments,
       fullText,
+      thumbnailUri,
       videoLengthAtSegmentation,
       currentSegmentIndex,
       currentSegmentProgress: 0,
