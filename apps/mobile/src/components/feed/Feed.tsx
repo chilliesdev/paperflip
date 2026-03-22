@@ -6,9 +6,10 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { splitSentences } from '@paperflip/core';
 import { videoSources } from '@paperflip/core';
-import { updateDocumentProgress, DEFAULT_SETTINGS } from '@paperflip/core';
+import { updateDocumentProgress, DEFAULT_SETTINGS, getSettings, updateSettings } from '@paperflip/core';
 import { FeedSlide } from './FeedSlide';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ReadingOptionsSheet } from '../ReadingOptionsSheet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +39,30 @@ export function Feed({
   const [backgroundUrlIndex, setBackgroundUrlIndex] = useState(0);
 
   const [isDictationMode, setIsDictationMode] = useState(false);
+
+  const [optionsVisible, setOptionsVisible] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [autoScroll, setAutoScroll] = useState(false);
+  const [karaokeMode, setKaraokeMode] = useState(true);
+
+  useEffect(() => {
+    getSettings().then(s => {
+      if (s.playbackSpeed) setPlaybackRate(s.playbackSpeed);
+      if (s.autoScroll !== undefined) setAutoScroll(s.autoScroll);
+      if (s.karaokeMode !== undefined) setKaraokeMode(s.karaokeMode);
+    }).catch(console.error);
+  }, []);
+
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate);
+    updateSettings({ playbackSpeed: rate });
+  };
+
+  const handleAutoScrollToggle = () => {
+    const newValue = !autoScroll;
+    setAutoScroll(newValue);
+    updateSettings({ autoScroll: newValue });
+  };
 
   // Ref for mutable state that doesn't need to trigger re-renders but is accessed in callbacks
   const stateRef = useRef({
@@ -75,6 +100,7 @@ export function Feed({
     setIsPlaying(true);
 
     const voiceOptions: Speech.SpeechOptions = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onBoundary: (event: any) => {
         if (!event || event.charIndex === undefined) return; // Sometimes undefined depending on platform
         stateRef.current.boundaryFired = true;
@@ -100,7 +126,8 @@ export function Feed({
       onError: () => {
         setIsPlaying(false);
         stateRef.current.isPlaying = false;
-      }
+      },
+      rate: playbackRate
     };
 
     // React Native Expo Speech boundary events are notoriously unreliable across Android/iOS.
@@ -161,7 +188,8 @@ export function Feed({
         onError: () => {
           setIsPlaying(false);
           stateRef.current.isPlaying = false;
-        }
+        },
+        rate: playbackRate
       });
     };
 
@@ -197,7 +225,7 @@ export function Feed({
     if (!currentSegment) return;
 
     // Use current state settings
-    const modeDictation = isDictationMode || !DEFAULT_SETTINGS.karaokeMode;
+    const modeDictation = isDictationMode || !karaokeMode;
 
     if (modeDictation) {
       await speakDictation(currentSegment, startIndex);
@@ -296,6 +324,7 @@ export function Feed({
           </View>
 
           <Pressable
+            onPress={() => setOptionsVisible(true)}
             className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15 pointer-events-auto"
           >
             <Feather name="more-horizontal" size={24} color="white" />
@@ -364,6 +393,15 @@ export function Feed({
           </View>
         )}
       </View>
+
+      <ReadingOptionsSheet
+        visible={optionsVisible}
+        onClose={() => setOptionsVisible(false)}
+        playbackRate={playbackRate}
+        onPlaybackRateChange={handlePlaybackRateChange}
+        autoScroll={autoScroll}
+        onAutoScrollToggle={handleAutoScrollToggle}
+      />
     </View>
   );
 }

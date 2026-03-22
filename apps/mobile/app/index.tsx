@@ -13,8 +13,17 @@ if (Platform.OS === 'web') {
   }
 }
 
+// Ignore react-native-pager-view and native-only errors on web if needed
+if (Platform.OS === 'web') {
+  const origError = console.error;
+  console.error = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('Unable to resolve')) return;
+    origError(...args);
+  };
+}
+
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useEffect, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
@@ -108,7 +117,7 @@ export default function App() {
       });
   }, []);
 
-  const handlePdfParsed = async ({ text, filename }: { text: string; filename: string }) => {
+  const handlePdfParsed = async ({ text, filename, thumbnailUri }: { text: string; filename: string; thumbnailUri?: string }) => {
     setIsProcessing(true);
     setErrorMessage(null);
 
@@ -130,7 +139,9 @@ export default function App() {
         filename,
         newSegmentedData,
         text,
-        currentVideoLength
+        currentVideoLength,
+        0,
+        thumbnailUri
       );
       console.log('Document stored in RxDB:', filename);
 
@@ -235,7 +246,11 @@ export default function App() {
                       >
                         <View className="w-12 h-14 bg-brand-surface-dark rounded items-center justify-center overflow-hidden relative shrink-0 mr-3">
                           <View className="w-full h-full bg-brand-surface opacity-50 absolute" />
-                          <MaterialIcons name="menu-book" size={20} color="#00FF88" />
+                          {doc.thumbnailUri ? (
+                            <Image source={{ uri: doc.thumbnailUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                          ) : (
+                            <MaterialIcons name="menu-book" size={20} color="#00FF88" />
+                          )}
                         </View>
 
                         <View className="flex-1 min-w-0">

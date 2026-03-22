@@ -1,7 +1,7 @@
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getDb, getDocument, resegmentDocument } from '@paperflip/core';
+import { getDb, getDocument, resegmentDocument, getSettings } from '@paperflip/core';
 import { Feed } from '../src/components/feed/Feed';
 import { DEFAULT_SETTINGS } from '@paperflip/core';
 
@@ -9,8 +9,8 @@ export default function FeedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [doc, setDoc] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isResegmenting, setIsResegmenting] = useState(false);
@@ -22,30 +22,35 @@ export default function FeedScreen() {
       return;
     }
 
-    const loadDoc = async () => {
+    const loadDocAndSettings = async () => {
       try {
         await getDb(); // Ensure DB is initialized
 
-        const loadedDoc = await getDocument(id);
+        const [loadedDoc, loadedSettings] = await Promise.all([
+          getDocument(id),
+          getSettings()
+        ]);
+
         if (loadedDoc) {
           setDoc(loadedDoc);
         } else {
           setError('Document not found');
         }
+        setSettings(loadedSettings);
       } catch (err) {
-        console.error('Error loading document:', err);
+        console.error('Error loading document/settings:', err);
         setError('Failed to load document');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadDoc();
+    loadDocAndSettings();
   }, [id]);
 
   useEffect(() => {
-    if (doc && doc.fullText && !isResegmenting) {
-      const currentVideoLength = DEFAULT_SETTINGS.videoLength; // Should get from settings store in reality
+    if (doc && doc.fullText && settings && !isResegmenting) {
+      const currentVideoLength = settings.videoLength;
       if (doc.videoLengthAtSegmentation !== currentVideoLength) {
         console.log(`Re-segmenting document from ${doc.videoLengthAtSegmentation}s to ${currentVideoLength}s`);
         setIsResegmenting(true);
@@ -62,7 +67,7 @@ export default function FeedScreen() {
           });
       }
     }
-  }, [doc, id, isResegmenting]);
+  }, [doc, id, isResegmenting, settings]);
 
   if (isLoading) {
     return (
@@ -84,14 +89,14 @@ export default function FeedScreen() {
     );
   }
 
-  if (doc?.segments && doc.segments.length > 0) {
+  if (doc?.segments && doc.segments.length > 0 && settings) {
     return (
       <View className="flex-1 bg-black">
         <Feed
           key={doc.videoLengthAtSegmentation} // Force remount on resegmentation
           segments={doc.segments}
-          initialIndex={DEFAULT_SETTINGS.autoResume ? (doc.currentSegmentIndex || 0) : 0}
-          initialProgress={DEFAULT_SETTINGS.autoResume ? (doc.currentSegmentProgress || 0) : 0}
+          initialIndex={settings.autoResume ? (doc.currentSegmentIndex || 0) : 0}
+          initialProgress={settings.autoResume ? (doc.currentSegmentProgress || 0) : 0}
           documentId={id!}
         />
 
@@ -102,7 +107,7 @@ export default function FeedScreen() {
               Resegmenting...
             </Text>
             <Text className="text-white/60 text-sm mt-2">
-              Adjusting for {DEFAULT_SETTINGS.videoLength}s video length
+              Adjusting for {settings.videoLength}s video length
             </Text>
           </View>
         )}

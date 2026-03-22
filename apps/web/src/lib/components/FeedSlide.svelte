@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
   import { videoAssetUrls } from "$lib/stores/assets";
   import { isMuted } from "$lib/stores/audio";
-  import { splitSentences } from "@paperflip/core/segmenter";
+  import { splitSentences } from "@paperflip/core";
 
   let {
     segment = "",
