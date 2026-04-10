@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@paperflip/web",
+    "dev:mobile": "turbo run dev --filter=@paperflip/mobile",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
