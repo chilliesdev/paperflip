@@ -7,7 +7,7 @@ vi.mock("$lib/database-init", () => ({
   getSettingsObservable: vi.fn(),
   updateSettings: vi.fn(),
   DEFAULT_SETTINGS: {
-    videoLength: 15,
+    videoLength: 60,
     darkMode: true,
   },
 }));
@@ -29,7 +29,7 @@ describe("syncStoresWithDb", () => {
   });
 
   it("should hydrate stores from DB and not immediately overwrite DB with defaults", async () => {
-    const videoLengthStore = writable(15);
+    const videoLengthStore = writable(60);
     const darkModeStore = writable(true);
 
     // Simulate DB having different values
@@ -68,7 +68,7 @@ describe("syncStoresWithDb", () => {
   });
 
   it("should handle multi-tab sync (subsequent DB updates)", async () => {
-    const videoLengthStore = writable(15);
+    const videoLengthStore = writable(60);
     const syncPromise = syncStoresWithDb({ videoLength: videoLengthStore });
 
     // Wait a tick for subscription

@@ -99,7 +99,7 @@ describe("resegmentDocument", () => {
       },
       settings: {
         findOne: vi.fn(() => ({
-          exec: vi.fn().mockResolvedValue({ id: "global", videoLength: 15 }),
+          exec: vi.fn().mockResolvedValue({ id: "global", videoLength: 60 }),
         })),
         insert: vi.fn(),
       },

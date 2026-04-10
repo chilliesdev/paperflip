@@ -1,21 +1,26 @@
 <script lang="ts">
-  let { value = $bindable(15) } = $props();
+  let { value = $bindable(60) } = $props();
 
-  const options = [15, 30, 60, 90];
+  const options = [60, 90, 180, 300];
 
   function getRotation(val: number) {
     switch (val) {
-      case 15:
-        return -135;
-      case 30:
-        return -45;
       case 60:
-        return 45;
+        return -135;
       case 90:
+        return -45;
+      case 180:
+        return 45;
+      case 300:
         return 135;
       default:
         return -135;
     }
+  }
+
+  function getLabel(opt: number) {
+    if (opt < 120) return opt + "s";
+    return opt / 60 + "m";
   }
 
   let rotation = $derived(getRotation(value));
@@ -53,10 +58,7 @@
         class="absolute inset-4 bg-brand-surface rounded-full flex flex-col items-center justify-center z-10 border border-white/5"
       >
         <span class="text-4xl font-black text-brand-secondary tracking-tighter">
-          {value}<span
-            class="text-lg align-top text-brand-text-muted font-normal ml-1"
-            >s</span
-          >
+          {getLabel(value)}
         </span>
         <span
           class="text-[10px] text-brand-text-muted uppercase tracking-widest mt-1"
@@ -93,7 +95,7 @@
             : 'hover:text-white'}"
           onclick={() => selectValue(opt)}
         >
-          {opt}s
+          {getLabel(opt)}
         </button>
       {/each}
     </div>

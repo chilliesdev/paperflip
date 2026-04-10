@@ -98,6 +98,8 @@ import {
   resetDb,
   toggleFavourite,
   deleteDocument,
+  getRecentUploads,
+  getAllDocuments,
 } from "../database.js";
 import { setDbStorage } from "../database.js";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
@@ -283,14 +285,15 @@ describe("database.ts", () => {
       const segments = ["Segment 1", "Segment 2", "Segment 3"];
       const currentSegmentIndex = 1;
 
-      await addDocument(documentId, segments, "", 15, currentSegmentIndex);
+      await addDocument(documentId, segments, "", 60, currentSegmentIndex);
 
       expect(mockInsert).toHaveBeenCalledTimes(1);
       expect(mockInsert).toHaveBeenCalledWith({
         documentId,
         segments,
         fullText: "",
-        videoLengthAtSegmentation: 15,
+        thumbnailUri: "",
+        videoLengthAtSegmentation: 60,
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
@@ -312,14 +315,15 @@ describe("database.ts", () => {
       const segments = ["Segment 1", "Segment 2"];
       const currentSegmentIndex = 1;
 
-      await upsertDocument(documentId, segments, "", 15, currentSegmentIndex);
+      await upsertDocument(documentId, segments, "", 60, currentSegmentIndex);
 
       expect(mockUpsert).toHaveBeenCalledTimes(1);
       expect(mockUpsert).toHaveBeenCalledWith({
         documentId,
         segments,
         fullText: "",
-        videoLengthAtSegmentation: 15,
+        thumbnailUri: "",
+        videoLengthAtSegmentation: 60,
         currentSegmentIndex,
         currentSegmentProgress: 0,
         createdAt: expect.any(Number),
@@ -400,6 +404,110 @@ describe("database.ts", () => {
         currentSegmentLength: 0,
         lastViewedAt: expect.any(Number),
       });
+    });
+  });
+
+  describe("getRecentUploads", () => {
+    beforeEach(() => {
+      (globalThis as any).__mockDb = mockDb;
+    });
+
+    it("returns recent uploads with segments excluded", async () => {
+      const mockDoc = {
+        documentId: "doc-1",
+        segments: ["seg1"],
+        toJSON: function () {
+          return { ...this };
+        },
+      };
+
+      mockDb.documents.find.mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            exec: vi.fn().mockResolvedValue([mockDoc]),
+          }),
+        }),
+      });
+
+      const result = await getRecentUploads(5);
+      expect(result).toHaveLength(1);
+      expect(result[0].documentId).toBe("doc-1");
+      expect(result[0].segments).toBeUndefined();
+    });
+
+    it("should not throw when RxDB returns a frozen object", async () => {
+      const frozenDoc = {
+        documentId: "frozen-doc",
+        segments: ["seg1"],
+        toJSON: function () {
+          return Object.freeze({
+            documentId: "frozen-doc",
+            segments: ["seg1"],
+          });
+        },
+      };
+
+      mockDb.documents.find.mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            exec: vi.fn().mockResolvedValue([frozenDoc]),
+          }),
+        }),
+      });
+
+      const result = await getRecentUploads(5);
+      expect(result[0].documentId).toBe("frozen-doc");
+      expect(result[0].segments).toBeUndefined();
+    });
+  });
+
+  describe("getAllDocuments", () => {
+    beforeEach(() => {
+      (globalThis as any).__mockDb = mockDb;
+    });
+
+    it("returns all documents with segments excluded", async () => {
+      const mockDoc = {
+        documentId: "doc-all",
+        segments: ["seg1"],
+        toJSON: function () {
+          return { ...this };
+        },
+      };
+
+      mockDb.documents.find.mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          exec: vi.fn().mockResolvedValue([mockDoc]),
+        }),
+      });
+
+      const result = await getAllDocuments();
+      expect(result).toHaveLength(1);
+      expect(result[0].documentId).toBe("doc-all");
+      expect(result[0].segments).toBeUndefined();
+    });
+
+    it("should not throw when RxDB returns a frozen object", async () => {
+      const frozenDoc = {
+        documentId: "frozen-all",
+        segments: ["seg1"],
+        toJSON: function () {
+          return Object.freeze({
+            documentId: "frozen-all",
+            segments: ["seg1"],
+          });
+        },
+      };
+
+      mockDb.documents.find.mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          exec: vi.fn().mockResolvedValue([frozenDoc]),
+        }),
+      });
+
+      const result = await getAllDocuments();
+      expect(result[0].documentId).toBe("frozen-all");
+      expect(result[0].segments).toBeUndefined();
     });
   });
 });

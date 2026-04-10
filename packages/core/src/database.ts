@@ -98,7 +98,7 @@ export const DEFAULT_SETTINGS = {
   playbackSpeed: 1,
   autoScroll: true,
   karaokeMode: true,
-  videoLength: 15,
+  videoLength: 60,
   isMuted: false,
   autoResume: true,
   darkMode: true,
@@ -224,7 +224,7 @@ async function _createDb() {
           7: (oldDoc: any) => {
             oldDoc.fullText = oldDoc.fullText || oldDoc.segments.join("\n\n");
             oldDoc.videoLengthAtSegmentation =
-              oldDoc.videoLengthAtSegmentation || 15;
+              oldDoc.videoLengthAtSegmentation || 60;
             return oldDoc;
           },
           8: (oldDoc: any) => {
@@ -273,7 +273,7 @@ export async function addDocument(
   documentId: string,
   segments: string[],
   fullText: string = "",
-  videoLengthAtSegmentation: number = 15,
+  videoLengthAtSegmentation: number = 60,
   currentSegmentIndex: number = 0,
   thumbnailUri: string = "",
 ) {
@@ -306,7 +306,7 @@ export async function upsertDocument(
   documentId: string,
   segments: string[],
   fullText: string = "",
-  videoLengthAtSegmentation: number = 15,
+  videoLengthAtSegmentation: number = 60,
   currentSegmentIndex: number = 0,
   thumbnailUri: string = "",
 ) {
@@ -343,8 +343,7 @@ export async function getRecentUploads(limit: number = 10) {
     .limit(limit)
     .exec();
   return docs.map((doc: any) => {
-    const json = doc.toJSON();
-    delete json.segments;
+    const { segments, ...json } = doc.toJSON();
     return json;
   });
 }
@@ -419,8 +418,7 @@ export async function getAllDocuments() {
   const db = await getDb();
   const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).exec();
   return docs.map((doc: any) => {
-    const json = doc.toJSON();
-    delete json.segments;
+    const { segments, ...json } = doc.toJSON();
     return json;
   });
 }

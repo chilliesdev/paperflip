@@ -9,7 +9,7 @@ import { getSettings, updateSettings, videoSources, getAllDocuments, resegmentDo
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState({
-    videoLength: 15,
+    videoLength: 60,
     autoResume: true,
     darkMode: true,
     textScale: 110,

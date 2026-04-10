@@ -8,17 +8,22 @@ type VideoLengthDialProps = {
 };
 
 export function VideoLengthDial({ value, onChange }: VideoLengthDialProps) {
-  const options = [15, 30, 60, 90];
+  const options = [60, 90, 180, 300];
 
   const rotation = useMemo(() => {
     switch (value) {
-      case 15: return '-135deg';
-      case 30: return '-45deg';
-      case 60: return '45deg';
-      case 90: return '135deg';
+      case 60: return '-135deg';
+      case 90: return '-45deg';
+      case 180: return '45deg';
+      case 300: return '135deg';
       default: return '-135deg';
     }
   }, [value]);
+
+  const getLabel = (opt: number) => {
+    if (opt < 120) return opt + 's';
+    return (opt / 60) + 'm';
+  };
 
   return (
     <View className="bg-brand-surface-dark/40 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
@@ -48,7 +53,7 @@ export function VideoLengthDial({ value, onChange }: VideoLengthDialProps) {
           {/* Inner Circle */}
           <View className="absolute inset-4 bg-brand-surface rounded-full items-center justify-center z-10 border border-white/5">
             <Text className="text-4xl font-black text-brand-secondary tracking-tighter">
-              {value}<Text className="text-lg text-brand-text-muted font-normal ml-1">s</Text>
+              {getLabel(value)}
             </Text>
             <Text className="text-[10px] text-brand-text-muted uppercase tracking-widest mt-1">Duration</Text>
           </View>
@@ -65,7 +70,7 @@ export function VideoLengthDial({ value, onChange }: VideoLengthDialProps) {
           {options.map(opt => (
             <Pressable key={opt} onPress={() => onChange(opt)}>
               <Text className={`text-xs font-medium ${value === opt ? 'text-brand-secondary font-bold' : 'text-brand-text-muted'}`}>
-                {opt}s
+                {getLabel(opt)}
               </Text>
             </Pressable>
           ))}

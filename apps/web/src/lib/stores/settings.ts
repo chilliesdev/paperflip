@@ -1,7 +1,7 @@
 import { writable, type Writable } from "svelte/store";
 import { videoSources } from "@paperflip/core";
 
-export const videoLength = writable<number>(15);
+export const videoLength = writable<number>(60);
 export const backgroundUrl = writable<string>(videoSources[0].url);
 export const autoResume = writable<boolean>(true);
 export const darkMode = writable<boolean>(true);
