@@ -18,9 +18,13 @@ vi.mock("$lib/database-init", () => ({
   getRecentUploads: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@paperflip/core/segmenter", () => ({
-  segmentText: vi.fn((_text) => ["Segment 1", "Segment 2"]),
-}));
+vi.mock("@paperflip/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@paperflip/core")>();
+  return {
+    ...actual,
+    segmentText: vi.fn((_text) => ["Segment 1", "Segment 2"]),
+  };
+});
 
 vi.mock("$app/navigation", () => ({
   goto: vi.fn(),

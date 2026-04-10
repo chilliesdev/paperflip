@@ -22,17 +22,21 @@ vi.mock("../../lib/stores/audio", async (importOriginal) => {
 });
 
 // Mock segmenter
-vi.mock("@paperflip/core/segmenter", () => ({
-  splitSentences: vi.fn((text) => {
-    if (text === "Sentence 1. Sentence 2.") {
-      return [
-        { text: "Sentence 1.", start: 0, end: 11 },
-        { text: "Sentence 2.", start: 12, end: 23 },
-      ];
-    }
-    return [{ text, start: 0, end: text.length }];
-  }),
-}));
+vi.mock("@paperflip/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@paperflip/core")>();
+  return {
+    ...actual,
+    splitSentences: vi.fn((text) => {
+      if (text === "Sentence 1. Sentence 2.") {
+        return [
+          { text: "Sentence 1.", start: 0, end: 11 },
+          { text: "Sentence 2.", start: 12, end: 23 },
+        ];
+      }
+      return [{ text, start: 0, end: text.length }];
+    }),
+  };
+});
 
 // Mock audio
 vi.mock("../../lib/audio", () => {

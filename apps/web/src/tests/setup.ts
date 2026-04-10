@@ -8,6 +8,24 @@ expect.extend(matchers);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 setDbStorage({} as any, false);
 
+// Mock constants at top level as required by Vitest
+vi.mock("@paperflip/core/constants", () => ({
+  wordCount: 8,
+  CHARS_PER_SECOND: 16.6,
+  videoSources: [
+    {
+      url: "https://www.w3schools.com/tags/mov_bbb.mp4",
+      previewUrl: "https://example.com/preview1.jpg",
+      name: "Test Video 1",
+    },
+    {
+      url: "https://www.w3schools.com/tags/mov_bbb.mp4#t=5",
+      previewUrl: "https://example.com/preview2.jpg",
+      name: "Test Video 2",
+    },
+  ],
+}));
+
 if (typeof window !== "undefined") {
   // Mock File.prototype.arrayBuffer globally
   Object.defineProperty(File.prototype, "arrayBuffer", {
@@ -30,24 +48,6 @@ if (typeof window !== "undefined") {
     writable: true,
     value: vi.fn(),
   });
-
-  // Mock constants
-  vi.mock("@paperflip/core/constants", () => ({
-    wordCount: 8,
-    CHARS_PER_SECOND: 16.6,
-    videoSources: [
-      {
-        url: "https://www.w3schools.com/tags/mov_bbb.mp4",
-        previewUrl: "https://example.com/preview1.jpg",
-        name: "Test Video 1",
-      },
-      {
-        url: "https://www.w3schools.com/tags/mov_bbb.mp4#t=5",
-        previewUrl: "https://example.com/preview2.jpg",
-        name: "Test Video 2",
-      },
-    ],
-  }));
 
   // Mock Web Animations API
   if (!Element.prototype.animate) {
