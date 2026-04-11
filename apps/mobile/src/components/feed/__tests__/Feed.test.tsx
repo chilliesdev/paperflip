@@ -1,6 +1,7 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Feed } from '../Feed';
 import * as Speech from 'expo-speech';
+import { Dimensions } from 'react-native';
 
 // Mock @paperflip/core
 jest.mock('@paperflip/core', () => ({
@@ -71,8 +72,43 @@ describe('Feed', () => {
     
     // Feed has a setTimeout of 500ms on mount to start speaking
     await waitFor(() => {
-      expect(Speech.speak).toHaveBeenCalled();
+      expect(Speech.speak).toHaveBeenCalledWith('Segment 1', expect.any(Object));
     }, { timeout: 1000 });
+  });
+
+  it('switches segments when scrolled', async () => {
+    const { getByText, getByTestId } = render(
+      <Feed segments={segments} documentId={documentId} />
+    );
+
+    await waitFor(() => expect(Speech.speak).toHaveBeenCalledWith('Segment 1', expect.any(Object)));
+
+    // Mock scrolling to second segment
+    // ScrollView height is 'height' which is mocked by Dimensions.get('window')
+    // Since we can't easily trigger native scroll events that RN would pick up as MomentumScrollEnd
+    // we manually call the handler if we can, or we simulate the event.
+    // In our Feed component, we have handleMomentumScrollEnd.
+    
+    // Most RNTL users simulate the event on the ScrollView
+    const scrollView = getByTestId('tap-to-playback').children[0];
+    
+    // Simulate scroll to index 1 (y = height)
+    // We need to know what 'height' is. It's from Dimensions.get('window').
+    // By default in jest-expo it might be 1334 or something.
+    const { height } = Dimensions.get('window');
+    
+    fireEvent(scrollView, 'momentumScrollEnd', {
+      nativeEvent: {
+        contentOffset: { y: height },
+        layoutMeasurement: { height },
+        contentSize: { height: height * 3 },
+      },
+    });
+
+    await waitFor(() => {
+      expect(getByText('Short 2 / 3')).toBeTruthy();
+      expect(Speech.speak).toHaveBeenCalledWith('Segment 2', expect.any(Object));
+    });
   });
 
   it('stops speaking and goes back when back button pressed', async () => {
