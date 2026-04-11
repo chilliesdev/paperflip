@@ -3,7 +3,14 @@ import { BottomNavigation } from '../src/components/BottomNavigation';
 import { View, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setStorageEngine, type StorageEngine } from '@paperflip/core';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 import '../global.css';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* ignore error */
+});
 
 // Barebones storage engine for Mobile and Web
 const memoryFallback = new Map<string, string>();
@@ -124,6 +131,13 @@ const mobileStorage: StorageEngine = {
 setStorageEngine(mobileStorage);
 
 export default function Layout() {
+  useEffect(() => {
+    // Hide the splash screen once the initial render is done
+    SplashScreen.hideAsync().catch(() => {
+      /* ignore error */
+    });
+  }, []);
+
   return (
     <View className="flex-1 bg-brand-bg">
       <Tabs tabBar={() => <BottomNavigation />} screenOptions={{ headerShown: false }}>
