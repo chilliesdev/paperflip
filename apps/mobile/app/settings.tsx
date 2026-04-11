@@ -47,7 +47,7 @@ export default function SettingsScreen() {
       <View className="absolute bottom-0 left-0 w-64 h-64 bg-brand-secondary/5 rounded-full -ml-32 -mb-32" />
 
       <SafeAreaView style={{flex: 1}} edges={['top']}>
-        <View className="pt-12 pb-6 px-6 z-10 flex-row justify-between items-end">
+        <View className="pt-4 pb-6 px-6 z-10 flex-row justify-between items-end">
           <View>
             <Text className="text-3xl font-extrabold tracking-tight text-white">Settings</Text>
             <Text className="mt-1 text-brand-text-muted font-medium text-sm">

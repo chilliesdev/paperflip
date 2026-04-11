@@ -29,13 +29,13 @@ The mobile application has achieved major architectural milestones and is curren
 - [x] **Document Picker:** `expo-document-picker` implemented.
 - [x] **Processing Pipeline:** `PdfUploader.tsx` uses `expo-pdf-text-extract` and `react-native-pdf-thumbnail`.
 
-### Phase 5: Polish & Parity Check (IN PROGRESS ⏳)
+### Phase 5: Polish & Parity Check (COMPLETED ✅)
 
 - [x] **Implement Settings Screen:** `app/settings.tsx` ported with mobile-native controls (`TextScaleSlider`, `ToggleTile`, etc.).
 - [x] **Document Options (OptionsSheet):** `OptionsSheet.tsx` implemented as a mobile bottom sheet.
 - [x] **Reading Controls (ReadingOptionsSheet):** `ReadingOptionsSheet.tsx` implemented for the `Feed` screen.
-- [ ] **UI Refinement:** Address layout overlaps and optimize `FlashList` performance for large libraries.
-- [ ] **Visual Parity:** Ensure identical typography and spacing between Svelte and React Native versions.
+- [x] **UI Refinement:** Addressed layout overlaps and optimized `FlashList` performance for large libraries.
+- [x] **Visual Parity:** Ensured identical typography and spacing between Svelte and React Native versions.
 
 ## Remaining Challenges
 

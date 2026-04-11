@@ -160,9 +160,9 @@ export default function App() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Header */}
-          <View className="pt-8 pb-6 px-6 items-center">
+          <View className="pt-4 pb-6 px-6 items-center">
             <Text className="text-4xl font-extrabold tracking-tight text-white">
-              Paper<Text className="text-[#00FF88]">Flip</Text>
+              Paper<Text className="text-brand-primary">Flip</Text>
             </Text>
             <Text className="mt-2 text-brand-text-muted font-medium text-sm">
               Transform PDFs into immersive stories
@@ -171,7 +171,7 @@ export default function App() {
 
           {/* Privacy Badge */}
           <View className="px-6 mb-4">
-            <View className="bg-brand-surface/40 border border-white/5 rounded-xl p-4 flex-row items-center space-x-4">
+            <View className="bg-brand-surface/40 border border-brand-primary/10 rounded-xl p-4 flex-row items-center space-x-4">
               <View className="bg-brand-primary/10 p-2 rounded-lg mr-3">
                 <MaterialIcons name="security" size={20} color="#00FF88" />
               </View>
@@ -236,7 +236,7 @@ export default function App() {
                     return (
                       <Pressable
                         key={doc.documentId}
-                        className="bg-brand-surface/50 border border-white/5 rounded-xl p-4 flex-row items-center space-x-4 active:bg-brand-surface/70 mb-3"
+                        className="bg-brand-surface/50 border border-brand-primary/10 rounded-xl p-4 flex-row items-center space-x-4 active:bg-brand-surface/70 mb-3"
                         onPress={() => router.push(`/feed?id=${encodeURIComponent(doc.documentId)}`)}
                       >
                         <View className="w-12 h-14 bg-brand-surface-dark rounded items-center justify-center overflow-hidden relative shrink-0 mr-3">
@@ -263,7 +263,7 @@ export default function App() {
 
                           <View className="mt-2 w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                             <View
-                              className="bg-[#00FF88] h-full rounded-full"
+                              className="bg-brand-primary h-full rounded-full"
                               style={{ width: `${progress}%` }}
                             />
                           </View>

@@ -41,7 +41,7 @@ export function DocumentListItem({ document, onShowOptions }: DocumentProps) {
   const bgColor = colorClasses[1];
 
   return (
-    <View className="bg-brand-surface border border-white/5 rounded-xl overflow-hidden flex-row h-24 relative mb-3 w-full">
+    <View className="bg-brand-surface border border-brand-primary/10 rounded-xl overflow-hidden flex-row h-24 relative mb-3 w-full">
       <Link href={`/feed?id=${encodeURIComponent(document.documentId)}`} asChild>
         <Pressable className="flex-row flex-grow w-full">
           <View className="w-24 bg-brand-surface-dark relative flex-shrink-0 items-center justify-center">
@@ -78,7 +78,7 @@ export function DocumentListItem({ document, onShowOptions }: DocumentProps) {
 
       <View testID="progress-bar-container" className="absolute bottom-0 left-0 right-0 pointer-events-none">
         <View className="w-full bg-white/5 h-1">
-          <View className={`${bgColor} h-full`} style={{ width: `${progress}%` }} />
+          <View className="bg-brand-primary h-full" style={{ width: `${progress}%` }} />
         </View>
       </View>
     </View>

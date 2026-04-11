@@ -39,7 +39,7 @@ export function DocumentGridItem({ document, onShowOptions }: DocumentProps) {
   const colorObj = colors[hash % colors.length];
 
   return (
-    <View className="bg-brand-surface border border-white/5 rounded-xl overflow-hidden flex-col h-48 mb-4 w-[48%] relative">
+    <View className="bg-brand-surface border border-brand-primary/10 rounded-xl overflow-hidden flex-col h-48 mb-4 w-[48%] relative">
       <Link href={`/feed?id=${encodeURIComponent(document.documentId)}`} asChild>
         <Pressable className="flex-col h-full w-full">
           <View className="h-24 bg-brand-surface-dark relative items-center justify-center overflow-hidden">
@@ -62,7 +62,7 @@ export function DocumentGridItem({ document, onShowOptions }: DocumentProps) {
             </View>
             <View className="mt-2">
               <View className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
-                <View className={`${colorObj.bg} h-full rounded-full`} style={{ width: `${progress}%` }} />
+                <View className="bg-brand-primary h-full rounded-full" style={{ width: `${progress}%` }} />
               </View>
             </View>
           </View>

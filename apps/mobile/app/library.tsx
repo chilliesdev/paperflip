@@ -1,4 +1,4 @@
-import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { View, Text, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { subscribeToChanges, getAllDocuments } from '@paperflip/core';
@@ -8,6 +8,7 @@ import { DocumentGridItem } from '../src/components/DocumentGridItem';
 import { OptionsSheet } from '../src/components/OptionsSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { toggleFavourite, deleteDocument } from '@paperflip/core';
+import { FlashList } from '@shopify/flash-list';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function LibraryScreen() {
@@ -138,25 +139,26 @@ export default function LibraryScreen() {
           </View>
         ) : (
           <View className="flex-1">
-            <FlatList
+            <FlashList
               data={filteredDocuments}
-              key={viewMode} // Force re-render when changing numColumns
-              numColumns={viewMode === 'grid' ? 2 : 1}
-              keyExtractor={(item) => item.documentId}
-              ListHeaderComponent={renderHeader}
-              ListEmptyComponent={renderEmpty}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00FF88" />
-              }
-              contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 24 }}
-              columnWrapperStyle={viewMode === 'grid' ? { justifyContent: 'space-between' } : undefined}
-              renderItem={({ item }) =>
-                viewMode === 'grid' ? (
-                  <DocumentGridItem document={item} onShowOptions={showOptions} />
-                ) : (
-                  <DocumentListItem document={item} onShowOptions={showOptions} />
-                )
-              }
+              {...({
+                key: viewMode,
+                numColumns: viewMode === 'grid' ? 2 : 1,
+                keyExtractor: (item: any) => item.documentId,
+                estimatedItemSize: viewMode === 'grid' ? 192 : 96,
+                ListHeaderComponent: renderHeader,
+                ListEmptyComponent: renderEmpty,
+                refreshControl: (
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00FF88" />
+                ),
+                contentContainerStyle: { paddingBottom: 120, paddingHorizontal: 24 },
+                renderItem: ({ item }: any) =>
+                  viewMode === 'grid' ? (
+                    <DocumentGridItem document={item} onShowOptions={showOptions} />
+                  ) : (
+                    <DocumentListItem document={item} onShowOptions={showOptions} />
+                  )
+              } as any)}
             />
           </View>
         )}

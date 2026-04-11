@@ -17,6 +17,7 @@ jest.mock('@paperflip/core', () => ({
   getAllDocuments: jest.fn(),
   toggleFavourite: jest.fn(),
   deleteDocument: jest.fn(),
+  subscribeToChanges: jest.fn().mockReturnValue(jest.fn()),
 }));
 
 // Mock expo-router

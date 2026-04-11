@@ -8,7 +8,7 @@ type LibraryHeaderProps = {
 
 export function LibraryHeader({ searchQuery, onSearchChange }: LibraryHeaderProps) {
   return (
-    <View className="pt-12 pb-6 px-6">
+    <View className="pt-6 pb-6 px-6">
       <View className="flex-row items-center">
         <Text className="text-3xl font-extrabold tracking-tight text-white">My</Text>
         <Text className="text-3xl font-extrabold tracking-tight text-brand-primary ml-2">Library</Text>
