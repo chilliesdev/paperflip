@@ -57,6 +57,13 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --clean
 
+      - name: Patch Android Build.gradle for AsyncStorage
+        if: steps.tag_version.outputs.new_tag != ''
+        run: |
+          # The prebuild generates the android/ folder. We need to add the local repo for async-storage
+          # because pnpm's symlinking structure can confuse the default gradle autolinking.
+          sed -i '/allprojects {/,/repositories {/!b;/repositories {/a \        maven { url "$rootDir/../node_modules/@react-native-async-storage/async-storage/android/local_repo" }' apps/mobile/android/build.gradle
+
       - name: Build Android APK
         if: steps.tag_version.outputs.new_tag != ''
         working-directory: apps/mobile/android
