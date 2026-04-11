@@ -1,0 +1,87 @@
+name: Release Android APK
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for tagging
+
+      - name: Determine Next Version
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true # We calculate it first, then use it in the build
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Update App Version
+        if: steps.tag_version.outputs.new_tag != ''
+        run: |
+          # Inject the new version and a unique versionCode into app.json
+          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+          VERSION_CODE="${{ github.run_number }}"
+          echo "Updating app.json to version $NEW_VERSION (code: $VERSION_CODE)"
+          
+          # Use jq to update app.json in place
+          jq ".expo.version = \"$NEW_VERSION\" | .expo.android.versionCode = $VERSION_CODE" apps/mobile/app.json > apps/mobile/app.json.tmp && mv apps/mobile/app.json.tmp apps/mobile/app.json
+
+      - name: Expo Prebuild
+        if: steps.tag_version.outputs.new_tag != ''
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build Android APK
+        if: steps.tag_version.outputs.new_tag != ''
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Finalize Tag
+        if: steps.tag_version.outputs.new_tag != ''
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ steps.tag_version.outputs.new_version }}
+          tag_prefix: v
+
+      - name: Create GitHub Release
+        if: steps.tag_version.outputs.new_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          files: |
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
