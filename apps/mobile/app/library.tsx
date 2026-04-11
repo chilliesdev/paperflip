@@ -140,9 +140,9 @@ export default function LibraryScreen() {
         ) : (
           <View className="flex-1">
             <FlashList
+              key={viewMode}
               data={filteredDocuments}
               {...({
-                key: viewMode,
                 numColumns: viewMode === 'grid' ? 2 : 1,
                 keyExtractor: (item: any) => item.documentId,
                 estimatedItemSize: viewMode === 'grid' ? 192 : 96,

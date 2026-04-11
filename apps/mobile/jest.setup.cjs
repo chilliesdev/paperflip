@@ -17,7 +17,7 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('@shopify/flash-list', () => {
   const { FlatList } = require('react-native');
   return {
-    FlashList: (props) => React.createElement(FlatList, props),
+    FlashList: ({ key, ...props }) => React.createElement(FlatList, { ...props, key }),
   };
 });
 

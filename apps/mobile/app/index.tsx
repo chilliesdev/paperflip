@@ -65,33 +65,11 @@ if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined
 }
 
 // Import from workspace core package
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_SETTINGS, setStorageEngine, getSettings, upsertDocument, getAllDocuments, type StorageEngine, type Document as PaperFlipDocument } from '@paperflip/core';
+import { DEFAULT_SETTINGS, getSettings, upsertDocument, getAllDocuments, type Document as PaperFlipDocument } from '@paperflip/core';
 import { segmentText } from '@paperflip/core';
 import { CHARS_PER_SECOND } from '@paperflip/core';
 import { PdfUploader } from '../src/components/PdfUploader';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Barebones AsyncStorage storage engine for Mobile
-const mobileStorage: StorageEngine = {
-  get: async (key) => {
-    const val = await AsyncStorage.getItem(key);
-    return val ? JSON.parse(val) : null;
-  },
-  set: async (key, value) => {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-  },
-  del: async (key) => {
-    await AsyncStorage.removeItem(key);
-  },
-  keys: async () => {
-    const keys = await AsyncStorage.getAllKeys();
-    return keys as string[];
-  },
-};
-
-// Initialize the storage engine for mobile
-setStorageEngine(mobileStorage);
 
 export default function App() {
   const router = useRouter();

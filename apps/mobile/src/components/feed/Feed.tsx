@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Pressable, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, Pressable, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Platform } from 'react-native';
 import * as Speech from 'expo-speech';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -137,12 +137,9 @@ export function Feed({
         console.warn("Boundary events missing or slow, switching to Dictation Mode");
         stopTTS().then(() => {
           setIsDictationMode(true);
-          // We can't immediately restart here easily without complex state management in RN
-          // This relies on user interaction or the next slide to kick in properly,
-          // but for simplicity in parity, we set the mode.
         });
       }
-    }, 2500);
+    }, 5000);
 
     // If there's an offset, some platforms don't support it natively for TTS.
     // For true parity we might need to substring the text if offset > 0.
@@ -264,14 +261,23 @@ export function Feed({
 
   const togglePlayback = async () => {
     if (isPlaying) {
-      await Speech.pause();
+      if (Platform.OS === 'android') {
+        await Speech.stop();
+      } else {
+        await Speech.pause();
+      }
       setIsPlaying(false);
       setIsPausedState(true);
       stateRef.current.isPlaying = false;
       saveProgress(true);
     } else {
       if (isPausedState) {
-        await Speech.resume();
+        if (Platform.OS === 'android') {
+          // Android doesn't support resume, so we speak from current progress
+          await speakCurrentSlide(stateRef.current.currentSegmentProgress);
+        } else {
+          await Speech.resume();
+        }
         setIsPlaying(true);
         setIsPausedState(false);
         stateRef.current.isPlaying = true;
