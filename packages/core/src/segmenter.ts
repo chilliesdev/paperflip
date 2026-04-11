@@ -115,36 +115,43 @@ export function splitSentences(
 ): { text: string; start: number; end: number }[] {
   const sentences: { text: string; start: number; end: number }[] = [];
 
-  if (typeof Intl !== "undefined" && Intl.Segmenter) {
-    if (!cachedSentenceSegmenter) {
-      cachedSentenceSegmenter = new Intl.Segmenter(undefined, {
-        granularity: "sentence",
+  const useIntl = typeof Intl !== "undefined" && (Intl as any).Segmenter;
+
+  if (useIntl) {
+    try {
+      if (!cachedSentenceSegmenter) {
+        cachedSentenceSegmenter = new (Intl as any).Segmenter(undefined, {
+          granularity: "sentence",
+        });
+      }
+      const segmenter = cachedSentenceSegmenter!;
+      for (const { segment, index } of segmenter.segment(text)) {
+        if (segment.trim().length > 0) {
+          sentences.push({
+            text: segment,
+            start: index,
+            end: index + segment.length,
+          });
+        }
+      }
+      if (sentences.length > 0) return sentences;
+    } catch (e) {
+      console.warn("[Core] Intl.Segmenter failed, falling back to regex", e);
+    }
+  }
+
+  // Fallback: simpler regex-based split that preserves offsets
+  // Improved regex to handle abbreviations and common sentence endings
+  const regex = /[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const s = match[0];
+    if (s.trim().length > 0) {
+      sentences.push({
+        text: s,
+        start: match.index,
+        end: match.index + s.length,
       });
-    }
-    const segmenter = cachedSentenceSegmenter;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore - TS types for Intl.Segmenter might be missing in some environments
-    for (const { segment, index } of segmenter.segment(text)) {
-      if (segment.trim().length > 0) {
-        sentences.push({
-          text: segment,
-          start: index,
-          end: index + segment.length,
-        });
-      }
-    }
-  } else {
-    // Fallback: simpler regex-based split that preserves offsets
-    const regex = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      if (match[0].trim().length > 0) {
-        sentences.push({
-          text: match[0],
-          start: match.index,
-          end: match.index + match[0].length,
-        });
-      }
     }
   }
 

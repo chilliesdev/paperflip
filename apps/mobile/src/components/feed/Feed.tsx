@@ -37,31 +37,12 @@ export function Feed({
   const [isMuted, setIsMuted] = useState(true);
   const [backgroundUrlIndex, setBackgroundUrlIndex] = useState(0);
 
-  const [isDictationMode, setIsDictationMode] = useState(false);
+  const [isDictationMode, setIsDictationMode] = useState(Platform.OS === 'android');
 
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [autoScroll, setAutoScroll] = useState(false);
   const [karaokeMode, setKaraokeMode] = useState(true);
-
-  useEffect(() => {
-    getSettings().then(s => {
-      if (s.playbackSpeed) setPlaybackRate(s.playbackSpeed);
-      if (s.autoScroll !== undefined) setAutoScroll(s.autoScroll);
-      if (s.karaokeMode !== undefined) setKaraokeMode(s.karaokeMode);
-    }).catch(console.error);
-  }, []);
-
-  const handlePlaybackRateChange = (rate: number) => {
-    setPlaybackRate(rate);
-    updateSettings({ playbackSpeed: rate });
-  };
-
-  const handleAutoScrollToggle = () => {
-    const newValue = !autoScroll;
-    setAutoScroll(newValue);
-    updateSettings({ autoScroll: newValue });
-  };
 
   // Ref for mutable state that doesn't need to trigger re-renders but is accessed in callbacks
   const stateRef = useRef({
@@ -69,11 +50,21 @@ export function Feed({
     currentSegmentProgress: 0,
     isPlaying: false,
     boundaryFired: false,
+    lastTap: 0,
   });
 
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boundaryCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    getSettings().then(s => {
+      console.log('[Feed] Settings loaded:', s);
+      if (s.playbackSpeed) setPlaybackRate(s.playbackSpeed);
+      if (s.autoScroll !== undefined) setAutoScroll(s.autoScroll);
+      if (s.karaokeMode !== undefined) setKaraokeMode(s.karaokeMode);
+    }).catch(console.error);
+  }, []);
 
   const saveProgress = useCallback((immediate = false) => {
     if (!documentId) return;
@@ -89,10 +80,85 @@ export function Feed({
   }, [documentId, activeIndex]);
 
   const stopTTS = useCallback(async () => {
+    console.log('[Feed] stopTTS called');
     await Speech.stop();
+    // On some Android devices, stop() takes a moment to actually release the resource
+    if (Platform.OS === 'android') {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     stateRef.current.isPlaying = false;
     setIsPlaying(false);
   }, []);
+
+  const speakDictation = useCallback(async (text: string, startIndex: number) => {
+    console.log(`[Feed] speakDictation starting from ${startIndex}`);
+    const isSpeaking = await Speech.isSpeakingAsync();
+    if (isSpeaking) {
+      console.log('[Feed] Speech engine busy, waiting...');
+      await stopTTS();
+    }
+    const sentences = splitSentences(text);
+    console.log(`[Feed] splitSentences found ${sentences.length} sentences`);
+    const sentenceQueue = sentences.filter((s) => s.end > startIndex);
+
+    const playNextSentence = async (queue: typeof sentences, originalStartIndex: number) => {
+      if (queue.length === 0 || !stateRef.current.isPlaying) {
+        console.log(`[Feed] playNextSentence finished or stopped. Queue: ${queue.length}, isPlaying: ${stateRef.current.isPlaying}`);
+        setIsPlaying(false);
+        stateRef.current.isPlaying = false;
+        if (segments[activeIndex]) {
+          setCurrentCharIndex(segments[activeIndex].length);
+          stateRef.current.currentSegmentProgress = segments[activeIndex].length;
+        }
+        setHighlightEndIndex(undefined);
+        setHighlightStartIndex(undefined);
+        saveProgress(true);
+        return;
+      }
+
+      const currentSentence = queue[0];
+      const remaining = queue.slice(1);
+
+      setCurrentCharIndex(currentSentence.start);
+      setHighlightEndIndex(currentSentence.end);
+      setHighlightStartIndex(currentSentence.start);
+      stateRef.current.currentSegmentProgress = currentSentence.start;
+
+      const offset = Math.max(0, originalStartIndex - currentSentence.start);
+      const textToSpeak = (offset > 0 ? currentSentence.text.substring(offset) : currentSentence.text).trim();
+
+      if (!textToSpeak) {
+        playNextSentence(remaining, 0);
+        return;
+      }
+
+      console.log(`[Feed] Speaking sentence: "${textToSpeak.substring(0, 30)}..."`);
+      try {
+        Speech.speak(textToSpeak, {
+          onDone: () => {
+            console.log(`[Feed] Sentence done`);
+            if (!stateRef.current.isPlaying) return;
+            playNextSentence(remaining, 0);
+          },
+          onError: (err) => {
+            console.error(`[Feed] Speech error:`, err);
+            setIsPlaying(false);
+            stateRef.current.isPlaying = false;
+          },
+          rate: playbackRate
+        });
+      } catch (err) {
+        console.error(`[Feed] Speech.speak sync throw:`, err);
+        setIsPlaying(false);
+        stateRef.current.isPlaying = false;
+      }
+    };
+
+    stateRef.current.isPlaying = true;
+    setIsPlaying(true);
+    playNextSentence(sentenceQueue, startIndex);
+
+  }, [segments, activeIndex, saveProgress, playbackRate, stopTTS]);
 
   const speakKaraoke = useCallback(async (text: string, startIndex: number) => {
     stateRef.current.boundaryFired = false;
@@ -123,7 +189,8 @@ export function Feed({
       onStopped: () => {
         // Handled by explicit stops
       },
-      onError: () => {
+      onError: (err) => {
+        console.error('[Feed] Karaoke speech error:', err);
         setIsPlaying(false);
         stateRef.current.isPlaying = false;
       },
@@ -137,67 +204,24 @@ export function Feed({
         console.warn("Boundary events missing or slow, switching to Dictation Mode");
         stopTTS().then(() => {
           setIsDictationMode(true);
+          // Auto-restart in dictation mode
+          const currentSegment = segments[activeIndex];
+          if (currentSegment) {
+            speakDictation(currentSegment, stateRef.current.currentSegmentProgress);
+          }
         });
       }
     }, 5000);
 
     // If there's an offset, some platforms don't support it natively for TTS.
-    // For true parity we might need to substring the text if offset > 0.
     const textToSpeak = startIndex > 0 ? text.substring(startIndex) : text;
     Speech.speak(textToSpeak, voiceOptions);
 
-  }, [saveProgress, stopTTS]);
-
-  const speakDictation = useCallback(async (text: string, startIndex: number) => {
-    const sentences = splitSentences(text);
-    const sentenceQueue = sentences.filter((s) => s.end > startIndex);
-
-    const playNextSentence = async (queue: typeof sentences, originalStartIndex: number) => {
-      if (queue.length === 0 || !stateRef.current.isPlaying) {
-        setIsPlaying(false);
-        stateRef.current.isPlaying = false;
-        if (segments[activeIndex]) {
-          setCurrentCharIndex(segments[activeIndex].length);
-          stateRef.current.currentSegmentProgress = segments[activeIndex].length;
-        }
-        setHighlightEndIndex(undefined);
-        setHighlightStartIndex(undefined);
-        saveProgress(true);
-        return;
-      }
-
-      const currentSentence = queue[0];
-      const remaining = queue.slice(1);
-
-      setCurrentCharIndex(currentSentence.start);
-      setHighlightEndIndex(currentSentence.end);
-      setHighlightStartIndex(currentSentence.start);
-      stateRef.current.currentSegmentProgress = currentSentence.start;
-
-      const offset = Math.max(0, originalStartIndex - currentSentence.start);
-      const textToSpeak = offset > 0 ? currentSentence.text.substring(offset) : currentSentence.text;
-
-      Speech.speak(textToSpeak, {
-        onDone: () => {
-          if (!stateRef.current.isPlaying) return;
-          playNextSentence(remaining, 0);
-        },
-        onError: () => {
-          setIsPlaying(false);
-          stateRef.current.isPlaying = false;
-        },
-        rate: playbackRate
-      });
-    };
-
-    stateRef.current.isPlaying = true;
-    setIsPlaying(true);
-    playNextSentence(sentenceQueue, startIndex);
-
-  }, [segments, activeIndex, saveProgress]);
+  }, [saveProgress, stopTTS, playbackRate, segments, activeIndex, speakDictation]);
 
 
   const speakCurrentSlide = useCallback(async (overrideStartIndex?: number) => {
+    console.log(`[Feed] speakCurrentSlide called, index: ${activeIndex}, overrideStart: ${overrideStartIndex}`);
     await stopTTS();
     if (boundaryCheckTimeout.current) clearTimeout(boundaryCheckTimeout.current);
 
@@ -209,8 +233,6 @@ export function Feed({
 
     // For initial load
     if (overrideStartIndex === undefined && activeIndex === initialIndex && initialProgress > 0) {
-      // In a real implementation we'd check if it's the first play,
-      // here we simplify to starting at the initialProgress if we're on the initial slide.
       startIndex = initialProgress;
     }
 
@@ -219,22 +241,27 @@ export function Feed({
     stateRef.current.currentCharIndex = startIndex;
 
     const currentSegment = segments[activeIndex];
-    if (!currentSegment) return;
+    if (!currentSegment) {
+      console.warn(`[Feed] No segment found at index ${activeIndex}`);
+      return;
+    }
 
     // Use current state settings
     const modeDictation = isDictationMode || !karaokeMode;
+    console.log(`[Feed] Mode: ${modeDictation ? 'Dictation' : 'Karaoke'}`);
 
     if (modeDictation) {
       await speakDictation(currentSegment, startIndex);
     } else {
       await speakKaraoke(currentSegment, startIndex);
     }
-  }, [activeIndex, initialIndex, initialProgress, segments, isDictationMode, speakDictation, speakKaraoke, stopTTS]);
+  }, [activeIndex, initialIndex, initialProgress, segments, isDictationMode, karaokeMode, speakDictation, speakKaraoke, stopTTS]);
 
 
   useEffect(() => {
-    // Component mount
+    // Component mount or activeIndex change
     if (segments.length > 0) {
+      console.log(`[Feed] Starting mountTimeout for index ${activeIndex}`);
       // Small delay to ensure ScrollView has settled if not on index 0
       mountTimeout.current = (setTimeout(() => {
          speakCurrentSlide();
@@ -242,13 +269,28 @@ export function Feed({
     }
 
     return () => {
+      console.log(`[Feed] Cleanup for index ${activeIndex}`);
       stopTTS();
       if (boundaryCheckTimeout.current) clearTimeout(boundaryCheckTimeout.current);
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
       if (mountTimeout.current) clearTimeout(mountTimeout.current);
       saveProgress(true);
     };
-  }, [activeIndex, segments.length]); // Intentionally omitting speakCurrentSlide to avoid re-triggering on its deps
+  }, [activeIndex, segments.length, speakCurrentSlide]);
+
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate);
+    updateSettings({ playbackSpeed: rate });
+    if (stateRef.current.isPlaying) {
+      speakCurrentSlide();
+    }
+  };
+
+  const handleAutoScrollToggle = () => {
+    const newValue = !autoScroll;
+    setAutoScroll(newValue);
+    updateSettings({ autoScroll: newValue });
+  };
 
   const handleMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.y / height);
@@ -261,6 +303,7 @@ export function Feed({
 
   const togglePlayback = async () => {
     if (isPlaying) {
+      console.log('[Feed] togglePlayback: pausing');
       if (Platform.OS === 'android') {
         await Speech.stop();
       } else {
@@ -271,9 +314,9 @@ export function Feed({
       stateRef.current.isPlaying = false;
       saveProgress(true);
     } else {
+      console.log('[Feed] togglePlayback: playing');
       if (isPausedState) {
         if (Platform.OS === 'android') {
-          // Android doesn't support resume, so we speak from current progress
           await speakCurrentSlide(stateRef.current.currentSegmentProgress);
         } else {
           await Speech.resume();
@@ -291,17 +334,16 @@ export function Feed({
     setBackgroundUrlIndex((prev) => (prev + 1) % videoSources.length);
   };
 
-  let lastTap: number | null = null;
-  const handleTap = () => {
+  const handleTap = useCallback(() => {
     const now = Date.now();
     const DOUBLE_PRESS_DELAY = 300;
-    if (lastTap && (now - lastTap) < DOUBLE_PRESS_DELAY) {
+    if (stateRef.current.lastTap && (now - stateRef.current.lastTap) < DOUBLE_PRESS_DELAY) {
       handleDoubleClick();
     } else {
       togglePlayback();
     }
-    lastTap = now;
-  };
+    stateRef.current.lastTap = now;
+  }, [togglePlayback]);
 
   if (segments.length === 0) {
     return (
@@ -346,9 +388,9 @@ export function Feed({
           pagingEnabled
           showsVerticalScrollIndicator={false}
           onMomentumScrollEnd={handleMomentumScrollEnd}
+          scrollEnabled={true}
         >
           {segments.map((segment, i) => {
-            // Memory optimization: render only current, previous, and next slides
             const isNearActive = Math.abs(i - activeIndex) <= 1;
 
             if (!isNearActive) {
