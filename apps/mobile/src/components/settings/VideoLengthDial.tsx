@@ -52,7 +52,7 @@ export function VideoLengthDial({ value, onChange }: VideoLengthDialProps) {
 
           {/* Inner Circle */}
           <View className="absolute inset-4 bg-brand-surface rounded-full items-center justify-center z-10 border border-white/5">
-            <Text className="text-4xl font-black text-brand-secondary tracking-tighter">
+            <Text testID="duration-label" className="text-4xl font-black text-brand-secondary tracking-tighter">
               {getLabel(value)}
             </Text>
             <Text className="text-[10px] text-brand-text-muted uppercase tracking-widest mt-1">Duration</Text>

@@ -73,6 +73,7 @@ export function Feed({
 
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boundaryCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveProgress = useCallback((immediate = false) => {
     if (!documentId) return;
@@ -238,15 +239,16 @@ export function Feed({
     // Component mount
     if (segments.length > 0) {
       // Small delay to ensure ScrollView has settled if not on index 0
-      setTimeout(() => {
+      mountTimeout.current = (setTimeout(() => {
          speakCurrentSlide();
-      }, 500);
+      }, 500) as unknown as ReturnType<typeof setTimeout>);
     }
 
     return () => {
       stopTTS();
       if (boundaryCheckTimeout.current) clearTimeout(boundaryCheckTimeout.current);
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
+      if (mountTimeout.current) clearTimeout(mountTimeout.current);
       saveProgress(true);
     };
   }, [activeIndex, segments.length]); // Intentionally omitting speakCurrentSlide to avoid re-triggering on its deps
@@ -330,7 +332,7 @@ export function Feed({
         </View>
       </SafeAreaView>
 
-      <Pressable className="flex-1" onPress={handleTap}>
+      <Pressable testID="tap-to-playback" className="flex-1" onPress={handleTap}>
         <ScrollView
           ref={scrollRef}
           style={{ flex: 1, width, height }}

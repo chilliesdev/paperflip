@@ -21,6 +21,7 @@ export function BackgroundSelector({ selected, onChange }: BackgroundSelectorPro
           const isSelected = selected === bg.url;
           return (
             <Pressable
+              testID={`bg-button-${bg.url}`}
               key={bg.url}
               onPress={() => onChange(bg.url)}
               className={`flex-1 aspect-square rounded-xl overflow-hidden relative ${

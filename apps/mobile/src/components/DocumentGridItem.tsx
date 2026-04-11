@@ -70,6 +70,7 @@ export function DocumentGridItem({ document, onShowOptions }: DocumentProps) {
       </Link>
 
       <Pressable
+        testID="more-options-button"
         className="absolute top-1 right-1 p-2 rounded-full z-20"
         onPress={(e) => {
           e.stopPropagation();

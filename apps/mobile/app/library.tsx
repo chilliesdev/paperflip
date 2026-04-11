@@ -92,12 +92,14 @@ export default function LibraryScreen() {
         </Text>
         <View className="flex-row bg-brand-surface-dark border border-white/5 rounded-lg p-1">
           <Pressable
+            testID="grid-view-button"
             className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-white/10' : ''}`}
             onPress={() => setViewMode('grid')}
           >
             <MaterialIcons name="grid-view" size={20} color={viewMode === 'grid' ? '#00FF88' : '#888'} />
           </Pressable>
           <Pressable
+            testID="list-view-button"
             className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white/10' : ''}`}
             onPress={() => setViewMode('list')}
           >

@@ -66,6 +66,7 @@ export function DocumentListItem({ document, onShowOptions }: DocumentProps) {
       </Link>
 
       <Pressable
+        testID="more-options-button"
         className="absolute right-0 h-full p-3 items-center justify-center z-10"
         onPress={(e) => {
           e.stopPropagation();
@@ -75,7 +76,7 @@ export function DocumentListItem({ document, onShowOptions }: DocumentProps) {
         <MaterialIcons name="more-vert" size={24} color="rgba(255,255,255,0.5)" />
       </Pressable>
 
-      <View className="absolute bottom-0 left-0 right-0 pointer-events-none">
+      <View testID="progress-bar-container" className="absolute bottom-0 left-0 right-0 pointer-events-none">
         <View className="w-full bg-white/5 h-1">
           <View className={`${bgColor} h-full`} style={{ width: `${progress}%` }} />
         </View>

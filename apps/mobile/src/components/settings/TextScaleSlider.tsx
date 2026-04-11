@@ -32,7 +32,11 @@ export function TextScaleSlider({ scale, onChange }: TextScaleSliderProps) {
       </View>
 
       <View className="flex-row items-center space-x-3 justify-between">
-        <Pressable onPress={decrement} className="p-2 bg-white/10 rounded-full">
+        <Pressable
+          testID="decrement-button"
+          onPress={decrement}
+          className="p-2 bg-white/10 rounded-full"
+        >
           <MaterialIcons name="remove" size={24} color="#888" />
         </Pressable>
 
@@ -43,7 +47,11 @@ export function TextScaleSlider({ scale, onChange }: TextScaleSliderProps) {
           />
         </View>
 
-        <Pressable onPress={increment} className="p-2 bg-white/10 rounded-full">
+        <Pressable
+          testID="increment-button"
+          onPress={increment}
+          className="p-2 bg-white/10 rounded-full"
+        >
           <MaterialIcons name="add" size={24} color="#00FF88" />
         </Pressable>
       </View>

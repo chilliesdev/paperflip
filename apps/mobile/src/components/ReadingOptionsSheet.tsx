@@ -82,6 +82,7 @@ export function ReadingOptionsSheet({
 
               {/* Toggle Switch */}
               <Pressable
+                testID="auto-scroll-toggle"
                 onPress={onAutoScrollToggle}
                 className={`h-6 w-11 rounded-full justify-center px-0.5 ${autoScroll ? 'bg-brand-primary' : 'bg-gray-700'}`}
               >

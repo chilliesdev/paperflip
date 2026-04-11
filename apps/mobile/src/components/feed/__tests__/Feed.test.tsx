@@ -88,4 +88,27 @@ describe('Feed', () => {
       expect(mockBack).toHaveBeenCalled();
     });
   });
+
+  it('toggles playback when the play/pause button is pressed', async () => {
+    const { getByTestId } = render(
+      <Feed segments={segments} documentId={documentId} />
+    );
+
+    // Initial state after mount should be playing (after 500ms)
+    await waitFor(() => {
+      expect(Speech.speak).toHaveBeenCalled();
+    });
+
+    const toggleButton = getByTestId('tap-to-playback');
+    fireEvent.press(toggleButton);
+
+    await waitFor(() => {
+      expect(Speech.pause).toHaveBeenCalled();
+    });
+
+    fireEvent.press(toggleButton);
+    await waitFor(() => {
+      expect(Speech.resume).toHaveBeenCalled();
+    });
+  });
 });
