@@ -64,6 +64,18 @@ jobs:
           # because pnpm's symlinking structure can confuse the default gradle autolinking.
           sed -i '/allprojects {/,/repositories {/!b;/repositories {/a \        maven { url "$rootDir/../node_modules/@react-native-async-storage/async-storage/android/local_repo" }' apps/mobile/android/build.gradle
 
+      - name: Patch react-native-pdf-thumbnail for Kotlin Type Mismatch
+        if: steps.tag_version.outputs.new_tag != ''
+        run: |
+          # Fix Kotlin null-safety error in react-native-pdf-thumbnail caused by newer SDK versions.
+          FILE=$(find node_modules -name PdfThumbnailModule.kt)
+          if [ -n "$FILE" ]; then
+            echo "Patching $FILE"
+            sed -i 's/bitmap.config!!/Bitmap.Config.ARGB_8888/g' "$FILE"
+          else
+            echo "PdfThumbnailModule.kt not found"
+          fi
+
       - name: Build Android APK
         if: steps.tag_version.outputs.new_tag != ''
         working-directory: apps/mobile/android
