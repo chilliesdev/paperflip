@@ -4,6 +4,7 @@
     getAllDocuments,
     deleteDocument,
     toggleFavourite,
+    type Document,
   } from "$lib/database-init";
   import LibraryHeader from "$lib/components/LibraryHeader.svelte";
   import FavouriteCard from "$lib/components/FavouriteCard.svelte";
@@ -12,17 +13,11 @@
   import LoadingScreen from "$lib/components/LoadingScreen.svelte";
   import OptionsSheet from "$lib/components/OptionsSheet.svelte";
 
-  type PaperFlipDocument = {
-    documentId: string;
-    isFavourite?: boolean;
-    [key: string]: unknown;
-  };
-
-  let documents: PaperFlipDocument[] = $state([]);
+  let documents: Document[] = $state([]);
   let isLoading = $state(true);
   let searchQuery = $state("");
   let viewMode: "list" | "grid" = $state("list");
-  let selectedDocument: PaperFlipDocument | null = $state(null);
+  let selectedDocument: Document | null = $state(null);
 
   const favouriteDocs = $derived(documents.filter((doc) => doc.isFavourite));
   const filteredDocs = $derived(
@@ -50,7 +45,7 @@
   <LoadingScreen />
 {:else}
   <div
-    class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden pb-10 text-white font-display"
+    class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden pb-10 text-foreground font-display"
   >
     <LibraryHeader bind:searchQuery />
 
@@ -58,7 +53,7 @@
       {#if favouriteDocs.length > 0 && !searchQuery}
         <section>
           <div class="flex items-center justify-between px-6 mb-3">
-            <h3 class="text-lg font-bold text-white">Favourites</h3>
+            <h3 class="text-lg font-bold text-foreground">Favourites</h3>
             <button
               class="text-xs font-semibold text-brand-primary uppercase tracking-wider hover:text-brand-secondary transition-colors"
               onclick={() =>
@@ -83,7 +78,7 @@
         <DocumentList
           documents={filteredDocs}
           bind:viewMode
-          onShowOptions={(doc: PaperFlipDocument) => (selectedDocument = doc)}
+          onShowOptions={(doc: Document) => (selectedDocument = doc)}
         />
       </div>
     </main>

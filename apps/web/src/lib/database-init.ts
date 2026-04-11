@@ -1,7 +1,18 @@
-import { setDbStorage } from "@paperflip/core";
-import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
+import { setStorageEngine, type StorageEngine } from "@paperflip/core";
+import * as idb from "idb-keyval";
 
-// Initialize the database storage for the Web app
-setDbStorage(getRxStorageDexie(), import.meta.env.DEV);
+// Barebones IndexedDB storage engine for Web
+const webStorage: StorageEngine = {
+  get: async (key) => {
+    const val = await idb.get(key);
+    return val === undefined ? null : val;
+  },
+  set: (key, value) => idb.set(key, value),
+  del: (key) => idb.del(key),
+  keys: () => idb.keys() as Promise<string[]>,
+};
+
+// Initialize the storage engine for the Web app
+setStorageEngine(webStorage);
 
 export * from "@paperflip/core";

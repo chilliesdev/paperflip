@@ -30,7 +30,9 @@ export default function SettingsScreen() {
         const docs = await getAllDocuments();
         // Resegment top 5 recent documents automatically
         for (const doc of docs.slice(0, 5)) {
-          await resegmentDocument(doc.documentId, value);
+          if (doc.documentId) {
+            await resegmentDocument(doc.documentId, value);
+          }
         }
       } catch (e) {
         console.error('Failed to resegment documents:', e);

@@ -1,513 +1,114 @@
-process.env.NODE_ENV = "test";
 // @vitest-environment node
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-
-// Use vi.hoisted to ensure mocks are set up before module imports
-const { mockBrowser, setMockBrowser } = vi.hoisted(() => {
-  let browserValue = true;
-  return {
-    mockBrowser: {
-      get browser() {
-        return browserValue;
-      },
-    },
-    setMockBrowser: (value: boolean) => {
-      browserValue = value;
-    },
-  };
-});
-
-// Hoist all mock functions so they can be used in vi.mock factories
-const {
-  mockCreateRxDatabase,
-  mockAddRxPlugin,
-  mockAddCollections,
-  mockInsert,
-  mockUpsert,
-  mockGetRxStorageDexie,
-  mockDevModePlugin,
-  mockWrappedValidateAjvStorage,
-} = vi.hoisted(() => {
-  const mockCreateRxDatabase = vi.fn();
-  const mockAddRxPlugin = vi.fn();
-  const mockAddCollections = vi.fn();
-  const mockInsert = vi.fn();
-  const mockUpsert = vi.fn();
-  const mockGetRxStorageDexie = vi.fn(() => ({ name: "dexie-storage" }));
-  const mockDevModePlugin = { name: "dev-mode-plugin" };
-  const mockWrappedValidateAjvStorage = vi.fn(({ storage }) => ({
-    name: `validate-ajv-${storage.name}`,
-    storage,
-  }));
-
-  return {
-    mockCreateRxDatabase,
-    mockAddRxPlugin,
-    mockAddCollections,
-    mockInsert,
-    mockUpsert,
-    mockGetRxStorageDexie,
-    mockDevModePlugin,
-    mockWrappedValidateAjvStorage,
-  };
-});
-
-// Mock RxDB
-vi.mock("rxdb", () => ({
-  createRxDatabase: mockCreateRxDatabase,
-  addRxPlugin: mockAddRxPlugin,
-  RxStorage: {},
-}));
-
-// Mock RxDB plugins
-vi.mock("rxdb/plugins/storage-dexie", () => ({
-  getRxStorageDexie: mockGetRxStorageDexie,
-}));
-
-vi.mock("rxdb/plugins/migration-schema", () => ({
-  RxDBMigrationSchemaPlugin: { name: "migration-schema-plugin" },
-}));
-
-vi.mock("rxdb/plugins/query-builder", () => ({
-  RxDBQueryBuilderPlugin: { name: "query-builder-plugin" },
-}));
-
-vi.mock("rxdb/plugins/update", () => ({
-  RxDBUpdatePlugin: { name: "update-plugin" },
-}));
-
-// Mock $app/environment with hoisted value
-vi.mock("$app/environment", () => mockBrowser);
-
-// Mock RxDB dev-mode plugin
-vi.mock("rxdb/plugins/dev-mode", () => ({
-  RxDBDevModePlugin: mockDevModePlugin,
-}));
-
-// Mock RxDB validation plugin
-vi.mock("rxdb/plugins/validate-ajv", () => ({
-  wrappedValidateAjvStorage: mockWrappedValidateAjvStorage,
-}));
-
-// Import the module after mocks are set up
+import { describe, it, expect, beforeEach } from "vitest";
 import {
-  getDb,
+  setStorageEngine,
   addDocument,
-  upsertDocument,
+  getDocument,
+  getAllDocuments,
   updateDocumentProgress,
-  resetDb,
   toggleFavourite,
   deleteDocument,
-  getRecentUploads,
-  getAllDocuments,
-} from "../database.js";
-import { setDbStorage } from "../database.js";
-import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
-import { removeRxDatabase } from "rxdb";
+  getSettings,
+  updateSettings,
+  DEFAULT_SETTINGS,
+  type StorageEngine,
+} from "../database";
 
-setDbStorage(getRxStorageDexie(), true);
+// Simple in-memory storage for testing
+class MemoryStorage implements StorageEngine {
+  private data = new Map<string, any>();
 
-// Type for mock database
-type MockDatabase = {
-  documents: {
-    insert: typeof mockInsert;
-    upsert: typeof mockUpsert;
-    find: ReturnType<typeof vi.fn>;
-    findOne: ReturnType<typeof vi.fn>;
-    incrementalPatch: ReturnType<typeof vi.fn>;
-  };
-  settings: {
-    findOne: ReturnType<typeof vi.fn>;
-    insert: ReturnType<typeof vi.fn>;
-    upsert: ReturnType<typeof vi.fn>;
-    incrementalPatch: ReturnType<typeof vi.fn>;
-  };
-  addCollections: typeof mockAddCollections;
-};
+  async get<T>(key: string): Promise<T | null> {
+    return this.data.get(key) ?? null;
+  }
+  async set<T>(key: string, value: T): Promise<void> {
+    this.data.set(key, value);
+  }
+  async del(key: string): Promise<void> {
+    this.data.delete(key);
+  }
+  async keys(): Promise<string[]> {
+    return Array.from(this.data.keys());
+  }
+}
 
-describe("database.ts", () => {
-  let mockDb: MockDatabase;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+describe("database.ts (Barebones Storage)", () => {
+  let storage: MemoryStorage;
 
   beforeEach(() => {
-    // Mock window for these tests since we are in node environment
-    vi.stubGlobal("window", {});
-
-    // Reset browser to true for most tests
-    setMockBrowser(true);
-
-    // Reset all mocks
-    vi.clearAllMocks();
-
-    // Reset window globals
-    if (typeof window !== "undefined") {
-      delete (window as any).__rxdb_devmode_added;
-    }
-
-    // Reset the dbPromise singleton
-    resetDb();
-
-    // Create mock database instance
-    mockDb = {
-      documents: {
-        insert: mockInsert,
-        upsert: mockUpsert,
-        find: vi.fn(() => ({
-          sort: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              exec: vi.fn().mockResolvedValue([]),
-            })),
-            exec: vi.fn().mockResolvedValue([]),
-          })),
-        })),
-        findOne: vi.fn(() => ({
-          exec: vi.fn().mockResolvedValue(null),
-        })),
-        incrementalPatch: vi.fn(),
-      },
-      settings: {
-        findOne: vi.fn(() => ({
-          exec: vi.fn().mockResolvedValue(null),
-        })),
-        insert: vi.fn().mockResolvedValue({}),
-        upsert: vi.fn().mockResolvedValue({}),
-        incrementalPatch: vi.fn(),
-      },
-      addCollections: mockAddCollections,
-    };
-
-    // Setup default mock implementations
-    mockCreateRxDatabase.mockResolvedValue(mockDb);
-    (globalThis as any).__mockDb = undefined;
-    mockAddCollections.mockResolvedValue(undefined);
-    mockInsert.mockImplementation((doc) => ({
-      toJSON: () => doc,
-    }));
-    mockUpsert.mockImplementation((doc) => ({
-      toJSON: () => doc,
-    }));
-
-    // Spy on console methods
-    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    storage = new MemoryStorage();
+    setStorageEngine(storage);
   });
 
-  afterEach(async () => {
-    // await removeRxDatabase
+  describe("Documents API", () => {
+    const docId = "test-doc";
+    const segments = ["Seg 1", "Seg 2"];
 
-    consoleWarnSpy.mockRestore();
-    vi.unstubAllGlobals();
-  });
+    it("should add and retrieve a document", async () => {
+      await addDocument(docId, segments, "Full text");
+      const doc = await getDocument(docId);
 
-  describe("getDb", () => {
-    beforeEach(() => {
-      // Need it to actually bypass getDb for these tests too because they were checking actual creation,
-      // but the creation fails with DB9 in vitest concurrency.
-      // We'll update the assertions to match what globalThis bypass returns,
-      // except when we're specifically testing the logic, we can't because it's completely bypassed.
-      // Since we just completely bypass `getDb` in testing to avoid DB9, these tests that test
-      // RxDatabase creation itself aren't really testable without it failing DB9.
-      // So we will just let them bypass, and we'll skip the ones that expect `createRxDatabase` to be called.
+      expect(doc).not.toBeNull();
+      expect(doc?.documentId).toBe(docId);
+      expect(doc?.segments).toEqual(segments);
+      expect(doc?.fullText).toBe("Full text");
     });
 
-    it.skip("creates and returns a database instance", async () => {
-      // By default DEV is true in vitest, so it might be wrapped
-      const db = await getDb();
+    it("should return metadata only in getAllDocuments", async () => {
+      await addDocument("doc1", ["s1"], "full1");
+      await addDocument("doc2", ["s2"], "full2");
 
-      expect(db).toBe(mockDb);
-      expect(mockCreateRxDatabase).toHaveBeenCalledTimes(1);
+      const all = await getAllDocuments();
+      expect(all).toHaveLength(2);
+      expect(all[0]).not.toHaveProperty("segments");
+      expect(all[0]).not.toHaveProperty("fullText");
+      expect(all[0]).toHaveProperty("documentId");
     });
 
-    it.skip("returns the same database instance on subsequent calls (singleton pattern)", async () => {
-      const db1 = await getDb();
-      const db2 = await getDb();
+    it("should update progress", async () => {
+      await addDocument(docId, segments);
+      await updateDocumentProgress(docId, 1, 50);
 
-      expect(db1).toBe(db2);
-      expect(mockCreateRxDatabase).toHaveBeenCalledTimes(1);
+      const doc = await getDocument(docId);
+      expect(doc?.currentSegmentIndex).toBe(1);
+      expect(doc?.currentSegmentProgress).toBe(50);
     });
 
-    it.skip("adds the documents collection with correct schema", async () => {
-      await getDb();
+    it("should toggle favourite", async () => {
+      await addDocument(docId, segments);
 
-      expect(mockAddCollections).toHaveBeenCalledTimes(1);
-      expect(mockAddCollections).toHaveBeenCalledWith(
-        expect.objectContaining({
-          documents: {
-            schema: expect.objectContaining({
-              title: "paperflip_document",
-              primaryKey: "documentId",
-              version: 7,
-              properties: expect.objectContaining({
-                currentSegmentIndex: expect.objectContaining({
-                  type: "number",
-                }),
-                currentSegmentProgress: expect.objectContaining({
-                  type: "number",
-                }),
-                isFavourite: expect.objectContaining({ type: "boolean" }),
-              }),
-            }),
-            migrationStrategies: expect.any(Object),
-          },
-        }),
-      );
+      const status1 = await toggleFavourite(docId);
+      expect(status1).toBe(true);
+
+      const status2 = await toggleFavourite(docId);
+      expect(status2).toBe(false);
     });
 
-    it.skip("rejects when called on the server (browser = false)", async () => {
-      // Set browser to false
-      setMockBrowser(false);
+    it("should delete a document", async () => {
+      await addDocument(docId, segments);
+      await deleteDocument(docId);
 
-      await expect(getDb()).rejects.toThrow(
-        "RxDB is not available on the server",
-      );
+      const doc = await getDocument(docId);
+      expect(doc).toBeNull();
+
+      const all = await getAllDocuments();
+      expect(all).toHaveLength(0);
     });
   });
 
-  describe("Schema & Migration", () => {
-    it.skip("TC-DB-001: Schema Validation", async () => {
-      await getDb();
-      const call = mockAddCollections.mock.calls[0][0];
-      const schema = call.documents.schema;
-
-      expect(schema.version).toBe(7);
-      expect(schema.properties).toHaveProperty("currentSegmentIndex");
-      expect(schema.properties).toHaveProperty("currentSegmentProgress");
-      expect(schema.properties).toHaveProperty("isFavourite");
-    });
-  });
-
-  describe("addDocument", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
+  describe("Settings API", () => {
+    it("should return default settings if none stored", async () => {
+      const settings = await getSettings();
+      expect(settings).toEqual(DEFAULT_SETTINGS);
     });
 
-    it("inserts a document with all required fields including isFavourite", async () => {
-      const documentId = "doc-123";
-      const segments = ["Segment 1", "Segment 2", "Segment 3"];
-      const currentSegmentIndex = 1;
+    it("should update and persist settings", async () => {
+      await updateSettings({ darkMode: false, textScale: 150 });
+      const settings = await getSettings();
 
-      await addDocument(documentId, segments, "", 60, currentSegmentIndex);
-
-      expect(mockInsert).toHaveBeenCalledTimes(1);
-      expect(mockInsert).toHaveBeenCalledWith({
-        documentId,
-        segments,
-        fullText: "",
-        thumbnailUri: "",
-        videoLengthAtSegmentation: 60,
-        currentSegmentIndex,
-        currentSegmentProgress: 0,
-        createdAt: expect.any(Number),
-        lastViewedAt: expect.any(Number),
-        isFavourite: false,
-        totalSegments: 3,
-        currentSegmentLength: 9,
-      });
-    });
-  });
-
-  describe("upsertDocument", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
-    });
-
-    it("upserts a document with all required fields including isFavourite", async () => {
-      const documentId = "doc-123";
-      const segments = ["Segment 1", "Segment 2"];
-      const currentSegmentIndex = 1;
-
-      await upsertDocument(documentId, segments, "", 60, currentSegmentIndex);
-
-      expect(mockUpsert).toHaveBeenCalledTimes(1);
-      expect(mockUpsert).toHaveBeenCalledWith({
-        documentId,
-        segments,
-        fullText: "",
-        thumbnailUri: "",
-        videoLengthAtSegmentation: 60,
-        currentSegmentIndex,
-        currentSegmentProgress: 0,
-        createdAt: expect.any(Number),
-        lastViewedAt: expect.any(Number),
-        isFavourite: false,
-        totalSegments: 2,
-        currentSegmentLength: 9,
-      });
-    });
-  });
-
-  describe("toggleFavourite", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
-    });
-
-    it("toggles favourite status", async () => {
-      const mockIncrementalPatch = vi.fn();
-      const mockExec = vi.fn().mockResolvedValue({
-        isFavourite: false,
-        incrementalPatch: mockIncrementalPatch,
-      });
-      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
-
-      const result = await toggleFavourite("doc-1");
-
-      expect(mockFindOne).toHaveBeenCalledWith("doc-1");
-      expect(mockIncrementalPatch).toHaveBeenCalledWith({ isFavourite: true });
-      expect(result).toBe(true);
-    });
-  });
-
-  describe("deleteDocument", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
-    });
-
-    it("deletes a document", async () => {
-      const mockRemove = vi.fn();
-      const mockExec = vi.fn().mockResolvedValue({
-        remove: mockRemove,
-      });
-      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
-
-      const result = await deleteDocument("doc-1");
-
-      expect(mockFindOne).toHaveBeenCalledWith("doc-1");
-      expect(mockRemove).toHaveBeenCalled();
-      expect(result).toBe(true);
-    });
-  });
-
-  describe("updateDocumentProgress", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
-    });
-
-    it("updates segment index, progress and lastViewedAt timestamp", async () => {
-      const mockIncrementalPatch = vi.fn();
-      const mockExec = vi.fn().mockResolvedValue({
-        incrementalPatch: mockIncrementalPatch,
-      });
-      const mockFindOne = vi.fn().mockReturnValue({ exec: mockExec });
-      mockDb.documents.findOne = mockFindOne as any;
-
-      const documentId = "doc-progress-test";
-      const index = 5;
-      const progress = 120;
-
-      await updateDocumentProgress(documentId, index, progress);
-
-      expect(mockFindOne).toHaveBeenCalledWith(documentId);
-      expect(mockIncrementalPatch).toHaveBeenCalledWith({
-        currentSegmentIndex: index,
-        currentSegmentProgress: progress,
-        currentSegmentLength: 0,
-        lastViewedAt: expect.any(Number),
-      });
-    });
-  });
-
-  describe("getRecentUploads", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
-    });
-
-    it("returns recent uploads with segments excluded", async () => {
-      const mockDoc = {
-        documentId: "doc-1",
-        segments: ["seg1"],
-        toJSON: function () {
-          return { ...this };
-        },
-      };
-
-      mockDb.documents.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue({
-            exec: vi.fn().mockResolvedValue([mockDoc]),
-          }),
-        }),
-      });
-
-      const result = await getRecentUploads(5);
-      expect(result).toHaveLength(1);
-      expect(result[0].documentId).toBe("doc-1");
-      expect(result[0].segments).toBeUndefined();
-    });
-
-    it("should not throw when RxDB returns a frozen object", async () => {
-      const frozenDoc = {
-        documentId: "frozen-doc",
-        segments: ["seg1"],
-        toJSON: function () {
-          return Object.freeze({
-            documentId: "frozen-doc",
-            segments: ["seg1"],
-          });
-        },
-      };
-
-      mockDb.documents.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue({
-            exec: vi.fn().mockResolvedValue([frozenDoc]),
-          }),
-        }),
-      });
-
-      const result = await getRecentUploads(5);
-      expect(result[0].documentId).toBe("frozen-doc");
-      expect(result[0].segments).toBeUndefined();
-    });
-  });
-
-  describe("getAllDocuments", () => {
-    beforeEach(() => {
-      (globalThis as any).__mockDb = mockDb;
-    });
-
-    it("returns all documents with segments excluded", async () => {
-      const mockDoc = {
-        documentId: "doc-all",
-        segments: ["seg1"],
-        toJSON: function () {
-          return { ...this };
-        },
-      };
-
-      mockDb.documents.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          exec: vi.fn().mockResolvedValue([mockDoc]),
-        }),
-      });
-
-      const result = await getAllDocuments();
-      expect(result).toHaveLength(1);
-      expect(result[0].documentId).toBe("doc-all");
-      expect(result[0].segments).toBeUndefined();
-    });
-
-    it("should not throw when RxDB returns a frozen object", async () => {
-      const frozenDoc = {
-        documentId: "frozen-all",
-        segments: ["seg1"],
-        toJSON: function () {
-          return Object.freeze({
-            documentId: "frozen-all",
-            segments: ["seg1"],
-          });
-        },
-      };
-
-      mockDb.documents.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          exec: vi.fn().mockResolvedValue([frozenDoc]),
-        }),
-      });
-
-      const result = await getAllDocuments();
-      expect(result[0].documentId).toBe("frozen-all");
-      expect(result[0].segments).toBeUndefined();
+      expect(settings.darkMode).toBe(false);
+      expect(settings.textScale).toBe(150);
+      expect(settings.videoLength).toBe(DEFAULT_SETTINGS.videoLength); // preserved
     });
   });
 });

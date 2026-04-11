@@ -27,28 +27,28 @@
     onkeydown={(e) => e.key === "Escape" && onClose()}
   ></button>
   <div
-    class="relative w-full max-w-md mx-auto bg-black/80 backdrop-blur-xl border-t border-white/10 rounded-t-3xl pb-10 pt-4 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pointer-events-auto"
+    class="relative w-full max-w-md mx-auto bg-brand-surface backdrop-blur-xl border-t border-brand-primary/10 rounded-t-3xl pb-10 pt-4 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pointer-events-auto"
   >
     <div class="w-full flex justify-center mb-6">
-      <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
+      <div class="w-12 h-1.5 bg-brand-text-muted/20 rounded-full"></div>
     </div>
     <div class="px-6 flex flex-col space-y-2">
       <button
-        class="w-full flex items-center space-x-4 p-4 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors group"
+        class="w-full flex items-center space-x-4 p-4 rounded-xl hover:bg-brand-primary/5 active:bg-brand-primary/10 transition-colors group text-left"
         onclick={handleToggleFavourite}
       >
         <div
-          class="w-10 h-10 rounded-full bg-brand-surface-dark border border-white/10 flex items-center justify-center shrink-0"
+          class="w-10 h-10 rounded-full bg-brand-surface-dark border border-brand-primary/10 flex items-center justify-center shrink-0"
         >
           <span
             class="material-symbols-outlined {isFavourite
               ? 'text-brand-primary'
-              : 'text-brand-gradient'} fill-1"
+              : 'text-brand-text-muted'} fill-1"
           >
             star
           </span>
         </div>
-        <span class="text-white font-semibold text-base">
+        <span class="text-foreground font-semibold text-base">
           {isFavourite ? "Remove from Favourites" : "Set as Favourite"}
         </span>
       </button>

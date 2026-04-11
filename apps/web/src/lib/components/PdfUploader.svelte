@@ -141,7 +141,7 @@
 <div class="flex flex-col min-h-screen pb-20">
   <!-- Header -->
   <header class="pt-12 pb-8 px-6 text-center">
-    <h1 class="text-4xl font-extrabold tracking-tight text-white">
+    <h1 class="text-4xl font-extrabold tracking-tight text-foreground">
       Paper<span
         class="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-secondary"
         >Flip</span
@@ -155,13 +155,13 @@
   <!-- Privacy Badge -->
   <div class="px-6 mb-8">
     <div
-      class="bg-brand-surface/40 border border-white/5 rounded-xl p-4 flex items-center space-x-4"
+      class="bg-brand-surface/40 border border-brand-primary/10 rounded-xl p-4 flex items-center space-x-4"
     >
       <div class="bg-brand-primary/10 p-2 rounded-lg">
         <Shield class="text-brand-primary w-5 h-5" />
       </div>
       <div>
-        <h3 class="font-bold text-sm leading-tight text-white">
+        <h3 class="font-bold text-sm leading-tight text-foreground">
           100% On-Device
         </h3>
         <p class="text-xs text-brand-text-muted mt-0.5">
@@ -199,7 +199,7 @@
           {/if}
         </div>
         <div>
-          <h2 class="text-xl font-bold tracking-tight text-white">
+          <h2 class="text-xl font-bold tracking-tight text-foreground">
             {isLoading ? "Processing..." : "Open PDF"}
           </h2>
           <p class="text-brand-text-muted text-sm">Tap to browse files</p>
@@ -224,14 +224,14 @@
     <!-- Recent Stories -->
     <section class="space-y-4">
       <div class="flex items-center justify-between px-1">
-        <h3 class="text-lg font-bold text-white">Recent Stories</h3>
+        <h3 class="text-lg font-bold text-foreground">Recent Stories</h3>
       </div>
       <div class="space-y-3">
         {#each recentUploads as file, index (file.id)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="bg-brand-surface/50 border border-white/5 rounded-xl p-4 flex items-center space-x-4 cursor-pointer hover:bg-brand-surface/70 transition-colors"
+            class="bg-brand-surface/50 border border-brand-primary/10 rounded-xl p-4 flex items-center space-x-4 cursor-pointer hover:bg-brand-surface/70 transition-colors"
             onclick={() => handleRecentClick(file.id)}
             in:fly={{ y: 20, duration: 300, delay: index * 50 }}
           >
@@ -247,7 +247,7 @@
 
             <div class="flex-grow min-w-0">
               <div class="flex justify-between items-start">
-                <h4 class="font-bold text-sm truncate pr-2 text-white">
+                <h4 class="font-bold text-sm truncate pr-2 text-foreground">
                   {file.name}
                 </h4>
                 <span

@@ -11,7 +11,7 @@
 
 <section class="px-6 flex-grow">
   <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-bold text-white">All Documents</h3>
+    <h3 class="text-lg font-bold text-foreground">All Documents</h3>
     <div class="flex space-x-2">
       <button
         class="p-1 rounded hover:bg-white/5 {viewMode === 'list'

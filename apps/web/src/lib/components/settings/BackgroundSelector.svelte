@@ -10,9 +10,9 @@
 
 <div class="glass-panel rounded-2xl p-6">
   <div class="flex justify-between items-center mb-4">
-    <h3 class="font-bold text-lg">Background</h3>
+    <h3 class="font-bold text-lg text-foreground">Background</h3>
     <span
-      class="text-xs font-bold text-brand-primary uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+      class="text-xs font-bold text-brand-primary uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors"
     >
       View All
     </span>
@@ -25,7 +25,7 @@
         class="aspect-square rounded-xl relative overflow-hidden cursor-pointer group transition-all duration-200 {selected ===
         bg.url
           ? 'ring-2 ring-brand-primary ring-offset-2 ring-offset-brand-surface'
-          : 'border border-white/10 opacity-70 hover:opacity-100'}"
+          : 'border border-brand-primary/10 opacity-70 hover:opacity-100'}"
         onclick={() => selectBackground(bg.url)}
       >
         {#if selected === bg.url}
@@ -56,10 +56,10 @@
 
     <!-- Add New Placeholder -->
     <div
-      class="aspect-square rounded-xl bg-brand-surface-dark border border-white/10 flex items-center justify-center cursor-pointer hover:bg-brand-surface transition-colors group"
+      class="aspect-square rounded-xl bg-brand-surface-dark border border-brand-primary/10 flex items-center justify-center cursor-pointer hover:bg-brand-surface transition-colors group"
     >
       <span
-        class="material-symbols-outlined text-brand-text-muted group-hover:text-white transition-colors"
+        class="material-symbols-outlined text-brand-text-muted group-hover:text-foreground transition-colors"
         >add_photo_alternate</span
       >
     </div>
@@ -68,8 +68,10 @@
 
 <style>
   .glass-panel {
-    background: rgba(26, 26, 46, 0.4);
+    background: var(--brand-surface);
+    opacity: 0.8;
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--brand-primary);
+    border-color: rgba(0, 255, 136, 0.1);
   }
 </style>

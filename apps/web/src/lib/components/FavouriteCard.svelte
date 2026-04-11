@@ -64,11 +64,11 @@
 
 <a
   href="{resolve('/feed')}?id={encodeURIComponent(document.documentId)}"
-  class="snap-start shrink-0 w-36 bg-brand-surface border border-white/5 rounded-xl overflow-hidden group relative hover:border-white/10 transition-colors"
+  class="snap-start shrink-0 w-36 bg-brand-surface border border-brand-primary/10 rounded-xl overflow-hidden group relative hover:border-brand-primary/20 transition-colors"
 >
   <div class="h-40 bg-brand-surface-dark relative">
     <div
-      class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-[#050510] flex items-center justify-center"
+      class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-brand-bg flex items-center justify-center"
     >
       <span
         class="material-symbols-outlined {colorObj.text} opacity-40 text-5xl"
@@ -93,7 +93,7 @@
   </div>
 
   <div class="p-3">
-    <h4 class="font-bold text-sm truncate text-white mb-1">
+    <h4 class="font-bold text-sm truncate text-foreground mb-1">
       {document.documentId}
     </h4>
     <div class="w-full bg-white/5 rounded-full h-1">

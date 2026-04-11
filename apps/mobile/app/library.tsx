@@ -1,7 +1,7 @@
 import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getDb, getAllDocuments } from '@paperflip/core';
+import { subscribeToChanges, getAllDocuments } from '@paperflip/core';
 import { LibraryHeader } from '../src/components/LibraryHeader';
 import { DocumentListItem } from '../src/components/DocumentListItem';
 import { DocumentGridItem } from '../src/components/DocumentGridItem';
@@ -37,34 +37,14 @@ export default function LibraryScreen() {
   useEffect(() => {
     loadDocuments();
 
-    let sub: any;
-    getDb().then(db => {
-      if (db && db.documents) {
-        sub = db.documents.find().$.subscribe((docs: any) => {
-          setDocuments(docs.map((d: any) => {
-            const json = d.toJSON();
-            delete json.segments;
-            return json;
-          }).sort((a: any, b: any) => b.lastViewedAt - a.lastViewedAt));
-        });
+    const unsubscribe = subscribeToChanges((key) => {
+      if (key === 'documents' || key.startsWith('document:')) {
+        loadDocuments();
       }
-    }).catch(console.error);
-
-    // Mock data injection for testing
-    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      const handleInject = (e: any) => {
-        setDocuments(e.detail);
-        setLoading(false);
-      };
-      window.addEventListener('testing:inject-docs', handleInject);
-      return () => {
-        window.removeEventListener('testing:inject-docs', handleInject);
-        if (sub) sub.unsubscribe();
-      };
-    }
+    });
 
     return () => {
-      if (sub) sub.unsubscribe();
+      unsubscribe();
     };
   }, []);
 

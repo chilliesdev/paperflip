@@ -44,13 +44,13 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* Brand Colors */
-  --brand-primary: #00ff88;
-  --brand-secondary: #00bfff;
-  --brand-bg: #0a0a0a;
-  --brand-surface: #1a1a2e;
-  --brand-surface-dark: #0f0f1e;
-  --brand-text-muted: #9ca3af; /* gray-400 */
+  /* Brand Colors (Light) */
+  --brand-primary: #008855;
+  --brand-secondary: #0077aa;
+  --brand-bg: #f9f9fb;
+  --brand-surface: #ffffff;
+  --brand-surface-dark: #f3f3f5;
+  --brand-text-muted: #6b7280; /* gray-500 */
 }
 
 .dark {
@@ -88,6 +88,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* Brand Colors (Dark) */
+  --brand-primary: #00ff88;
+  --brand-secondary: #00bfff;
+  --brand-bg: #0a0a0a;
+  --brand-surface: #1a1a2e;
+  --brand-surface-dark: #0f0f1e;
+  --brand-text-muted: #9ca3af; /* gray-400 */
 }
 
 @theme inline {

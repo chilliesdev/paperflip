@@ -1,99 +1,10 @@
-import { createRxDatabase, addRxPlugin, type RxStorage } from "rxdb";
-import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
-import { RxDBUpdatePlugin } from "rxdb/plugins/update";
-import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { segmentText } from "./segmenter";
 import { CHARS_PER_SECOND } from "./constants";
+import type { Document, Settings } from "./types";
 
-// Use globalThis to track DB state across module instances
-declare global {
-  var __rxdb_plugins_added: boolean | undefined;
-  var __rxdb_devmode_added: boolean | undefined;
-  var __rxdb_storage: RxStorage<any, any> | null;
-  var __rxdb_is_dev: boolean;
-  var __rxdb_hash_function: ((data: any) => Promise<string>) | undefined;
-}
+// --- Types & Schemas (Simplified) ---
 
-const _global = typeof window !== "undefined" ? window : globalThis;
-
-// Add essential plugins - only once
-if (!_global.__rxdb_plugins_added) {
-  try {
-    addRxPlugin(RxDBMigrationSchemaPlugin);
-    addRxPlugin(RxDBUpdatePlugin);
-    addRxPlugin(RxDBQueryBuilderPlugin);
-    _global.__rxdb_plugins_added = true;
-  } catch (e) {
-    console.warn("Plugins might already be added", e);
-  }
-}
-
-export const documentSchema = {
-  // ... rest of schema ...
-  version: 9,
-  primaryKey: "documentId",
-  type: "object",
-  properties: {
-    documentId: { type: "string", maxLength: 100 },
-    segments: { type: "array", items: { type: "string" } },
-    fullText: { type: "string" },
-    thumbnailUri: { type: "string" },
-    videoLengthAtSegmentation: { type: "number" },
-    currentSegmentIndex: { type: "number" },
-    currentSegmentProgress: { type: "number" },
-    createdAt: {
-      type: "number",
-      multipleOf: 1,
-      minimum: 0,
-      maximum: 100000000000000,
-    },
-    lastViewedAt: {
-      type: "number",
-      multipleOf: 1,
-      minimum: 0,
-      maximum: 100000000000000,
-    },
-    isFavourite: { type: "boolean" },
-    totalSegments: { type: "number" },
-    currentSegmentLength: { type: "number" },
-  },
-  required: [
-    "documentId",
-    "segments",
-    "createdAt",
-    "lastViewedAt",
-    "isFavourite",
-  ],
-} as const;
-
-export const settingsSchema: any = {
-  version: 1,
-  primaryKey: "id",
-  type: "object",
-  properties: {
-    id: { type: "string", maxLength: 100 },
-    playbackSpeed: { type: "number" },
-    autoScroll: { type: "boolean" },
-    karaokeMode: { type: "boolean" },
-    videoLength: { type: "number" },
-    isMuted: { type: "boolean" },
-    autoResume: { type: "boolean" },
-    darkMode: { type: "boolean" },
-    textScale: { type: "number" },
-    backgroundUrl: { type: "string" },
-  },
-  required: [
-    "id",
-    "playbackSpeed",
-    "autoScroll",
-    "karaokeMode",
-    "videoLength",
-    "isMuted",
-    "autoResume",
-  ],
-} as const;
-
-export const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS: Settings = {
   id: "global",
   playbackSpeed: 1,
   autoScroll: true,
@@ -106,167 +17,65 @@ export const DEFAULT_SETTINGS = {
   backgroundUrl: "",
 };
 
-let dbPromise: Promise<any> | null = null;
+// --- Storage Engine Interface ---
 
-export function setDbStorage(
-  storage: RxStorage<any, any>,
-  devMode: boolean = false,
-  hashFunction?: (data: any) => Promise<string>,
+export interface StorageEngine {
+  get<T>(key: string): Promise<T | null>;
+  set<T>(key: string, value: T): Promise<void>;
+  del(key: string): Promise<void>;
+  keys(): Promise<string[]>;
+}
+
+// Global storage state
+let _storage: StorageEngine | null = null;
+const _changeListeners: Set<(key: string, value: any) => void> = new Set();
+
+export function setStorageEngine(engine: StorageEngine) {
+  _storage = engine;
+}
+
+export function getStorage(): StorageEngine {
+  if (!_storage) {
+    throw new Error("Storage engine not set. Call setStorageEngine first.");
+  }
+  return _storage;
+}
+
+// --- Reactivity (Simple Event Emitter) ---
+
+export function subscribeToChanges(
+  callback: (key: string, value: any) => void,
 ) {
-  _global.__rxdb_storage = storage;
-  _global.__rxdb_is_dev = devMode;
-  _global.__rxdb_hash_function = hashFunction;
+  _changeListeners.add(callback);
+  return () => _changeListeners.delete(callback);
 }
 
-export function getDb() {
-  // Add another layer of check to support the vitest tests bypassing db creation
-  if (typeof globalThis !== "undefined" && (globalThis as any).__mockDb) {
-    return Promise.resolve((globalThis as any).__mockDb);
-  }
-
-  if (!_global.__rxdb_storage) {
-    return Promise.reject(
-      new Error("Storage adapter not set. Call setDbStorage first."),
-    );
-  }
-  if (!dbPromise) {
-    dbPromise = _createDb();
-  }
-  return dbPromise;
+function notifyChange(key: string, value: any) {
+  _changeListeners.forEach((cb) => cb(key, value));
 }
 
-async function _createDb() {
-  console.log(
-    "_createDb: currentHashFunction is",
-    typeof _global.__rxdb_hash_function,
-  );
-  let storage: RxStorage<any, any> = _global.__rxdb_storage!;
+// --- Keys ---
 
-  if (_global.__rxdb_is_dev) {
-    if (!_global.__rxdb_devmode_added) {
-      try {
-        const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
-        addRxPlugin(RxDBDevModePlugin);
-        _global.__rxdb_devmode_added = true;
-      } catch (e: unknown) {
-        const err = e as { code?: string; message?: string; name?: string };
-        const isDev1 =
-          err?.code === "DEV1" ||
-          String(e).includes("DEV1") ||
-          err?.message?.includes?.("DEV1") ||
-          err?.name?.includes?.("DEV1");
+const SETTINGS_KEY = "paperflip:settings";
+const DOC_PREFIX = "paperflip:doc:";
+const DOC_LIST_KEY = "paperflip:docs";
 
-        if (isDev1) {
-          _global.__rxdb_devmode_added = true;
-        } else {
-          console.warn("Failed to load RxDB Dev Mode Plugin", e);
-        }
-      }
-    }
+// --- Core API ---
 
-    try {
-      const { wrappedValidateAjvStorage } =
-        await import("rxdb/plugins/validate-ajv");
-      storage = wrappedValidateAjvStorage({ storage });
-    } catch (e) {
-      console.warn("Failed to load RxDB AJV Validation Storage Wrapper", e);
-    }
-  }
+/**
+ * Gets the list of document IDs, sorted by last viewed.
+ */
+async function getDocList(): Promise<string[]> {
+  const storage = getStorage();
+  return (await storage.get<string[]>(DOC_LIST_KEY)) || [];
+}
 
-  try {
-    const db = await createRxDatabase({
-      name:
-        "paperflipdb_" +
-        Math.random().toString(36).substring(7) +
-        "_" +
-        Date.now(),
-      storage,
-      // Only use ignoreDuplicate if devMode is loaded, otherwise it triggers DB9
-      ignoreDuplicate: !!_global.__rxdb_devmode_added,
-      hashFunction: _global.__rxdb_hash_function,
-    });
-
-    await db.addCollections({
-      documents: {
-        schema: documentSchema,
-        migrationStrategies: {
-          1: (oldDoc: any) => {
-            oldDoc.createdAt = oldDoc.createdAt || Date.now();
-            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
-            oldDoc.isFavourite = oldDoc.isFavourite || false;
-            return oldDoc;
-          },
-          2: (oldDoc: any) => {
-            oldDoc.createdAt = oldDoc.createdAt || Date.now();
-            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
-            return oldDoc;
-          },
-          3: (oldDoc: any) => {
-            oldDoc.createdAt = oldDoc.createdAt || Date.now();
-            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
-            return oldDoc;
-          },
-          4: (oldDoc: any) => {
-            oldDoc.createdAt = oldDoc.createdAt || Date.now();
-            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
-            return oldDoc;
-          },
-          5: (oldDoc: any) => {
-            oldDoc.createdAt = oldDoc.createdAt || Date.now();
-            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
-            return oldDoc;
-          },
-          6: (oldDoc: any) => {
-            oldDoc.createdAt = oldDoc.createdAt || Date.now();
-            oldDoc.lastViewedAt = oldDoc.lastViewedAt || oldDoc.createdAt;
-            return oldDoc;
-          },
-          7: (oldDoc: any) => {
-            oldDoc.fullText = oldDoc.fullText || oldDoc.segments.join("\n\n");
-            oldDoc.videoLengthAtSegmentation =
-              oldDoc.videoLengthAtSegmentation || 60;
-            return oldDoc;
-          },
-          8: (oldDoc: any) => {
-            oldDoc.totalSegments = oldDoc.segments?.length || 0;
-            oldDoc.currentSegmentLength =
-              oldDoc.segments &&
-              oldDoc.currentSegmentIndex !== undefined &&
-              oldDoc.segments[oldDoc.currentSegmentIndex]
-                ? oldDoc.segments[oldDoc.currentSegmentIndex].length
-                : 0;
-            return oldDoc;
-          },
-          9: (oldDoc: any) => {
-            oldDoc.thumbnailUri = oldDoc.thumbnailUri || "";
-            return oldDoc;
-          },
-        },
-      },
-      settings: {
-        schema: settingsSchema,
-        migrationStrategies: {
-          1: (oldDoc: any) => {
-            oldDoc.darkMode =
-              oldDoc.darkMode !== undefined ? oldDoc.darkMode : true;
-            oldDoc.textScale = oldDoc.textScale || 100;
-            oldDoc.backgroundUrl = oldDoc.backgroundUrl || "";
-            return oldDoc;
-          },
-        },
-      },
-    });
-
-    const settingsDoc = await db.settings.findOne("global").exec();
-    if (!settingsDoc) {
-      await db.settings.insert(DEFAULT_SETTINGS);
-    }
-
-    return db;
-  } catch (error) {
-    console.error("Failed to initialize RxDB:", error);
-    throw error;
-  }
+/**
+ * Internal helper to save the document list.
+ */
+async function saveDocList(ids: string[]) {
+  const storage = getStorage();
+  await storage.set(DOC_LIST_KEY, ids);
 }
 
 export async function addDocument(
@@ -276,30 +85,35 @@ export async function addDocument(
   videoLengthAtSegmentation: number = 60,
   currentSegmentIndex: number = 0,
   thumbnailUri: string = "",
-) {
-  try {
-    const db = await getDb();
-    const now = Date.now();
-    const currentSegmentLength = segments[currentSegmentIndex]?.length || 0;
-    const doc = await db.documents.insert({
-      documentId,
-      segments,
-      fullText,
-      thumbnailUri,
-      videoLengthAtSegmentation,
-      currentSegmentIndex,
-      currentSegmentProgress: 0,
-      createdAt: now,
-      lastViewedAt: now,
-      isFavourite: false,
-      totalSegments: segments.length,
-      currentSegmentLength,
-    });
-    return doc.toJSON();
-  } catch (error) {
-    console.error(`Failed to add document ${documentId}:`, error);
-    throw error;
-  }
+): Promise<Document> {
+  const storage = getStorage();
+  const now = Date.now();
+  const currentSegmentLength = segments[currentSegmentIndex]?.length || 0;
+
+  const doc: Document = {
+    documentId,
+    segments,
+    fullText,
+    thumbnailUri,
+    videoLengthAtSegmentation,
+    currentSegmentIndex,
+    currentSegmentProgress: 0,
+    createdAt: now,
+    lastViewedAt: now,
+    isFavourite: false,
+    totalSegments: segments.length,
+    currentSegmentLength,
+  };
+
+  await storage.set(`${DOC_PREFIX}${documentId}`, doc);
+
+  // Update doc list (add to front)
+  const list = await getDocList();
+  const filteredList = list.filter((id) => id !== documentId);
+  await saveDocList([documentId, ...filteredList]);
+
+  notifyChange("documents", doc);
+  return doc;
 }
 
 export async function upsertDocument(
@@ -310,52 +124,58 @@ export async function upsertDocument(
   currentSegmentIndex: number = 0,
   thumbnailUri: string = "",
 ) {
-  try {
-    const db = await getDb();
-    const now = Date.now();
-    const currentSegmentLength = segments[currentSegmentIndex]?.length || 0;
-    const doc = await db.documents.upsert({
-      documentId,
-      segments,
-      fullText,
-      thumbnailUri,
-      videoLengthAtSegmentation,
-      currentSegmentIndex,
-      currentSegmentProgress: 0,
-      createdAt: now,
-      lastViewedAt: now,
-      isFavourite: false,
-      totalSegments: segments.length,
-      currentSegmentLength,
-    });
-    return doc.toJSON();
-  } catch (error) {
-    console.error(`Failed to upsert document ${documentId}:`, error);
-    throw error;
-  }
+  return addDocument(
+    documentId,
+    segments,
+    fullText,
+    videoLengthAtSegmentation,
+    currentSegmentIndex,
+    thumbnailUri,
+  );
 }
 
-export async function getRecentUploads(limit: number = 10) {
-  const db = await getDb();
-  const docs = await db.documents
-    .find()
-    .sort({ lastViewedAt: "desc" })
-    .limit(limit)
-    .exec();
-  return docs.map((doc: any) => {
-    const { segments, ...json } = doc.toJSON();
-    return json;
-  });
-}
-
-export async function getDocument(documentId: string) {
-  const db = await getDb();
-  const doc = await db.documents.findOne(documentId).exec();
+export async function getDocument(
+  documentId: string,
+): Promise<Document | null> {
+  const storage = getStorage();
+  const doc = await storage.get<Document>(`${DOC_PREFIX}${documentId}`);
   if (doc) {
-    await doc.incrementalPatch({ lastViewedAt: Date.now() });
-    return doc.toJSON();
+    // Update last viewed
+    doc.lastViewedAt = Date.now();
+    await storage.set(`${DOC_PREFIX}${documentId}`, doc);
+
+    // Re-order in list
+    const list = await getDocList();
+    const filteredList = list.filter((id) => id !== documentId);
+    await saveDocList([documentId, ...filteredList]);
+
+    return doc;
   }
   return null;
+}
+
+export async function getAllDocuments(): Promise<Document[]> {
+  const ids = await getDocList();
+  const docs: Document[] = [];
+
+  for (const id of ids) {
+    const doc = await getDocument(id);
+    if (doc) {
+      // In a real KV store we might want to return metadata only,
+      // but for simplicity and type safety we return the whole doc
+      // and let the caller decide what to use.
+      docs.push(doc);
+    }
+  }
+
+  return docs;
+}
+
+export async function getRecentUploads(
+  limit: number = 10,
+): Promise<Document[]> {
+  const all = await getAllDocuments();
+  return all.slice(0, limit);
 }
 
 export async function updateDocumentProgress(
@@ -363,146 +183,142 @@ export async function updateDocumentProgress(
   index: number,
   progress: number = 0,
 ) {
-  try {
-    const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
-    if (doc) {
-      const segments = doc.segments || [];
-      const currentSegmentLength = segments[index]?.length || 0;
-      await doc.incrementalPatch({
-        currentSegmentIndex: index,
-        currentSegmentProgress: progress,
-        currentSegmentLength,
-        lastViewedAt: Date.now(),
-      });
-    }
-  } catch (error) {
-    console.error(`Failed to update progress for ${documentId}:`, error);
+  const storage = getStorage();
+  const doc = await storage.get<Document>(`${DOC_PREFIX}${documentId}`);
+  if (doc) {
+    doc.currentSegmentIndex = index;
+    doc.currentSegmentProgress = progress;
+    doc.currentSegmentLength = doc.segments[index]?.length || 0;
+    doc.lastViewedAt = Date.now();
+
+    await storage.set(`${DOC_PREFIX}${documentId}`, doc);
+    notifyChange(`document:${documentId}`, doc);
   }
 }
 
 export async function toggleFavourite(documentId: string) {
-  try {
-    const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
-    if (doc) {
-      const newStatus = !doc.isFavourite;
-      await doc.incrementalPatch({ isFavourite: newStatus });
-      return newStatus;
-    }
-  } catch (error) {
-    console.error(`Failed to toggle favourite for ${documentId}:`, error);
+  const storage = getStorage();
+  const doc = await storage.get<Document>(`${DOC_PREFIX}${documentId}`);
+  if (doc) {
+    doc.isFavourite = !doc.isFavourite;
+    await storage.set(`${DOC_PREFIX}${documentId}`, doc);
+    notifyChange(`document:${documentId}`, doc);
+    return doc.isFavourite;
   }
   return false;
 }
 
 export async function deleteDocument(documentId: string) {
-  try {
-    const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
-    if (doc) {
-      await doc.remove();
-      return true;
-    }
-  } catch (error) {
-    console.error(`Failed to delete document ${documentId}:`, error);
-  }
-  return false;
+  const storage = getStorage();
+  await storage.del(`${DOC_PREFIX}${documentId}`);
+
+  const list = await getDocList();
+  await saveDocList(list.filter((id) => id !== documentId));
+
+  notifyChange("documents", null);
+  return true;
 }
 
-export function resetDb() {
-  dbPromise = null;
+export async function getSettings(): Promise<Settings> {
+  const storage = getStorage();
+  const settings = await storage.get<Settings>(SETTINGS_KEY);
+  return settings || DEFAULT_SETTINGS;
 }
 
-export async function getAllDocuments() {
-  const db = await getDb();
-  const docs = await db.documents.find().sort({ lastViewedAt: "desc" }).exec();
-  return docs.map((doc: any) => {
-    const { segments, ...json } = doc.toJSON();
-    return json;
-  });
-}
-
-export type Settings = typeof DEFAULT_SETTINGS;
-export async function getSettings() {
-  const db = await getDb();
-  const doc = await db.settings.findOne("global").exec();
-  return doc ? doc.toJSON() : DEFAULT_SETTINGS;
-}
-
-export async function updateSettings(patch: Partial<typeof DEFAULT_SETTINGS>) {
-  try {
-    const db = await getDb();
-    const doc = await db.settings.findOne("global").exec();
-    if (doc) {
-      await doc.incrementalPatch(patch);
-    } else {
-      await db.settings.insert({ ...DEFAULT_SETTINGS, ...patch });
-    }
-  } catch (error) {
-    console.error("Failed to update settings:", error);
-  }
-}
-
-export async function getSettingsObservable() {
-  const db = await getDb();
-  return db.settings.findOne("global").$;
+export async function updateSettings(patch: Partial<Settings>) {
+  const storage = getStorage();
+  const current = await getSettings();
+  const updated = { ...current, ...patch };
+  await storage.set(SETTINGS_KEY, updated);
+  notifyChange("settings", updated);
 }
 
 export async function resegmentDocument(
   documentId: string,
   newVideoLength: number,
 ) {
-  try {
-    const db = await getDb();
-    const doc = await db.documents.findOne(documentId).exec();
-    if (!doc || !doc.fullText) return null;
+  const doc = await getDocument(documentId);
+  if (!doc || !doc.fullText) return null;
 
-    const oldSegments = doc.segments || [];
-    const oldIndex = doc.currentSegmentIndex || 0;
-    const oldProgress = doc.currentSegmentProgress || 0;
+  const oldSegments = doc.segments || [];
+  const oldIndex = doc.currentSegmentIndex || 0;
+  const oldProgress = doc.currentSegmentProgress || 0;
 
-    let globalOffset = oldProgress;
-    const len = Math.min(oldIndex, oldSegments.length);
-    for (let i = 0; i < len; i++) {
-      globalOffset += oldSegments[i].length;
-    }
-
-    const maxChars = Math.max(1, Math.round(newVideoLength * CHARS_PER_SECOND));
-    const newSegments = segmentText(doc.fullText, maxChars);
-
-    let newIndex = 0;
-    let accumulatedLength = 0;
-    let newProgress = 0;
-
-    for (let i = 0; i < newSegments.length; i++) {
-      const segmentLength = newSegments[i].length;
-      if (accumulatedLength + segmentLength > globalOffset) {
-        newIndex = i;
-        newProgress = globalOffset - accumulatedLength;
-        break;
-      }
-      accumulatedLength += segmentLength;
-      if (i === newSegments.length - 1) {
-        newIndex = i;
-        newProgress = segmentLength;
-      }
-    }
-
-    const currentSegmentLength = newSegments[newIndex]?.length || 0;
-
-    await doc.incrementalPatch({
-      segments: newSegments,
-      videoLengthAtSegmentation: newVideoLength,
-      currentSegmentIndex: newIndex,
-      currentSegmentProgress: newProgress,
-      totalSegments: newSegments.length,
-      currentSegmentLength,
-    });
-
-    return doc.toJSON();
-  } catch (error) {
-    console.error(`Failed to resegment document ${documentId}:`, error);
-    throw error;
+  let globalOffset = oldProgress;
+  const len = Math.min(oldIndex, oldSegments.length);
+  for (let i = 0; i < len; i++) {
+    globalOffset += oldSegments[i].length;
   }
+
+  const maxChars = Math.max(1, Math.round(newVideoLength * CHARS_PER_SECOND));
+  const newSegments = segmentText(doc.fullText, maxChars);
+
+  let newIndex = 0;
+  let accumulatedLength = 0;
+  let newProgress = 0;
+
+  for (let i = 0; i < newSegments.length; i++) {
+    const segmentLength = newSegments[i].length;
+    if (accumulatedLength + segmentLength > globalOffset) {
+      newIndex = i;
+      newProgress = globalOffset - accumulatedLength;
+      break;
+    }
+    accumulatedLength += segmentLength;
+    if (i === newSegments.length - 1) {
+      newIndex = i;
+      newProgress = segmentLength;
+    }
+  }
+
+  doc.segments = newSegments;
+  doc.videoLengthAtSegmentation = newVideoLength;
+  doc.currentSegmentIndex = newIndex;
+  doc.currentSegmentProgress = newProgress;
+  doc.totalSegments = newSegments.length;
+  doc.currentSegmentLength = newSegments[newIndex]?.length || 0;
+
+  const storage = getStorage();
+  await storage.set(`${DOC_PREFIX}${documentId}`, doc);
+  notifyChange(`document:${documentId}`, doc);
+
+  return doc;
+}
+
+// Mocking some RxDB patterns for compatibility if needed
+export function resetDb() {
+  _storage = null;
+}
+
+// This was used for RxDB observables. In the new "barebones" world,
+// components should use subscribeToChanges or platform-specific stores.
+export async function getSettingsObservable() {
+  return {
+    subscribe: (callback: (s: Settings) => void) => {
+      getSettings().then(callback);
+      return subscribeToChanges((key, value) => {
+        if (key === "settings") callback(value);
+      });
+    },
+  };
+}
+
+// Deprecated RxDB specific exports (noop/empty)
+export function setDbStorage(...args: any[]) {
+  console.warn("setDbStorage is deprecated. Use setStorageEngine instead.");
+}
+export function getDb() {
+  return Promise.resolve({
+    settings: {
+      findOne: () => ({
+        $: {
+          subscribe: (cb: any) => {
+            getSettings().then(cb);
+            return subscribeToChanges((k, v) => k === "settings" && cb(v));
+          },
+        },
+        exec: () => getSettings(),
+      }),
+    },
+  });
 }

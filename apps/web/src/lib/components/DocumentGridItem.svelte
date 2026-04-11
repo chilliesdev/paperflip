@@ -54,7 +54,7 @@
 </script>
 
 <div
-  class="bg-brand-surface border border-white/5 rounded-xl overflow-hidden flex flex-col h-full hover:border-white/10 transition-colors group relative"
+  class="bg-brand-surface border border-brand-primary/10 rounded-xl overflow-hidden flex flex-col h-full hover:border-brand-primary/20 transition-colors group relative"
 >
   <a
     href="{resolve('/feed')}?id={encodeURIComponent(document.documentId)}"
@@ -62,7 +62,7 @@
   >
     <div class="h-24 bg-brand-surface-dark relative">
       <div
-        class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-[#050510] flex items-center justify-center"
+        class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-brand-bg flex items-center justify-center"
       >
         <span
           class="material-symbols-outlined {colorObj.text} opacity-40 text-4xl"
@@ -86,7 +86,9 @@
 
     <div class="p-2 flex-grow flex flex-col justify-between">
       <div>
-        <h4 class="font-bold text-xs text-white leading-tight truncate mb-1">
+        <h4
+          class="font-bold text-xs text-foreground leading-tight truncate mb-1"
+        >
           {document.documentId}
         </h4>
         <p class="text-[9px] text-brand-text-muted truncate">
@@ -106,7 +108,7 @@
   </a>
 
   <button
-    class="absolute top-1 right-1 p-2 rounded-full text-white/50 hover:text-white hover:bg-black/20 z-20 transition-all"
+    class="absolute top-1 right-1 p-2 rounded-full text-foreground/50 hover:text-foreground hover:bg-black/20 z-20 transition-all"
     onclick={(e) => {
       e.preventDefault();
       e.stopPropagation();

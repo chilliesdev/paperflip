@@ -55,7 +55,7 @@
 </script>
 
 <div
-  class="bg-brand-surface border border-white/5 rounded-xl overflow-hidden flex flex-row h-24 relative hover:border-white/10 transition-colors group"
+  class="bg-brand-surface border border-brand-primary/10 rounded-xl overflow-hidden flex flex-row h-24 relative hover:border-brand-primary/20 transition-colors group"
 >
   <a
     href="{resolve('/feed')}?id={encodeURIComponent(document.documentId)}"
@@ -63,7 +63,7 @@
   >
     <div class="w-24 bg-brand-surface-dark relative flex-shrink-0">
       <div
-        class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-[#050510] flex items-center justify-center"
+        class="w-full h-full bg-gradient-to-br from-brand-surface-dark to-brand-bg flex items-center justify-center"
       >
         <span
           class="material-symbols-outlined {colorClass} opacity-40 text-3xl"
@@ -89,7 +89,7 @@
     <div class="p-3 flex-grow flex flex-col justify-center min-w-0">
       <div>
         <h4
-          class="font-bold text-sm text-white leading-tight line-clamp-1 mb-1"
+          class="font-bold text-sm text-foreground leading-tight line-clamp-1 mb-1"
         >
           {document.documentId}
         </h4>
@@ -102,7 +102,7 @@
   </a>
 
   <button
-    class="shrink-0 p-3 flex items-center justify-center text-brand-text-muted hover:text-white z-10 transition-colors"
+    class="shrink-0 p-3 flex items-center justify-center text-brand-text-muted hover:text-foreground z-10 transition-colors"
     onclick={(e) => {
       e.stopPropagation();
       onShowOptions?.(document);

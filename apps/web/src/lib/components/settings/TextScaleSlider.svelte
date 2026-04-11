@@ -4,15 +4,15 @@
 
 <div class="glass-panel rounded-2xl p-6">
   <div class="flex justify-between items-center mb-2">
-    <h3 class="font-bold text-lg">Text Scale</h3>
+    <h3 class="font-bold text-lg text-foreground">Text Scale</h3>
     <span class="text-xs font-mono text-brand-secondary">{scale}%</span>
   </div>
 
   <div
-    class="h-16 flex items-center justify-center bg-brand-surface-dark/50 rounded-lg mb-4 border border-white/5 overflow-hidden"
+    class="h-16 flex items-center justify-center bg-brand-surface-dark/50 rounded-lg mb-4 border border-brand-primary/10 overflow-hidden"
   >
     <p
-      class="text-white/90 leading-snug text-center px-4 transition-all duration-300 whitespace-nowrap"
+      class="text-foreground/90 leading-snug text-center px-4 transition-all duration-300 whitespace-nowrap"
       style="font-size: {scale / 100}rem;"
     >
       The quick brown fox jumps over the lazy dog.
@@ -24,22 +24,25 @@
       >text_fields</span
     >
     <input
-      class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer slider-thumb"
+      class="w-full h-1 bg-brand-text-muted/20 rounded-lg appearance-none cursor-pointer slider-thumb"
       max="150"
       min="80"
       type="range"
       bind:value={scale}
     />
-    <span class="material-symbols-outlined text-white text-lg">text_fields</span
+    <span class="material-symbols-outlined text-foreground text-lg"
+      >text_fields</span
     >
   </div>
 </div>
 
 <style>
   .glass-panel {
-    background: rgba(26, 26, 46, 0.4);
+    background: var(--brand-surface);
+    opacity: 0.8;
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--brand-primary);
+    border-color: rgba(0, 255, 136, 0.1);
   }
 
   /* Slider Styling */

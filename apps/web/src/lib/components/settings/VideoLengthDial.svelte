@@ -35,27 +35,21 @@
     <span class="material-symbols-outlined text-brand-secondary">timelapse</span
     >
   </div>
-  <h3 class="font-bold text-lg mb-6">Video Length</h3>
+  <h3 class="font-bold text-lg mb-6 text-foreground">Video Length</h3>
   <div class="flex flex-col items-center justify-center relative py-2">
     <!-- Dial Container -->
     <div
-      class="w-48 h-48 rounded-full bg-brand-surface-dark relative flex items-center justify-center shadow-inner border border-white/5"
+      class="w-48 h-48 rounded-full bg-brand-surface-dark relative flex items-center justify-center shadow-inner border border-brand-primary/10"
     >
       <!-- Gradient Arc -->
-      <!-- We rotate this to match the filled amount.
-           The gradient provided in reference is: conic-gradient(from 180deg at 50% 50%, #00bfff 0deg, #1a1a2e 240deg, #1a1a2e 360deg)
-           If we rotate it, the 'start' (blue) moves.
-           Actually, to make it fill from start (-135) to current, we need a different approach or just rotate the gradient mask.
-           But let's stick to the reference visual for now: rotating the gradient background.
-      -->
       <div
         class="absolute inset-0 rounded-full opacity-80 transition-transform duration-500 ease-out"
-        style="background: conic-gradient(from 180deg at 50% 50%, #00bfff 0deg, #1a1a2e 240deg, #1a1a2e 360deg); transform: rotate({rotation}deg);"
+        style="background: conic-gradient(from 180deg at 50% 50%, #00bfff 0deg, var(--brand-surface-dark) 240deg, var(--brand-surface-dark) 360deg); transform: rotate({rotation}deg);"
       ></div>
 
       <!-- Inner Circle (Mask) -->
       <div
-        class="absolute inset-4 bg-brand-surface rounded-full flex flex-col items-center justify-center z-10 border border-white/5"
+        class="absolute inset-4 bg-brand-surface rounded-full flex flex-col items-center justify-center z-10 border border-brand-primary/10"
       >
         <span class="text-4xl font-black text-brand-secondary tracking-tighter">
           {getLabel(value)}
@@ -71,12 +65,6 @@
         class="absolute inset-0 z-20 transition-transform duration-500 ease-out"
         style="transform: rotate({rotation}deg);"
       >
-        <!-- The marker is at the top (0deg visual relative to container), so rotating the container moves it -->
-        <!-- But wait, 0deg is top.
-             If rotation is -135 (top-left), the marker should be there.
-             The marker div below is at 'top-2' which is top center.
-             So applying rotate(-135deg) to the parent moves it to -135deg. Correct.
-        -->
         <div
           class="w-1 h-2 bg-brand-secondary absolute top-2 left-1/2 -translate-x-1/2 rounded-full shadow-[0_0_8px_#00bfff]"
         ></div>
@@ -92,7 +80,7 @@
           class="focus:outline-none transition-colors duration-200 {value ===
           opt
             ? 'text-brand-secondary font-bold'
-            : 'hover:text-white'}"
+            : 'hover:text-foreground'}"
           onclick={() => selectValue(opt)}
         >
           {getLabel(opt)}
@@ -104,8 +92,10 @@
 
 <style>
   .glass-panel {
-    background: rgba(26, 26, 46, 0.4);
+    background: var(--brand-surface);
+    opacity: 0.8;
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--brand-primary);
+    border-color: rgba(0, 255, 136, 0.1);
   }
 </style>

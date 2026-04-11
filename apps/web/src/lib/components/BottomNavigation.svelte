@@ -6,7 +6,7 @@
 </script>
 
 <nav
-  class="fixed bottom-0 w-full px-6 pt-2 pb-8 bg-brand-surface-dark/90 backdrop-blur-xl border-t border-white/5 z-20 max-w-md left-1/2 -translate-x-1/2"
+  class="fixed bottom-0 w-full px-6 pt-2 pb-8 bg-brand-surface-dark/90 backdrop-blur-xl border-t border-brand-primary/10 z-20 max-w-md left-1/2 -translate-x-1/2"
 >
   <div class="flex items-center justify-between px-10">
     <!-- Home -->
@@ -14,7 +14,7 @@
       <span
         class="material-symbols-outlined {activeTab === 'home'
           ? 'text-brand-primary fill-1'
-          : 'text-brand-text-muted group-hover:text-white transition-colors'}"
+          : 'text-brand-text-muted group-hover:text-brand-primary transition-colors'}"
       >
         home
       </span>
@@ -22,7 +22,7 @@
         class="text-[10px] font-bold uppercase tracking-wider {activeTab ===
         'home'
           ? 'text-brand-primary'
-          : 'text-brand-text-muted group-hover:text-white transition-colors'}"
+          : 'text-brand-text-muted group-hover:text-brand-primary transition-colors'}"
       >
         Home
       </span>
@@ -36,7 +36,7 @@
       <span
         class="material-symbols-outlined {activeTab === 'library'
           ? 'text-brand-primary fill-1'
-          : 'text-brand-text-muted group-hover:text-white transition-colors'}"
+          : 'text-brand-text-muted group-hover:text-brand-primary transition-colors'}"
       >
         auto_stories
       </span>
@@ -44,7 +44,7 @@
         class="text-[10px] font-bold uppercase tracking-wider {activeTab ===
         'library'
           ? 'text-brand-primary'
-          : 'text-brand-text-muted group-hover:text-white transition-colors'}"
+          : 'text-brand-text-muted group-hover:text-brand-primary transition-colors'}"
       >
         Library
       </span>
@@ -58,7 +58,7 @@
       <span
         class="material-symbols-outlined {activeTab === 'settings'
           ? 'text-brand-primary fill-1'
-          : 'text-brand-text-muted group-hover:text-white transition-colors'}"
+          : 'text-brand-text-muted group-hover:text-brand-primary transition-colors'}"
       >
         settings
       </span>
@@ -66,7 +66,7 @@
         class="text-[10px] font-bold uppercase tracking-wider {activeTab ===
         'settings'
           ? 'text-brand-primary'
-          : 'text-brand-text-muted group-hover:text-white transition-colors'}"
+          : 'text-brand-text-muted group-hover:text-brand-primary transition-colors'}"
       >
         Settings
       </span>

@@ -25,7 +25,7 @@
     <div
       class="p-2 rounded-lg inline-flex {checked
         ? 'bg-brand-primary/10 text-brand-primary'
-        : 'bg-white/5 text-brand-text-muted'}"
+        : 'bg-brand-surface-dark text-brand-text-muted'}"
     >
       <span class="material-symbols-outlined">{icon}</span>
     </div>
@@ -47,7 +47,7 @@
         for={id}
         class="toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-300 {checked
           ? 'bg-brand-primary/30'
-          : 'bg-white/10'}"
+          : 'bg-brand-text-muted/20'}"
       ></label>
     </div>
   </div>
@@ -55,7 +55,7 @@
   <div>
     <h4
       class="font-bold text-sm transition-colors {checked
-        ? 'text-white'
+        ? 'text-foreground'
         : 'text-brand-text-muted'}"
     >
       {title}
@@ -68,19 +68,22 @@
 
 <style>
   .glass-panel {
-    background: rgba(26, 26, 46, 0.4);
+    background: var(--brand-surface);
+    opacity: 0.8;
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--brand-primary);
+    border-color: rgba(0, 255, 136, 0.1);
   }
   .glass-panel-active {
-    background: rgba(26, 26, 46, 0.7);
-    border: 1px solid rgba(0, 255, 136, 0.3);
+    background: var(--brand-surface);
+    opacity: 0.95;
+    border: 1px solid var(--brand-primary);
+    border-color: rgba(0, 255, 136, 0.3);
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
   }
   /* Checkbox styling logic moved to inline classes for dynamic values, but key behavior is here */
   .toggle-checkbox:checked {
     right: 0;
-    border-color: #00ff88;
+    border-color: var(--brand-primary);
   }
-  /* Svelte handles binding, so we rely on 'checked' prop for classes mostly */
 </style>

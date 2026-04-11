@@ -65,41 +65,42 @@ if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined
 }
 
 // Import from workspace core package
-import { DEFAULT_SETTINGS, setDbStorage, getDb, upsertDocument, getAllDocuments } from '@paperflip/core';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_SETTINGS, setStorageEngine, getSettings, upsertDocument, getAllDocuments, type StorageEngine, type Document as PaperFlipDocument } from '@paperflip/core';
 import { segmentText } from '@paperflip/core';
 import { CHARS_PER_SECOND } from '@paperflip/core';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { PdfUploader } from '../src/components/PdfUploader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Setup DB Storage for mobile (using memory storage for verification purposes)
-setDbStorage(getRxStorageMemory(), true, async (data: string | Uint8Array) => {
-  if (typeof data === 'string') {
-    return await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      data
-    );
-  } else {
-    const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
-    const str = Array.from(uint8)
-      .map((b) => String.fromCharCode(b))
-      .join('');
-    return await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      str
-    );
-  }
-});
+// Barebones AsyncStorage storage engine for Mobile
+const mobileStorage: StorageEngine = {
+  get: async (key) => {
+    const val = await AsyncStorage.getItem(key);
+    return val ? JSON.parse(val) : null;
+  },
+  set: async (key, value) => {
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  },
+  del: async (key) => {
+    await AsyncStorage.removeItem(key);
+  },
+  keys: async () => {
+    const keys = await AsyncStorage.getAllKeys();
+    return keys as string[];
+  },
+};
+
+// Initialize the storage engine for mobile
+setStorageEngine(mobileStorage);
 
 export default function App() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [recentDocs, setRecentDocs] = useState<any[]>([]);
+  const [recentDocs, setRecentDocs] = useState<PaperFlipDocument[]>([]);
 
   const loadRecentDocuments = async () => {
     try {
-      await getDb();
       const docs = await getAllDocuments();
       setRecentDocs(docs.slice(0, 3)); // Only show top 3 recent
     } catch (e) {
@@ -108,13 +109,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    getDb()
-      .then(() => {
-        loadRecentDocuments();
-      })
-      .catch((err) => {
-        console.error('getDb error', err);
-      });
+    loadRecentDocuments();
   }, []);
 
   const handlePdfParsed = async ({ text, filename, thumbnailUri }: { text: string; filename: string; thumbnailUri?: string }) => {

@@ -19,7 +19,7 @@
 </svelte:head>
 
 <div
-  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden text-white font-display"
+  class="max-w-md mx-auto min-h-screen bg-brand-bg relative flex flex-col overflow-hidden text-foreground font-display"
 >
   <!-- Background Gradients -->
   <div
