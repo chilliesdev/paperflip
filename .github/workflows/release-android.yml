@@ -87,6 +87,8 @@ jobs:
         if: steps.tag_version.outputs.new_tag != ''
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease --no-daemon
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
       - name: Finalize Tag
         if: steps.tag_version.outputs.new_tag != ''
