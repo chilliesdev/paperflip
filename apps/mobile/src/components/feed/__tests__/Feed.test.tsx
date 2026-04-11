@@ -7,6 +7,13 @@ jest.mock('@paperflip/core', () => ({
   splitSentences: jest.fn((text) => [{ text, start: 0, end: text.length }]),
   videoSources: [{ url: 'mock-video-url' }],
   updateDocumentProgress: jest.fn(),
+  getSettings: jest.fn().mockResolvedValue({
+    videoLength: 10,
+    karaokeMode: true,
+    autoResume: true,
+    playbackSpeed: 1.0,
+  }),
+  updateSettings: jest.fn(),
   DEFAULT_SETTINGS: {
     videoLength: 10,
     karaokeMode: true,
@@ -32,19 +39,6 @@ jest.mock('expo-speech', () => ({
   pause: jest.fn(),
   resume: jest.fn(),
 }));
-
-// Mock react-native-pager-view
-jest.mock('react-native-pager-view', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require('react');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View } = require('react-native');
-  return class MockPagerView extends React.Component {
-    render() {
-      return <View testID="pager-view">{this.props.children}</View>;
-    }
-  };
-});
 
 // Mock expo-av and FeedSlide
 jest.mock('../FeedSlide', () => ({

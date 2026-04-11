@@ -51,7 +51,7 @@ export default function LibraryScreen() {
     }).catch(console.error);
 
     // Mock data injection for testing
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       const handleInject = (e: any) => {
         setDocuments(e.detail);
         setLoading(false);

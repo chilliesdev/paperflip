@@ -3,11 +3,14 @@ import { render } from '@testing-library/react-native';
 import { FeedSlide } from '../FeedSlide';
 
 // Mocking some parts manually for the test
-jest.mock('expo-av', () => ({
-  Video: 'Video',
-  ResizeMode: {
-    COVER: 'cover'
-  }
+jest.mock('expo-video', () => ({
+  VideoView: 'VideoView',
+  useVideoPlayer: jest.fn(() => ({
+    play: jest.fn(),
+    pause: jest.fn(),
+    muted: false,
+    loop: false,
+  })),
 }));
 
 jest.mock('expo-linear-gradient', () => ({

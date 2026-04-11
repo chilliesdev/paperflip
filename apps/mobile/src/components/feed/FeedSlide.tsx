@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { View, Text, Dimensions } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { splitSentences } from '@paperflip/core';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -29,17 +29,25 @@ export function FeedSlide({
   textScale = 100,
   isMuted = true,
 }: FeedSlideProps) {
-  const videoRef = useRef<Video>(null);
+  const player = useVideoPlayer(videoSource, (p) => {
+    p.loop = true;
+    p.muted = isMuted;
+    if (isActive && isPlaying) {
+      p.play();
+    }
+  });
 
   useEffect(() => {
-    if (videoRef.current) {
-      if (isActive && isPlaying) {
-        videoRef.current.playAsync().catch(() => {});
-      } else {
-        videoRef.current.pauseAsync().catch(() => {});
-      }
+    if (isActive && isPlaying) {
+      player.play();
+    } else {
+      player.pause();
     }
-  }, [isActive, isPlaying]);
+  }, [player, isActive, isPlaying]);
+
+  useEffect(() => {
+    player.muted = isMuted;
+  }, [player, isMuted]);
 
   const words = useMemo(() => {
     if (!segment) return [];
@@ -152,14 +160,11 @@ export function FeedSlide({
   return (
     <View className="flex-1 bg-black relative overflow-hidden" style={{ width, height }}>
       <View className="absolute inset-0 z-0">
-        <Video
-          ref={videoRef}
+        <VideoView
+          player={player}
           className="w-full h-full opacity-80"
-          source={{ uri: videoSource }}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay={isActive && isPlaying}
-          isLooping
-          isMuted={isMuted}
+          contentFit="cover"
+          nativeControls={false}
         />
         {/* Gradient Overlay */}
         <LinearGradient
