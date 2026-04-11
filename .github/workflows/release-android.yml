@@ -71,7 +71,14 @@ jobs:
           FILE=$(find node_modules -name PdfThumbnailModule.kt)
           if [ -n "$FILE" ]; then
             echo "Patching $FILE"
-            sed -i 's/bitmap.config!!/Bitmap.Config.ARGB_8888/g' "$FILE"
+            echo "Before patch:"
+            grep "bitmap.config" "$FILE" || echo "bitmap.config not found!"
+            
+            # Match bitmap.config with or without !! and replace with ARGB_8888
+            sed -i 's/bitmap.config\(!!\)\?/Bitmap.Config.ARGB_8888/g' "$FILE"
+            
+            echo "After patch:"
+            grep "Bitmap.Config.ARGB_8888" "$FILE"
           else
             echo "PdfThumbnailModule.kt not found"
           fi
