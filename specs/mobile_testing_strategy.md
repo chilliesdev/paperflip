@@ -1,47 +1,54 @@
 # Mobile App Testing Strategy
 
-## 1. Understanding the Goal
+## 1. Overview
 
-Establish a robust Vitest-based testing suite for the mobile application (`apps/mobile`). This includes unit testing for components, hooks, and shared logic from `@paperflip/core`, while leveraging the same testing engine used in the web app.
+The mobile application (`apps/mobile`) utilizes **Jest** as its primary testing framework, integrated with **React Native Testing Library (RNTL)** for component and hook testing. This setup allows for reliable unit and integration tests within the Expo environment.
 
-## 2. Investigation & Analysis
+## 2. Current Setup
 
-- **Vitest in React Native:** Vitest is increasingly viable for React Native. We will use it alongside `@testing-library/react-native` (RNTL).
-- **Environment:** Since Vitest runs in a Node-based environment, we will need to mock `react-native` and Expo globals. Unlike Jest, we must ensure `vi.mock` is used instead of `jest.mock`.
-- **RxDB & Storage:** The mobile app uses `expo-sqlite` for RxDB. For Vitest, we'll swap this with an in-memory adapter (like `memory` or `indexeddb` via a polyfill) to avoid native dependency issues during tests.
+- **Framework:** Jest
+- **Preset:** `jest-expo` (provides essential mocks and configurations for the Expo ecosystem)
+- **Component Testing:** `@testing-library/react-native`
+- **Mocking:** `jest.setup.cjs` contains global mocks for native modules like `expo-sqlite`, `expo-speech`, and `expo-video`.
 
-## 3. Step-by-Step Execution Plan
+## 3. Testing Layers
 
-### Phase 1: Vitest Infrastructure & Configuration
+### 3.1 Unit Testing (Components)
 
-1.  **Install Dependencies:**
-    - `vitest`, `@testing-library/react-native`, `react-test-renderer`.
-2.  **Configure Vitest:**
-    - Create `apps/mobile/vitest.config.ts` extending the workspace's Vite/Vitest patterns.
-    - Setup `alias` for `@paperflip/core` to ensure direct source testing.
-3.  **Global Setup (`vitest.setup.ts`):**
-    - Initialize RNTL cleanup.
-    - Create comprehensive mocks for Expo APIs (`expo-sqlite`, `expo-av`, `expo-crypto`).
-    - Mock NativeWind's `styled` or `useColorScheme` if they interfere with rendering.
+We test individual React Native components for:
 
-### Phase 2: Unit & Component Testing
+- **Correct Rendering:** Ensuring UI elements (buttons, text, images) appear as expected.
+- **Interaction:** Simulating user taps and swipes using RNTL's `fireEvent`.
+- **Dynamic Styling:** Verifying that NativeWind styles are correctly applied based on component props.
 
-1.  **UI Components:** Test mobile-specific components for correct rendering and user interaction (presses, swipes).
-2.  **State & Hooks:** Test custom hooks using `@testing-library/react-native`'s `renderHook`.
-3.  **App Logic:** Verify `App.tsx` initializes the database and handles the loading state correctly.
+### 3.2 Hook & Logic Testing
 
-### Phase 3: Integration & Database
+Custom hooks that bridge `@paperflip/core` with the mobile UI are tested to ensure:
 
-1.  **RxDB Lifecycle:** Verify that document storage and retrieval work within the mobile context using an in-memory mock of the SQLite layer.
-2.  **Core Integration:** Ensure that `packages/core` segmenter logic is correctly invoked when a document is "uploaded" in the mobile app.
+- **State Transitions:** Correct updates to loading, document, and settings states.
+- **Database Interaction:** Verifying that `getStorage()` is called and data is correctly persisted.
 
-### Phase 4: Automation & CI
+### 3.3 Shared Core Integration
 
-1.  **Script Update:** Add `"test": "vitest run"` and `"test:watch": "vitest"` to `apps/mobile/package.json`.
-2.  **Turbo Integration:** Verify that `turbo test` correctly executes mobile tests alongside web and core tests.
+Tests verify that `packages/core` logic (like the segmenter) behaves identically within the mobile test environment as it does in the web test environment.
 
-## 4. Anticipated Challenges
+## 4. Execution
 
-1.  **Global Polyfills:** React Native relies on many globals (like `Buffer`, `crypto`, `URL`) that might be missing in a Vitest Node environment. We'll likely need `vite-plugin-node-polyfills`.
-2.  **Vitest vs. Native Modules:** Many Expo libraries are ESM-only or contain native code that Vitest cannot execute. Aggressive mocking in `vitest.setup.ts` will be critical.
-3.  **NativeWind v4:** Testing components that use NativeWind requires ensuring the styles don't crash the RNTL renderer (usually handled by mocking the `NativeWind` runtime).
+Tests are executed using the following commands:
+
+- `pnpm run test`: Runs the full test suite.
+- `pnpm run test:watch`: Runs tests in interactive watch mode.
+
+## 5. Mocking Strategy
+
+Since many Expo libraries require a physical device or simulator, we use aggressive mocking in `jest.setup.cjs` for:
+
+- **`AsyncStorage`**: Mocked (via `jest-expo` or explicitly) to verify that document storage and retrieval work correctly within tests.
+- **`expo-sqlite`**: Mocked (as per `jest.setup.cjs`) to ensure compatibility with any future SQLite implementations or dependent libraries.
+- **`expo-speech`**: Mocked to simulate boundary events for testing the "Karaoke" sync.
+- **`expo-video`**: Mocked to verify that videos are initialized with the correct source and loop settings.
+
+## 6. Future Improvements
+
+1.  **Visual Regression Testing:** Explore `pixelmatch` or similar to ensure visual parity with the web version's typography and layouts.
+2.  **E2E Testing:** Integrate Maestro or Detox for high-level user flow verification (e.g., "Upload PDF -> Read in Feed").

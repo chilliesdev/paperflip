@@ -10,7 +10,7 @@ This repository contains the **Monorepo** implementation of Paperflip, focusing 
 - **✂️ Smart Chunking:** Automatically segments text into digestible chunks for "short" video consumption.
 - **🗣️ Text-to-Speech (TTS):** Uses native device APIs (Web Speech API / Native Voice) to read content aloud with real-time word highlighting.
 - **📱 Vertical Feed:** A TikTok-style vertical swipe interface for seamless navigation between chunks.
-- **💾 Offline Storage:** Uses RxDB to store your study sessions locally across both platforms.
+- **💾 Offline Storage:** Uses a shared `StorageEngine` abstraction to store your study sessions locally on your device (IndexedDB for Web, SQLite for Mobile).
 - **🎨 Consistent Design:** Built with Tailwind CSS (Web) and NativeWind (Mobile) for a seamless experience.
 
 ## 🏢 Architecture
@@ -27,7 +27,7 @@ Paperflip is structured as a **Turborepo** monorepo using `pnpm`:
 - **Web Framework:** [SvelteKit](https://kit.svelte.dev/)
 - **Mobile Framework:** [Expo](https://expo.dev/) (React Native)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) / [NativeWind](https://www.nativewind.dev/)
-- **State/Database:** [RxDB](https://rxdb.info/) (Client-side NoSQL)
+- **State/Database:** Custom Key-Value store with platform-specific adapters (`idb-keyval` / `expo-sqlite`)
 - **Monorepo Tooling:** [Turborepo](https://turbo.build/) & [pnpm](https://pnpm.io/)
 
 ## 📦 Installation & Setup
@@ -59,6 +59,7 @@ pnpm run dev
 ```
 
 Alternatively, you can run apps individually:
+
 - **Web App:** `cd apps/web && pnpm run dev` (Runs on `http://localhost:5173`)
 - **Mobile App:** `cd apps/mobile && pnpm run start` (Opens the Expo bundler)
 
