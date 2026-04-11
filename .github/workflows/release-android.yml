@@ -86,7 +86,14 @@ jobs:
       - name: Build Android APK
         if: steps.tag_version.outputs.new_tag != ''
         working-directory: apps/mobile/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          ./gradlew assembleRelease --no-daemon
+          
+          # Rename the APK to a cleaner format: AppName-vVersion.apk
+          # We use the calculated version from the tagging step
+          APP_NAME=$(jq -r '.expo.name' ../app.json)
+          VERSION="${{ steps.tag_version.outputs.new_version }}"
+          mv app/build/outputs/apk/release/app-release.apk "app/build/outputs/apk/release/${APP_NAME}-v${VERSION}.apk"
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
@@ -106,7 +113,7 @@ jobs:
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
           files: |
-            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/app/build/outputs/apk/release/*.apk
           draft: false
           prerelease: false
         env:
