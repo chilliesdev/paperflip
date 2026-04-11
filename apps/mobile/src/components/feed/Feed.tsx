@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Pressable, Dimensions } from 'react-native';
-import PagerView from 'react-native-pager-view';
+import { View, Text, Pressable, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import * as Speech from 'expo-speech';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -27,7 +26,7 @@ export function Feed({
   documentId,
 }: FeedProps) {
   const router = useRouter();
-  const pagerRef = useRef<PagerView>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [currentCharIndex, setCurrentCharIndex] = useState(-1);
@@ -238,7 +237,7 @@ export function Feed({
   useEffect(() => {
     // Component mount
     if (segments.length > 0) {
-      // Small delay to ensure PagerView has settled if not on index 0
+      // Small delay to ensure ScrollView has settled if not on index 0
       setTimeout(() => {
          speakCurrentSlide();
       }, 500);
@@ -252,9 +251,8 @@ export function Feed({
     };
   }, [activeIndex, segments.length]); // Intentionally omitting speakCurrentSlide to avoid re-triggering on its deps
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePageSelected = (e: any) => {
-    const newIndex = e.nativeEvent.position;
+  const handleMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const newIndex = Math.round(e.nativeEvent.contentOffset.y / height);
     if (newIndex !== activeIndex) {
       setActiveIndex(newIndex);
       stateRef.current.currentSegmentProgress = 0;
@@ -333,13 +331,13 @@ export function Feed({
       </SafeAreaView>
 
       <Pressable className="flex-1" onPress={handleTap}>
-        <PagerView
-          ref={pagerRef}
+        <ScrollView
+          ref={scrollRef}
           style={{ flex: 1, width, height }}
-          initialPage={initialIndex}
-          orientation="vertical"
-          onPageSelected={handlePageSelected}
-          overdrag={true}
+          contentOffset={{ x: 0, y: activeIndex * height }}
+          pagingEnabled
+          showsVerticalScrollIndicator={false}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
         >
           {segments.map((segment, i) => {
             // Memory optimization: render only current, previous, and next slides
@@ -366,7 +364,7 @@ export function Feed({
               </View>
             );
           })}
-        </PagerView>
+        </ScrollView>
       </Pressable>
 
       {/* Footer / Controls */}
