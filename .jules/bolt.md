@@ -22,3 +22,8 @@
 
 **Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
 **Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
+
+## 2025-06-12 - Concurrent Cache API Deletions
+
+**Learning:** When performing cleanup operations on the browser Cache API using `cache.delete()`, sequentially awaiting each deletion inside a loop (e.g., `for...of`) forces the browser to handle one I/O operation at a time. This unnecessarily blocks the async task, especially when cleaning up multiple large assets like videos.
+**Action:** Always map the cache keys to an array of `cache.delete()` promises and use `Promise.all()` to execute the deletions concurrently. This maximizes the browser's I/O throughput and reduces the total time spent in background cleanup routines.
