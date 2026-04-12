@@ -45,11 +45,15 @@
     "text-pink-400",
   ];
 
-  const hash = $derived(
-    document.documentId
-      .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
-  );
+  // ⚡ Bolt Optimization: Replaced string split and reduce with an imperative loop to prevent array allocation overhead during list rendering.
+  const hash = $derived.by(() => {
+    let acc = 0;
+    const id = document.documentId;
+    for (let i = 0; i < id.length; i++) {
+      acc += id.charCodeAt(i);
+    }
+    return acc;
+  });
   const icon = $derived(icons[hash % icons.length]);
   const colorClass = $derived(colors[hash % colors.length]);
 </script>

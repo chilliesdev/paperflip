@@ -22,3 +22,6 @@
 
 **Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
 **Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
+## 2026-03-17 - Array Allocation in Svelte Derived Properties
+**Learning:** Declarative array techniques like `.split('').reduce(...)` inside `$derived` properties in Svelte components executing frequently (like iterating over list components) cause unnecessary garbage collection overhead due to continuous array allocations.
+**Action:** Replaced `.split('').reduce(...)` with imperative `for` loops for operations like string hashing in list items, avoiding intermediate array memory allocations entirely.
