@@ -45,11 +45,17 @@
     "text-pink-400",
   ];
 
-  const hash = $derived(
-    document.documentId
-      .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
-  );
+  // ⚡ Bolt Optimization: Replaced declarative .split("").reduce(...) with an
+  // imperative for loop to eliminate O(N) array allocation and garbage collection
+  // overhead during reactive high-frequency updates in Svelte 5.
+  const hash = $derived.by(() => {
+    let h = 0;
+    const str = document.documentId;
+    for (let i = 0; i < str.length; i++) {
+      h += str.charCodeAt(i);
+    }
+    return h;
+  });
   const icon = $derived(icons[hash % icons.length]);
   const colorClass = $derived(colors[hash % colors.length]);
 </script>
