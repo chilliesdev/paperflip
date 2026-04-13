@@ -22,3 +22,7 @@
 
 **Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
 **Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
+
+## 2025-06-05 - Minimize GC in Derivations
+**Learning:** Replaced `.split("").reduce(...)` string hashing with imperative `for` loops in Svelte 5 `$derived` blocks to minimize garbage collection and memory allocation during component reactivity.
+**Action:** Use string iteration and integer arithmetic instead of creating intermediate arrays when processing data for visual assignments like colors and icons.

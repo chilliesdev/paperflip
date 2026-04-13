@@ -53,11 +53,13 @@
     { text: "text-pink-400", bg: "bg-pink-400" },
   ];
 
-  const hash = $derived(
-    document.documentId
-      .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
-  );
+  const hash = $derived.by(() => {
+    let sum = 0;
+    for (let i = 0; i < document.documentId.length; i++) {
+      sum += document.documentId.charCodeAt(i);
+    }
+    return sum;
+  });
   const icon = $derived(icons[hash % icons.length]);
   const colorObj = $derived(colors[hash % colors.length]);
 </script>
