@@ -53,11 +53,16 @@
     { text: "text-pink-400", bg: "bg-pink-400" },
   ];
 
-  const hash = $derived(
-    document.documentId
-      .split("")
-      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
-  );
+  // ⚡ Bolt Optimization: Replaced `.split("").reduce(...)` with an imperative loop
+  // to eliminate intermediate array allocations during reactive updates.
+  const hash = $derived.by(() => {
+    let h = 0;
+    const str = document.documentId;
+    for (let i = 0; i < str.length; i++) {
+      h += str.charCodeAt(i);
+    }
+    return h;
+  });
   const icon = $derived(icons[hash % icons.length]);
   const colorObj = $derived(colors[hash % colors.length]);
 </script>

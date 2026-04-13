@@ -22,3 +22,7 @@
 
 **Learning:** When extracting text from multi-page PDFs using PDF.js (`pdf.getPage()` and `page.getTextContent()`), using a sequential `for` loop blocks the main thread waiting for each page's I/O to complete.
 **Action:** Replaced the sequential loop with an array of Promises and `Promise.all()`. This allows all page reads to be processed concurrently, drastically reducing the overall latency for parsing large PDF documents without sacrificing the order of pages (since `Promise.all` returns an ordered array).
+
+## 2024-03-15 - Svelte 5 and Allocation Costs
+**Learning:** High-frequency reactive updates in Svelte 5 (especially inside `$derived`) suffer from garbage collection and memory allocation overhead when using declarative array methods like `.filter()`, `.reduce()`, and string methods like `.split("")`. In this codebase, string-to-number hashing used for visual elements (`DocumentGridItem`, `DocumentListItem`, `FavouriteCard`) allocates strings on every reactive update.
+**Action:** Replace `str.split("").reduce(...)` with a custom imperative string hashing loop to prevent massive string array allocations.
