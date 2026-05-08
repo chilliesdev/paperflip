@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, Pressable } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { splitSentences } from '@paperflip/core';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +16,7 @@ interface FeedSlideProps {
   videoSource: string;
   textScale?: number;
   isMuted?: boolean;
+  onPress?: () => void;
 }
 
 export function FeedSlide({
@@ -28,6 +29,7 @@ export function FeedSlide({
   videoSource,
   textScale = 100,
   isMuted = true,
+  onPress,
 }: FeedSlideProps) {
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = true;
@@ -158,7 +160,7 @@ export function FeedSlide({
   };
 
   return (
-    <View className="flex-1 bg-black relative overflow-hidden" style={{ width, height }}>
+    <Pressable className="flex-1 bg-black relative overflow-hidden" style={{ width, height }} onPress={onPress}>
       <View className="absolute inset-0 z-0">
         <VideoView
           player={player}
@@ -188,7 +190,7 @@ export function FeedSlide({
       </View>
 
       {/* Progress Bar (simplified for mobile without scrubbing for now, matching simple playback progress) */}
-      <View className="absolute bottom-0 left-0 right-0 z-30 h-2 flex items-end">
+      <View className="absolute bottom-0 left-0 right-0 z-30 h-2 flex items-end pointer-events-none">
         <View className="w-full h-1 bg-white/10">
           <View
             testID="progress-bar"
@@ -197,6 +199,6 @@ export function FeedSlide({
           />
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }

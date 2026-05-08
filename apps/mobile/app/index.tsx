@@ -25,44 +25,9 @@ if (Platform.OS === 'web') {
 import { StatusBar } from 'expo-status-bar';
 import { Text, View, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useEffect, useState } from 'react';
-import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import '../global.css';
-
-// Polyfill crypto.subtle.digest for RxDB and other libraries
-if (typeof global.crypto === 'undefined') {
-  Object.assign(global, { crypto: {} });
-}
-if (typeof (global as { crypto: { subtle?: any } }).crypto.subtle === 'undefined') {
-  (global as { crypto: { subtle?: any } }).crypto.subtle = {
-    digest: async (_algorithm: string, data: Uint8Array | ArrayBuffer | string) => {
-      let str: string;
-      if (typeof data === 'string') {
-        str = data;
-      } else {
-        const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
-        str = Array.from(uint8)
-          .map((b) => String.fromCharCode(b))
-          .join('');
-      }
-
-      const hash = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        str
-      );
-
-      const hexToBuf = (hex: string) => {
-        const view = new Uint8Array(hex.length / 2);
-        for (let i = 0; i < hex.length; i += 2) {
-          view[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-        }
-        return view.buffer;
-      };
-      return hexToBuf(hash);
-    },
-  };
-}
 
 // Import from workspace core package
 import { DEFAULT_SETTINGS, getSettings, upsertDocument, getAllDocuments, type Document as PaperFlipDocument } from '@paperflip/core';

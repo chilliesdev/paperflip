@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getDb, getDocument, resegmentDocument, getSettings } from '@paperflip/core';
 import { Feed } from '../src/components/feed/Feed';
-import { DEFAULT_SETTINGS } from '@paperflip/core';
 
 export default function FeedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

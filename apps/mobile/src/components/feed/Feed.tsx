@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { splitSentences } from '@paperflip/core';
 import { videoSources } from '@paperflip/core';
-import { updateDocumentProgress, DEFAULT_SETTINGS, getSettings, updateSettings } from '@paperflip/core';
+import { updateDocumentProgress, getSettings, updateSettings } from '@paperflip/core';
 import { FeedSlide } from './FeedSlide';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ReadingOptionsSheet } from '../ReadingOptionsSheet';
@@ -356,11 +356,11 @@ export function Feed({
   return (
     <View className="flex-1 bg-black relative">
       <SafeAreaView style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 40}} edges={['top']}>
-        <View className="p-4 flex-row items-center justify-between pointer-events-none">
+        <View className="p-4 flex-row items-center justify-between pointer-events-box-none">
           <Pressable
             testID="back-button"
             onPress={() => { stopTTS(); router.back(); }}
-            className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15 pointer-events-auto"
+            className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15"
           >
             <Feather name="chevron-left" size={24} color="white" />
           </Pressable>
@@ -373,53 +373,52 @@ export function Feed({
 
           <Pressable
             onPress={() => setOptionsVisible(true)}
-            className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15 pointer-events-auto"
+            className="w-12 h-12 rounded-full items-center justify-center bg-black/40 border border-white/15"
           >
             <Feather name="more-horizontal" size={24} color="white" />
           </Pressable>
         </View>
       </SafeAreaView>
 
-      <Pressable testID="tap-to-playback" className="flex-1" onPress={handleTap}>
-        <ScrollView
-          ref={scrollRef}
-          style={{ flex: 1, width, height }}
-          contentOffset={{ x: 0, y: activeIndex * height }}
-          pagingEnabled
-          showsVerticalScrollIndicator={false}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          scrollEnabled={true}
-        >
-          {segments.map((segment, i) => {
-            const isNearActive = Math.abs(i - activeIndex) <= 1;
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1, width, height }}
+        contentOffset={{ x: 0, y: activeIndex * height }}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        scrollEnabled={true}
+      >
+        {segments.map((segment, i) => {
+          const isNearActive = Math.abs(i - activeIndex) <= 1;
 
-            if (!isNearActive) {
-               return (
-                 <View key={i} style={{ flex: 1, width, height, backgroundColor: 'black' }} />
-               );
-            }
+          if (!isNearActive) {
+             return (
+               <View key={i} style={{ flex: 1, width, height, backgroundColor: 'black' }} />
+             );
+          }
 
-            return (
-              <View key={i} style={{ flex: 1, width, height }}>
-                <FeedSlide
-                  segment={segment}
-                  isActive={i === activeIndex}
-                  isPlaying={isPlaying}
-                  currentCharIndex={i === activeIndex ? currentCharIndex : -1}
-                  highlightEndIndex={i === activeIndex ? highlightEndIndex : undefined}
-                  highlightStartIndex={i === activeIndex ? highlightStartIndex : undefined}
-                  videoSource={videoSources[(backgroundUrlIndex + i) % videoSources.length].url}
-                  isMuted={isMuted}
-                />
-              </View>
-            );
-          })}
-        </ScrollView>
-      </Pressable>
+          return (
+            <View key={i} style={{ flex: 1, width, height }}>
+              <FeedSlide
+                segment={segment}
+                isActive={i === activeIndex}
+                isPlaying={isPlaying}
+                currentCharIndex={i === activeIndex ? currentCharIndex : -1}
+                highlightEndIndex={i === activeIndex ? highlightEndIndex : undefined}
+                highlightStartIndex={i === activeIndex ? highlightStartIndex : undefined}
+                videoSource={videoSources[(backgroundUrlIndex + i) % videoSources.length].url}
+                isMuted={isMuted}
+                onPress={handleTap}
+              />
+            </View>
+          );
+        })}
+      </ScrollView>
 
       {/* Footer / Controls */}
-      <View className="absolute bottom-10 left-0 w-full z-40 p-4 pointer-events-none flex-col items-center">
-        <View className="w-full flex-row justify-start pb-4 pl-4 pointer-events-auto">
+      <View className="absolute bottom-10 left-0 w-full z-40 p-4 pointer-events-box-none flex-col items-center">
+        <View className="w-full flex-row justify-start pb-4 pl-4">
           <Pressable
             className="w-10 h-10 rounded-full items-center justify-center shadow-lg bg-[#00FF88]"
             onPress={() => setIsMuted(!isMuted)}

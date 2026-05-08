@@ -5,7 +5,48 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setStorageEngine, type StorageEngine } from '@paperflip/core';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import * as Crypto from 'expo-crypto';
+import "react-native-get-random-values";
+import { polyfillWebCrypto } from "expo-standard-web-crypto";
 import '../global.css';
+
+// Polyfill Web Crypto for RxDB in React Native
+polyfillWebCrypto();
+
+// Just in case, ensure it is on global and globalThis
+if (typeof global.crypto === 'undefined' || typeof (global as any).crypto?.subtle === 'undefined') {
+  if (typeof global.crypto === 'undefined') {
+    Object.assign(global, { crypto: {} });
+  }
+
+  (global as { crypto: { subtle?: any } }).crypto.subtle = {
+    digest: async (_algorithm: string, data: Uint8Array | ArrayBuffer | string) => {
+      let str: string;
+      if (typeof data === 'string') {
+        str = data;
+      } else {
+        const uint8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+        str = Array.from(uint8)
+          .map((b) => String.fromCharCode(b))
+          .join('');
+      }
+
+      const hash = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        str
+      );
+
+      const hexToBuf = (hex: string) => {
+        const view = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+          view[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+        }
+        return view.buffer;
+      };
+      return hexToBuf(hash);
+    },
+  };
+}
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync().catch(() => {

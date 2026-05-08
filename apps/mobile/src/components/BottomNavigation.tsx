@@ -8,6 +8,8 @@ export function BottomNavigation() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
+  if (pathname.includes('/feed')) return null;
+
   return (
     <View className="absolute bottom-0 w-full z-20">
       <BlurView
